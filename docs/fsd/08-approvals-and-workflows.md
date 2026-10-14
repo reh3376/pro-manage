@@ -3,7 +3,9 @@
 ## Decisions on record
 
 - **2026-10-13** — Approvals are a core feature. pro_manage owns the workflow engine; MDEMG provides advisory + classify at the gates (`§06`).
-- **2026-10-13** — Workflow kinds in year one: **CapEx, Baseline change, Milestone sign-off, Change request, Closeout**, plus a configurable **Custom** kind for policies pro_manage doesn't ship with.
+- **2026-10-13** — The primary approval instance in a TPM shop is the **CAR (Capital Authorization Request)**. "CapEx" is retained as the generic framing.
+- **2026-10-13** — Workflow kinds in year one: **CAR, Baseline change, Design review sign-off, CQV sign-off, Milestone sign-off, Change request, Shutdown & tie-in plan, Early Management exit, Closeout, Benefits Realization review**, plus a configurable **Custom** kind for policies pro_manage doesn't ship with.
+- **2026-10-13** — Pre-authorization workflow enforces **FEL stage** progression (FEL1 → FEL2 → FEL3) and **AACE Estimate Class** gates: Class 5 at concept, Class 3 required at CAR submission, Class 1 required at execution kickoff. Violations block submit (Tier A fail-closed).
 - **2026-10-13** — Formal e-signature via `Sigi` (DocuSign at launch). Workflow kinds for which Sigi is mandatory are configurable per policy; the rest rely on the authenticated AuditEvent as the sign-off of record.
 - **2026-10-13** — AuditEvents are append-only with chained signed hashes (tamper evidence). Retention aligned with the longest applicable regime (`§11`); baseline is 7 years for financial-impacting events.
 - **2026-10-13** — Routing resolves approvers from **eligibility pools** by **amount thresholds + delegation chain**. Pools are populated by platform roles (`finance_approver_eligible`, etc.) + per-project overrides.
@@ -55,7 +57,9 @@ An `ApprovalWorkflow` has an ordered list of `ApprovalStage` rows:
 - `delegate` reassigns the stage to another eligible approver without changing state (logged as such).
 - `reject` terminates the workflow.
 
-### Example — CapEx approval chain (year-one defaults, admin-tunable)
+### Example — CAR approval chain (year-one defaults, admin-tunable)
+
+Pre-conditions for CAR submission: `project.fel_stage == fel3`, current `BudgetBaseline.aace_class ∈ {3, 2, 1}`, approved Basis of Design, at least one Design Review of `stage=detailed` closed with no `high`-severity findings open.
 
 | Order | Role required | Pool | SLA |
 |---|---|---|---|
@@ -66,6 +70,60 @@ An `ApprovalWorkflow` has an ordered list of `ApprovalStage` rows:
 | 5 (if amount ≥ $100M) | `ceo` | configured CEO + 1 delegate | 7 days |
 
 Thresholds and roles are stored in the `WorkflowPolicy` table and are editable by `platform_admin` with a logged change.
+
+### Example — Design review sign-off
+
+Required before transitioning Project from `Plan` to `Execute`.
+
+| Order | Role required | SLA | Jiminy coupling |
+|---|---|---|---|
+| 1 | `facilitator` closes the review | at session+24h | `/jiminy/guide` surfaces MP-information from past assets of same equipment type |
+| 2 | `operator_representative` + `maintenance_representative` acknowledge | 48h | — |
+| 3 | `project_owner` approves | 48h | `/jiminy/evaluate` on open `high`-severity findings — must be dispositioned |
+
+### Example — CQV sign-off (per equipment / per batch)
+
+| Order | Role required | SLA |
+|---|---|---|
+| 1 | `commissioning_engineer` closes the record (pass / pass-with-punchlist / fail) | at session+24h |
+| 2 | `operator_representative` co-sign on `pass_with_punchlist` | 48h |
+| 3 (regulated contexts only) | `qa_lead` final sign-off | 72h |
+
+Fail routes back to engineering with a change request. Punchlist items block Early Management exit until closed.
+
+### Example — Shutdown & tie-in plan (brownfield)
+
+Required before any Execute-stage tie-in against a running plant. Captures the plan, operations' acknowledgment, and the restart criteria.
+
+| Order | Role required | SLA |
+|---|---|---|
+| 1 | `project_owner` presents the plan | 48h |
+| 2 | `site_operations_lead` acknowledges + confirms production impact | 48h |
+| 3 | `site_maintenance_lead` acknowledges | 48h |
+| 4 | `finance_approver` if lost production > threshold | 72h |
+
+### Example — Early Management exit
+
+Project cannot move from `Monitor` to `Close` without this.
+
+| Order | Role required | SLA | Exit criteria |
+|---|---|---|---|
+| 1 | `project_owner` requests exit | — | Startup curve sustained at ≥X% nameplate for ≥Y days; CQV punchlist closed; TurnoverPackage.status == `approved` |
+| 2 | `site_operations_lead` co-sign | 48h | — |
+| 3 | `site_maintenance_lead` co-sign | 48h | — |
+| 4 | `compliance_officer` co-sign for regulated contexts | 72h | — |
+
+### Example — Benefits Realization review
+
+Fired at `BenefitsRealization.window_closes_at`.
+
+| Order | Role required | SLA |
+|---|---|---|
+| 1 | `project_owner` compiles variance report | 14d |
+| 2 | `finance_approver` validates financial variance | 7d |
+| 3 | `portfolio_executive` approves closure | 14d |
+
+Outcome drives the project's final `Archived` transition and feeds a `decision` observation to MDEMG governance space with scope tags for similar future projects.
 
 ### Example — Baseline change
 

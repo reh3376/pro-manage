@@ -2,7 +2,9 @@
 
 ## Decisions on record
 
-- **2026-10-13** — First-class metric families: **Financial, Schedule/Milestones, Scope/Risk/Issues, Safety/Quality/Compliance, Resource utilization**.
+- **2026-10-13** — First-class metric families: **Financial, Schedule/Milestones, Scope/Risk/Issues, Safety/Quality/Compliance, Resource utilization, and TPM / Plant Operations** (post-startup).
+- **2026-10-13** — **TPM / Plant Operations** is the metric family that proves a capital project actually delivered. During Early Management Period and Benefits Realization, pro_manage pulls OEE, MTBF, MTTR, FPY/RFT, EPU, OLE, Startup Curve, Changeover Time, and Capacity Utilization via **Metrici** (plant historian / OPC UA) and **HSEi** (MES/QMS) and compares against the project's business-case promises.
+- **2026-10-13** — **TIC** (Total Installed Cost) and **LCC** (Lifecycle Cost) are separate first-class concepts. TIC is tracked throughout the project; LCC is estimated during Design and compared to actuals during Benefits Realization.
 - **2026-10-13** — Harvest architecture: pluggable `Metrici` connectors (relational, time-series, generic Historian / OPC UA) with per-backend throttles and schema contracts governed by UATS/UNTS.
 - **2026-10-13** — Metric readings land in **pro_manage's own TimescaleDB** (not MDEMG's). ERP actuals come via `ERPi` and settle into both the financial domain tables (Postgres) and the metric time series (ours).
 - **2026-10-13** — Spreadsheet import/export is first-class, with UATS-governed schema contracts for every supported workbook template.
@@ -50,6 +52,35 @@ Each family ships with a built-in set of standard metrics (admin-extensible via 
 - `resource.overallocation_count` (people above 1.0)
 - `resource.equipment_uptime_pct` (from Historian / OPC)
 - `resource.contractor_headcount`
+
+### TPM / Plant Operations (post-startup)
+
+This family only becomes meaningful once an asset is in Early Management or beyond. It is the direct scorecard for **vertical startup** and **benefits realization**. All of it harvests from the running plant via **Metrici** (historian / OPC UA / SCADA) and **HSEi** (MES / QMS).
+
+- `tpm.oee` — Overall Equipment Effectiveness. **Availability × Performance × Quality.**
+  - `tpm.oee.availability` — Run time ÷ planned production time.
+  - `tpm.oee.performance` — (Ideal cycle time × total count) ÷ run time.
+  - `tpm.oee.quality` — Good units first-time ÷ total units.
+- `tpm.teep` — Total Effective Equipment Performance. OEE × Loading. Reveals hidden capacity.
+- `tpm.capacity_utilization` — Actual output ÷ installed capacity.
+- `tpm.mtbf` — Mean Time Between Failures (operating time ÷ failure count).
+- `tpm.mttr` — Mean Time To Repair (repair downtime ÷ repair count).
+- `tpm.mttf` — Mean Time To Failure (non-repairable components).
+- `tpm.fpy_rft` — First Pass Yield / Right First Time.
+- `tpm.startup_curve` — Daily rate as % of nameplate, from Day 1 of production. Primary EEM scorecard.
+- `tpm.time_to_nameplate` — Days from first production to sustained target rate (point metric, computed at achievement).
+- `tpm.planned_maintenance_pct` — Planned maintenance hours ÷ total maintenance hours.
+- `tpm.changeover_time` — Per changeover.
+- `tpm.cpu` — Cost Per Unit (production cost ÷ units).
+- `tpm.copq` — Cost of Poor Quality (scrap + rework + reblend + returns + inspection + downgrades).
+- `tpm.epu` — Energy Per Unit (energy used ÷ output; e.g., therms per proof gallon for a distillery).
+- `tpm.ole` — Overall Labor Effectiveness.
+- `tpm.cycle_time` — Actual vs engineering-standard cycle time.
+- `tpm.schedule_adherence` — Actual output ÷ scheduled output.
+
+**Industry-specific metrics are template-driven.** For distilling: `distillery.yield_pg_per_bushel`, `distillery.proof_gallon_per_day`, `distillery.beer_system_water_use_gpd`. For bottling: `bottling.line_speed_bpm`, `bottling.changeover_time_sku_to_sku`. Templates ship with the pm-core release; new industries add their own via the admin `MetricDefinition` surface.
+
+**Business-case linking.** Every TPM metric used in a project's business case is captured as a `BenefitsRealization.business_case_promises[]` entry, with the promised value and the measurement cadence. During the realization window, actuals are measured and the delta is recorded.
 
 Admin can add `MetricDefinition`s per-project or per-portfolio for domain-specific KPIs.
 
@@ -125,11 +156,21 @@ Rolled-up readings are themselves stored in pm-TSDB with `scope=portfolio` and `
 
 ## Baselines & variance
 
-For metrics that have a plan vs actual story (budget, schedule):
+For metrics that have a plan vs actual story (budget, schedule, TPM targets):
 
-- A `MetricBaseline` row captures the planned value for the metric at a point in time, tied to a project baseline (Budget baseline or Schedule baseline from §03).
+- A `MetricBaseline` row captures the planned value for the metric at a point in time, tied to a project baseline (Budget baseline, Schedule baseline, or BusinessCasePromise from §03).
 - At read time, pm-core joins current readings against the current baseline to compute variance.
 - Baseline changes themselves fire a `Budget baseline change` workflow (§08); the old baseline is retained for historical variance queries.
+- **AACE Class** is carried alongside each `BudgetBaseline` (see §03). Variance dashboards surface the AACE Class so stakeholders see the estimate maturity behind the number ("Class 5 = ±100% expected band, so a 40% swing is in-band").
+
+## TIC vs LCC
+
+The two financial dimensions pro_manage treats distinctly:
+
+- **TIC (Total Installed Cost)** — all capital to put the asset in service. Lives in `BudgetBaseline.baseline_total`. Progresses from AACE Class 5 at concept to Class 1 at execution. Primary variance tracking during Execute stage.
+- **LCC (Lifecycle Cost)** — forecasted total cost of ownership over the asset's expected life. Captured in `LCCEstimate` entities (§03). Estimated at Design stage as part of the business case; validated against operational cost actuals during Benefits Realization and after.
+
+Dashboards present TIC and LCC together on projects where both exist. The Business Case view carries explicit prompts: "LCC estimated? Business case rejection likely without it on >$5M projects."
 
 ## Data quality
 

@@ -3,7 +3,8 @@
 ## Decisions on record
 
 - **2026-10-13** — Integration pattern: **Pattern A** (REST-only, no plugin) for MVP. Pattern B (thin plugin) added in Phase 2+.
-- **2026-10-13** — Space model: **hybrid** — `space = project_id` for day-to-day observations/outcomes/escalation; `space = org.<orgId>.governance` for company-wide policy constraints. pro_manage's guidance queries hit both.
+- **2026-10-13** — Space model: **hybrid** — `space = project_id` for day-to-day observations/outcomes/escalation; `space = org.<orgId>.governance` for company-wide policy constraints **and MP information harvested from running assets**. pro_manage's guidance queries hit both.
+- **2026-10-13** — **Flagship use case: MP information flow.** Lessons learned, failures, operability pain points, and maintainability frictions captured at Closeout (and periodically from running assets) are written as `obs_type=learning` observations into the governance space with `scope=equipment:<type>` tags. During Design-stage reviews on later projects for similar equipment, `/jiminy/guide` surfaces them automatically. This closes the EEM loop that TPM is built around.
 - **2026-10-13** — Division of responsibilities: **pro_manage owns identity, ACL, workflow, SOX/ISO audit, deterministic rules, and fail-closed policy tiering**. MDEMG is advisory + memory. See `§04`, `§08`.
 - **2026-10-13** — Trust mode: **EMA** (`JIMINY_TRUST_MODE=ema`). Not ratchet.
 - **2026-10-13** — Metalearn disabled (`METALEARN_ENABLED=false`) to prevent cross-tenant leakage via `mdemg-global` promotion.
@@ -105,15 +106,47 @@
 
 - **Endpoint:** `POST /v1/conversation/observe`
 - **What pm-core writes as observations:**
-  | pro_manage event | obs_type | tags/metadata |
-  |---|---|---|
-  | Approval granted/denied | `decision` | `[approval, stage:N, kind:capex, project:XYZ]` + outcome |
-  | Budget baseline changed | `decision` | `[budget, baseline]` + before/after amount in structured_data |
-  | Milestone slipped | `blocker` or `progress` | `[milestone, slip_days:N]` |
-  | Risk raised / aged | `blocker` | `[risk, severity:H]` |
-  | Metric anomaly | `insight` or `error` | `[metric, kpi:cpi, project:XYZ]` |
-  | Lesson learned (manual tag) | `learning` | `[lesson, project:XYZ]` |
-  | Policy exception granted | `decision` | `[policy_exception, scope:X]` |
+  | pro_manage event | obs_type | space | tags/metadata |
+  |---|---|---|---|
+  | Approval granted/denied (CAR / baseline / closeout / Early Management exit) | `decision` | project | `[approval, kind:car, stage:N, project:XYZ]` + outcome |
+  | Budget baseline changed | `decision` | project | `[budget, baseline, aace_class:N]` + before/after amount |
+  | AACE class progression | `decision` | project | `[aace, from:5, to:3, fel_stage:fel3]` |
+  | Milestone slipped | `blocker` or `progress` | project | `[milestone, slip_days:N]` |
+  | Risk raised / aged | `blocker` | project | `[risk, severity:H]` |
+  | Metric anomaly / OEE below target | `insight` or `error` | project | `[metric, kpi:oee, project:XYZ]` |
+  | CQV punchlist item | `blocker` | project | `[cqv, equipment:boiler, item_id:N]` |
+  | **MP information harvested at Closeout** (per observation) | **`learning`** | **governance** | `[mp_info, equipment:<type>, category:failure \| operability \| maintainability \| …, source_project:XYZ]` |
+  | MP information harvested from running asset (periodic) | `learning` | governance | same as above |
+  | Benefits Realization variance report | `decision` | governance | `[benefits_realization, promised:X, delivered:Y, variance_pct:Z, equipment:<type>]` |
+  | Design-review disposition | `decision` | project | `[design_review, criterion:easy_to_maintain, disposition:design_change]` |
+  | Lesson learned (manual tag by operator / maintainer) | `learning` | governance (if generalized) or project | `[lesson, project:XYZ, scope:equipment:<type>]` |
+  | Policy exception granted | `decision` | project | `[policy_exception, scope:X]` |
+
+### MP information flow — the flagship use case
+
+This is the single highest-value integration pattern in pro_manage. It operationalizes the EEM loop: *lessons from running assets → design of the next asset.*
+
+**At Closeout (per project, in UC-15):**
+1. pm-core prompts the Owner + Operations lead + Maintenance lead to capture `MPInformation` observations (see `§03`). The UI makes this a required step for closeout.
+2. For each `MPInformation`, pm-core writes:
+   - A row to Postgres (`mp_information` table, project-scoped).
+   - An observation to MDEMG governance space: `POST /v1/conversation/observe` with `obs_type=learning`, `space_id=org.<id>.governance`, `tags=[mp_info, equipment:<type>, category:<category>]`, `content=<narrative>`, `structured_data={source_project_id, severity_at_source, authored_by, authored_at}`.
+3. Governance Authors review promoted observations periodically and may codify repeatedly-cited lessons into formal constraints via `POST /v1/jiminy/rules`.
+
+**Periodically from running assets (via CMMSi):**
+- pm-workers scheduled job pulls `FetchHighFailureAssets` and `FetchAgedWork` from CMMSi.
+- Significant signals (new high-MTTR assets, aging work-order patterns) are proposed as `MPInformation` candidates to the Compliance/Maintenance team for authoring.
+
+**At Design stage on a new project (in UC-01 → UC-02 flow):**
+- When a user opens a Design screen for a specific equipment type (indicated by WBS tags or project typing), pm-core calls `/jiminy/guide` with:
+  - `context="Designing a <equipment_type> for project X; sub-system <sub>"`
+  - `space_id` × 2 (project + governance)
+  - `query="MP information equipment:<type>"` (optional, helps retrieval)
+- Jiminy returns relevant `learning`-type observations and any promoted `constraint`-type items.
+- pm-core renders them as **MP Advisory Cards** in the Design UI, grouped by the "easy-to" criterion each MP item speaks to. The DesignReview form becomes implicitly pre-populated with "did we address these?"
+
+**At Benefits Realization closeout (new):**
+- The final variance report is written as a `decision`-type observation to the governance space with scope tags that match similar future projects (`[benefits_realization, equipment:<type>, kpi:<metric>]`). Later projects' Business Case drafting surfaces these: "projects building similar <equipment_type> have historically delivered X% of promised EPU reduction."
 - **Delivery:** via **Postgres outbox** — every state-changing transaction in pm-core writes a mutation + an `AuditEvent` + an outbox row. A pm-workers process drains the outbox and POSTs to MDEMG with retries. **At-least-once delivery.** MDEMG is idempotent-tolerant for our usage: we include a `source_ref` (= `audit_id`) so dedup is per audit event.
 - **Why outbox (not inline):** we never couple a user's transaction to MDEMG availability. If MDEMG is down for 2 hours, outbox depth grows, drains when it returns. pro_manage's audit log remains the authoritative record regardless.
 
