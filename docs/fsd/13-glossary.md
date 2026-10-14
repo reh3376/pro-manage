@@ -149,6 +149,7 @@ Terms, acronyms, and project-specific names.
 
 | Term | Meaning |
 |---|---|
+| **Pareto (chart)** | A bar chart of loss categories sorted largest to smallest, with a cumulative-percentage line, used to decide what to attack first (the 80/20 rule: a few categories carry most of the cost). In pro_manage, plant losses and project losses are priced in the same dollars so they can sit on one Pareto. Pronounced pah-RAY-toh. |
 | **TPM** | Total Productive Maintenance. Discipline for maximizing equipment effectiveness through operator engagement, autonomous maintenance, planned maintenance, focused improvement, early equipment management, and five other pillars. |
 | **TPM pillars** | The eight canonical pillars: Autonomous Maintenance, Planned Maintenance, Focused Improvement, Early Equipment Management (EEM), Quality Maintenance, Training & Education, Office TPM, Safety/Health/Environment. |
 | **EEM** | Early Equipment Management. The TPM pillar for new equipment and new lines. Goal: **vertical startup**: reaching target performance immediately at startup rather than after months of debugging. |
