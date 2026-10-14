@@ -16,6 +16,8 @@
 - **2026-10-13** — The organizing success question for every project, from the operator's seat: *"Did the asset start up clean, and did operations and maintenance inherit something they could run?"*
 - **2026-10-14** — **Pillar scope.** pro_manage is the system for the **EEM pillar and capital-scale Focused Improvement** projects. It **integrates with, and does not replace,** the operations TPM stack (CMMS, connected-worker, OEE/loss platforms such as Cryotos, Fabrico, Redzone, L2L, Augmentir, MaintainX, Fiix). It reads losses, abnormality tags, and failure history in; it hands assets and turnover packages out. Informed by the owner's TPM software market review (Oct 2026), which found no PM application structured around TPM.
 - **2026-10-14** — **Losses are the common currency.** Business cases state their promises as recoverable losses (Six Big Losses, priced in dollars); Benefits Realization verifies recovery of *those* losses against production data; the portfolio can be ranked by recoverable loss.
+- **2026-10-14** — **Two views of TPM, both first-class.** *TPM for the asset* (EEM, MP information, verified loss recovery on the equipment being built) and *TPM of the project* (the eight pillars applied to project delivery under an EPCM model, with the project's own losses — waiting, rework, interface clashes, unready packages, safety stops, skill gaps — measured and attacked the way a plant attacks equipment losses). Informed by the owner's EPCM-pillar framework (Oct 2026). The *project as equipment* idea is a core concept of pro_manage and is developed in `§14`.
+- **2026-10-14** — **EPCM delivery is supported natively.** The owner holds contracts; the EPCM partner and contractors are participants, not viewers: they update their own work packages, answer RFIs, and submit documents under a scoped contributor role (`§04`).
 - **2026-10-14** — **Asset is a first-class entity**, mirrored from the plant CMMS. MP information, startup curve, OEE, turnover, and Benefits Realization all key off the same physical asset and asset class.
 
 ## Mission
@@ -100,7 +102,13 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 28. **Asset registry** (Asset / AssetClass), mirrored from the CMMS once in service; MP information, startup curve, turnover, and Benefits Realization key off the asset.
 29. **Priced losses** (Six Big Losses + site loss tree) harvested from the operations TPM stack; business cases promise loss recovery against a CAR-time baseline; Benefits Realization verifies recovery; portfolio ranked by recoverable loss.
 30. **Project health reviews** — recurring, pre-filled from live data, ending in owned actions.
-31. **Phone-first field flows** (Phase 2) — CQV/SAT walkdowns, punchlist capture, turnover inspections, with photo/QR proof and offline sync.
+31. **Phone-first field flows** (Phase 2) — CQV/SAT walkdowns, punchlist capture, turnover inspections, hold-point inspections, and deviation tagging, with photo/QR proof and offline sync.
+32. **Work packages with readiness** (Advanced Work Packaging style) — engineering, procurement, and construction packages released only when information, materials, resources, and HSE prerequisites are in place; plan compliance tracked with variance reasons.
+33. **EPCM project-administration objects** — contracts, RFIs, submittals, and change orders with cycle-time tracking, so waiting on information and approvals is measured rather than felt.
+34. **Project losses** — a project-side loss taxonomy (waiting, rework, interface clash, unready package, safety stop, skill gap), priced where possible, feeding health reviews and focused-improvement work.
+35. **Built-in quality during construction** — inspection & test plans with hold points, non-conformance data fed back into specifications.
+36. **EPCM / contractor contributors** — external participants with edit rights scoped to the packages under their contract.
+37. **Project-team competency matrix** (Phase 3) — role competencies for owner, EPCM, and contractor staff, alongside the operator certification gate.
 
 ## Explicitly out of scope (first year)
 

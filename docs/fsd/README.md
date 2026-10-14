@@ -14,6 +14,18 @@ It is designed for a single company (not a SaaS tenant model), hosted on the com
 
 **The one question the whole system is organized around**, phrased the way a plant manager would: *"Did the asset start up clean, and did Operations and Maintenance inherit something they could run?"* Every capability, every workflow, every metric in pro_manage ties back to that.
 
+**Two views of TPM, both first-class.** *TPM for the asset* — EEM, MP information, and verified recovery of the losses the business case promised on the equipment being built. *TPM of the project* — the eight pillars applied to project delivery under an EPCM model, where the project itself is the "equipment" and its losses (waiting on information or approvals, rework, interface clashes, unready work packages, safety stops, skill gaps) are measured and attacked the way a plant attacks equipment losses.
+
+---
+
+## Core concept: the project as equipment
+
+A TPM plant knows what share of planned time each line ran, how fast it ran, and how much it made right the first time — and it names, prices, and attacks every loss. Capital projects are usually reported as two variances, cost and schedule, that say *how far off* a project is but not *where the time and money went*. The days waiting on an RFI, the crew standing by because a package started without its materials, the rework after a failed hold point, the change order sitting in an approval queue: these losses disappear into "schedule slip."
+
+pro_manage treats **the project as the equipment**. Its work fronts are the machines and its work packages the production runs. Work-front availability, productivity, and first-time-right stand in for OEE's availability, performance, and quality; a project-loss taxonomy stands in for the Six Big Losses; and all eight pillars are applied to project delivery. Losses are captured automatically from normal work (RFIs, submittals, package readiness, hold points, deviations), priced in the same dollars as plant losses, shown on a Project reliability board, and attacked one dominant loss at a time in each health review. Recurring project losses become lessons the next project sees in design review — MP information for projects.
+
+This is the idea pro_manage is built to develop. The full statement, mappings, open questions, and prior art to check are in [§14](./14-project-as-equipment.md).
+
 ---
 
 ## Why it exists
@@ -71,7 +83,7 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 **Plan (Design)**
 - FEL stage progression (FEL1 → FEL2 → FEL3) with AACE class maturation
 - Full-ACL team membership (per section, per document, per field) + delegated access
-- Design-review workflow with the seven "easy-to" criteria; operator + maintenance participation
+- Design-review workflow with the seven "easy-to" criteria plus constructability, commissionability, and safety in design; operator, maintenance, and construction-manager participation
 - Basis of design, risk register, LCC estimate, TIC baseline
 - CAR submission with multi-stage approval chain
 
@@ -80,6 +92,10 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 - Shutdown & tie-in planning for brownfield work (sequenced around the production schedule, not the construction schedule)
 - FAT / SAT / CQV records; non-conformance tracking
 - Operator + maintenance participation in commissioning readiness and startup rehearsal
+- Work packages released only when ready (drawings, RFIs, materials, crew, permits, HSE); weekly plan compliance with variance reasons
+- RFIs, submittals, and change orders with cycle times; delays recorded as project losses
+- Inspection & test plans with hold points; deviation tagging by anyone close to the work
+- EPCM partner and contractor staff work in pro_manage on their own packages, scoped by contract
 - Change-request workflow with budget/schedule impact
 - Earned-value (CPI, SPI, BCWP) where inputs available
 
@@ -139,24 +155,25 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 | § | File | What's in it |
 |---|---|---|
 | 01 | [vision-and-scope.md](./01-vision-and-scope.md) | Mission, problem statement, in/out of scope, success criteria (incl. startup curve, benefits realization, MP flow) |
-| 02 | [personas-and-use-cases.md](./02-personas-and-use-cases.md) | 11 personas (incl. site operations & maintenance representatives, commissioning engineer), 18 use cases, 4 end-to-end journeys |
-| 03 | [domain-model.md](./03-domain-model.md) | Project, members, ACLs, budget (TIC/LCC), schedule, scope, risks, documents, metrics, approvals, EEM entities (DesignReview, MPInformation, CommissioningRecord, TurnoverPackage, BenefitsRealization), Asset/AssetClass, Loss/LossCategory, BusinessCasePromise, ProjectHealthReview |
-| 04 | [access-control-and-identity.md](./04-access-control-and-identity.md) | SSO (OIDC + SAML), platform / project / workflow roles, full ACL per section/doc/field, 4-layer enforcement |
+| 02 | [personas-and-use-cases.md](./02-personas-and-use-cases.md) | 13 personas (incl. site operations & maintenance reps, commissioning engineer, construction manager, EPCM / contractor contributors), 21 use cases, 4 end-to-end journeys |
+| 03 | [domain-model.md](./03-domain-model.md) | Project, members, ACLs, budget (TIC/LCC), schedule, scope, risks, documents, metrics, approvals, EEM entities (DesignReview, MPInformation, CommissioningRecord, TurnoverPackage, BenefitsRealization), Asset/AssetClass, Loss/LossCategory, BusinessCasePromise, ProjectHealthReview; EPCM objects (Contract, WorkPackage, RFI, Submittal, ChangeOrder, ITP/HoldPoint, ProjectDeviation, ProjectLoss) |
+| 04 | [access-control-and-identity.md](./04-access-control-and-identity.md) | SSO (OIDC + SAML), platform / project / workflow roles, contract-scoped EPCM contributors, full ACL per section/doc/field, 4-layer enforcement |
 | 05 | [architecture.md](./05-architecture.md) | Service inventory, gRPC/REST surfaces, modular connector framework, deployment topology |
 | 06 | [mdemg-integration.md](./06-mdemg-integration.md) | J17/Jiminy call surfaces, hybrid space model, fail-closed tiering, MP-information flow (incl. abnormality-tag and loss patterns from the operations TPM stack) |
-| 07 | [metrics-and-data-curation.md](./07-metrics-and-data-curation.md) | Financial, Schedule, Scope/Risk, Safety/Quality/Compliance, TPM/Plant-Ops and priced-loss families; verified recovery; connectors; spreadsheets |
-| 08 | [approvals-and-workflows.md](./08-approvals-and-workflows.md) | CAR workflow, baseline change, design review, CQV, shutdown & tie-in, Early Management exit, closeout, Benefits Realization, project health review, Sigi, admin override, audit chain |
-| 09 | [presentations-and-reporting.md](./09-presentations-and-reporting.md) | Live dashboards (incl. Loss & opportunity, Startup & Early Management), scheduled exports, on-demand decks, external sharing, phone-first field flows |
+| 07 | [metrics-and-data-curation.md](./07-metrics-and-data-curation.md) | Financial, Schedule, Scope/Risk, Safety/Quality/Compliance, TPM/Plant-Ops, priced-loss, and project-loss families; verified recovery; package readiness and plan compliance; connectors; spreadsheets |
+| 08 | [approvals-and-workflows.md](./08-approvals-and-workflows.md) | CAR workflow, baseline change, design review, CQV, shutdown & tie-in, Early Management exit, closeout, Benefits Realization, project health review, RFI / submittal / change order, work package release, hold points, Sigi, admin override, audit chain |
+| 09 | [presentations-and-reporting.md](./09-presentations-and-reporting.md) | Live dashboards (incl. Loss & opportunity, Startup & Early Management, Project reliability), scheduled exports, on-demand decks, external sharing, phone-first field flows |
 | 10 | [integrations.md](./10-integrations.md) | ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi |
 | 11 | [ops-and-nfr.md](./11-ops-and-nfr.md) | SLOs, availability, backup/DR, observability, security, retention |
 | 12 | [test-governance-uxts.md](./12-test-governance-uxts.md) | UATS + UDTS + UNTS from MVP; UBTS, USTS, UOTS, UPMTS roadmap |
 | 13 | [glossary.md](./13-glossary.md) | Terms and acronyms (TPM, EEM, CAR, AACE, LCC, TIC, OEE, MTBF, …) |
+| 14 | [project-as-equipment.md](./14-project-as-equipment.md) | **Core concept.** The project as equipment: OEE and Six Big Losses mapped to project delivery, the eight pillars applied, version-1 implementation, open questions, prior art |
 | — | [roadmap.md](./roadmap.md) | Phased delivery, milestones, dependencies, risks |
 
 ### Quick paths
 
-- **Capital Engineering leader** — §01, §08, §03, §07, §09
-- **Plant operations / maintenance stakeholder** — §01 (success criteria), §07 (TPM/Plant-Ops family), §08 (Early Management exit, Turnover), §06 (MP-information flow)
+- **Capital Engineering leader** — §14, §01, §08, §03, §07, §09
+- **Plant operations / maintenance stakeholder** — §14, §01 (success criteria), §07 (TPM/Plant-Ops family), §08 (Early Management exit, Turnover), §06 (MP-information flow)
 - **Platform engineer** — §05, §06, §11, §12
 - **Finance / Compliance** — §04, §07 (TIC/LCC, Benefits Realization), §08 (CAR + chained-hash audit), §11
 - **AI / governance stakeholder** — §06, §12

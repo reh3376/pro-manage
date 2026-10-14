@@ -11,6 +11,8 @@
 - **2026-10-14** — **Asset** and **AssetClass** are first-class, mirrored from the plant CMMS via CMMSi. The CMMS stays the system of record for in-service assets; pro_manage owns *planned* assets (created during Design) until turnover pushes them into the CMMS. MP information, startup curve, OEE readings, TurnoverPackage, and BenefitsRealization key off `asset_id` / `asset_class_id` rather than free-form equipment tags.
 - **2026-10-14** — **Loss** and **LossCategory** are first-class. Categories default to the **Six Big Losses** (breakdowns, setup/changeover, minor stops, reduced speed, startup rejects, production rejects) and are extensible per site loss tree. Business-case promises are expressed as recoverable losses priced in dollars.
 - **2026-10-14** — **ProjectHealthReview** is first-class: the capital-side analogue of an operations huddle (see `§08`).
+- **2026-10-14** — **EPCM delivery objects** are first-class: `Contract`, `WorkPackage` (with readiness constraints and plan compliance), `RFI`, `Submittal`, `ChangeOrder`, `InspectionTestPlan` / `HoldPoint`, `ProjectDeviation`, and `ProjectLossEvent`. `ChangeRequest` stays the owner's internal scope/budget change; `ChangeOrder` is the contractual change under a `Contract` that may implement it.
+- **2026-10-14** — DesignReview adds three lenses beyond the seven "easy-to" criteria: **constructability, commissionability, and safety in design**.
 - **2026-10-13** — **Postgres** holds the authoritative transactional model. **pro_manage's own TimescaleDB** holds metric time series. **MDEMG's Neo4j** holds derived memory and guidance substrate — never the source of truth for pro_manage domain data. **S3-compatible object storage** (on-prem MinIO or equivalent) holds attachment binaries; `Doci` holds pointers for externally-stored documents.
 - **2026-10-13** — Every mutable entity records its `created_at`, `created_by`, `updated_at`, `updated_by`, `version` (monotonic int), and `tenant_id` (always the same for a single-company install, but reserved for defense-in-depth).
 
@@ -76,7 +78,7 @@ A single capital project with one Owner and a bounded team.
 ### ProjectMember
 A user's membership in a specific project with an assigned base role.
 
-- **Key fields:** `project_id`, `user_id`, `base_role` ∈ `{owner, editor, viewer}`, `invited_by`, `invited_at`, `activated_at`, `expires_at?` (for time-boxed access like auditors).
+- **Key fields:** `project_id`, `user_id`, `base_role` ∈ `{owner, editor, viewer, contributor}` (`contributor` = external EPCM/contractor staff, scoped by `Contract`; see `§04`), `invited_by`, `invited_at`, `activated_at`, `expires_at?` (for time-boxed access like auditors).
 - Relationships: belongs to Project; links to User (resolved via IdPi).
 
 ### ACLGrant
@@ -141,7 +143,7 @@ Two layers: definitions and readings.
 ### ApprovalWorkflow
 A multi-stage approval instance (`§08` details the state machine).
 
-- `ApprovalWorkflow` — `workflow_id`, `project_id`, `kind` ∈ `{car, baseline_change, design_review_signoff, cqv_signoff, milestone_signoff, change_request, shutdown_tiein_plan, early_mgmt_exit, closeout, benefits_realization_review, custom}`, `subject_ref` (what's being approved: a budget baseline id, a change request id, …), `initiated_by`, `initiated_at`, `current_stage`, `status` ∈ `{in_flight, approved, rejected, cancelled, expired}`, `signed_artifact_ref?` (Sigi reference when applicable).
+- `ApprovalWorkflow` — `workflow_id`, `project_id`, `kind` ∈ `{car, baseline_change, design_review_signoff, cqv_signoff, milestone_signoff, change_request, change_order, rfi_response, submittal_review, work_package_release, hold_point_release, shutdown_tiein_plan, early_mgmt_exit, closeout, benefits_realization_review, custom}`, `subject_ref` (what's being approved: a budget baseline id, a change request id, …), `initiated_by`, `initiated_at`, `current_stage`, `status` ∈ `{in_flight, approved, rejected, cancelled, expired}`, `signed_artifact_ref?` (Sigi reference when applicable).
 - `ApprovalStage` — `stage_id`, `workflow_id`, `order`, `role_required` (e.g., `vp_finance`), `assignees[]`, `sla_duration`, `completed_at?`, `completed_by?`, `decision` ∈ `{approve, reject, delegate}`, `comment?`, `guidance_id?` (MDEMG reference captured when the approver viewed guidance), `signed_envelope_ref?` (Sigi envelope ID).
 
 ### AuditEvent (immutable)
@@ -173,7 +175,7 @@ A re-usable starter for a Project (or a Milestone set, Risk categories, etc.).
 A formal review event during Design (Plan) stage against the seven "easy-to" criteria. Operator and maintenance participation is first-class.
 
 - **Key fields:** `review_id`, `project_id`, `scope` (free-text + optional reference to a design document), `stage` (`basic | detailed | pre_approval | post_change`), `scheduled_at`, `participants[]` (resolved to users; **must include at least one operator role and one maintenance role** for Design reviews of equipment-touching scope), `facilitator_user_id`, `status` ∈ `{planned, in_session, closed, cancelled}`.
-- **Criteria:** every DesignReview carries findings against the seven "easy-to" lenses (`easy_to_operate`, `easy_to_maintain`, `easy_to_clean`, `easy_to_change_over`, `easy_to_inspect`, `easy_to_keep_safe`, `easy_to_make_quality_product`). Each lens: `rating` (1–5 or `n/a`), `findings[]`, `dispositions[]`.
+- **Criteria:** every DesignReview carries findings against the seven "easy-to" lenses (`easy_to_operate`, `easy_to_maintain`, `easy_to_clean`, `easy_to_change_over`, `easy_to_inspect`, `easy_to_keep_safe`, `easy_to_make_quality_product`) plus three project-delivery lenses (`constructability`, `commissionability`, `safety_in_design`). Each lens: `rating` (1–5 or `n/a`), `findings[]`, `dispositions[]`. A Construction Manager is a required participant when the constructability lens is in scope.
 - **Dispositions** carry `finding_id`, `action` (`design_change | accept | mitigate | defer`), `owner_user_id`, `due_date`, `status`, `resolution_note`, `change_request_id?` (if the disposition triggers a CR).
 - **Permissions:** owner, editors with design-review write grant, operators + maintenance participants in `read+comment` mode, platform roles per `§04`.
 
@@ -237,8 +239,53 @@ Production losses, in the vocabulary operations already uses.
 ### ProjectHealthReview
 A periodic structured review of an in-flight project — the capital-side counterpart to an operations huddle.
 
-- **Key fields:** `review_id`, `project_id`, `held_at`, `facilitator_user_id`, `participants[]`, `scope_stability` (1–5), `estimate_maturity_vs_stage` (AACE class vs FEL/lifecycle stage), `critical_path_float_days`, `top_risks[]` (with owners), `change_order_trend`, `contingency_burn_ratio` (from §03 Budget), `ops_maint_turnover_readiness` (1–5), `pm_concerns_not_on_register` (free text), `actions[]` (owner, due date), `overall` ∈ `{green, amber, red}`.
+- **Key fields:** `review_id`, `project_id`, `held_at`, `facilitator_user_id`, `participants[]`, `scope_stability` (1–5), `estimate_maturity_vs_stage` (AACE class vs FEL/lifecycle stage), `critical_path_float_days`, `top_risks[]` (with owners), `change_order_trend`, `contingency_burn_ratio` (from §03 Budget), `ops_maint_turnover_readiness` (1–5), `pm_concerns_not_on_register` (free text), `actions[]` (owner, due date), `dominant_project_loss` (the loss category selected from data for focused improvement this cycle), `overall` ∈ `{green, amber, red}`.
 - Produces actions with owners, not just a grade. Workflow and cadence in `§08`.
+
+### Contract
+A commercial agreement the owner holds with an EPCM partner, designer, supplier, or construction contractor. Under EPCM the owner holds these contracts; the EPCM partner coordinates them.
+
+- **Key fields:** `contract_id`, `project_id`, `counterparty_org` (name + IdP federation ref), `kind` ∈ `{epcm_services, engineering, supply, construction, installation, commissioning_support, other}`, `contracting_model` ∈ `{epcm, epc, design_build, lump_sum, unit_rate, reimbursable}`, `value`, `erpi_commitment_ref?` (PO/commitment in the ERP), `work_package_ids[]`, `start`, `end`, `status`.
+- **Access:** a Contract scopes what its counterparty's contributors can see and edit (`§04`). Contract value is visible to the counterparty; other contracts' commercials are not.
+
+### WorkPackage
+A unit of planned work in the Advanced Work Packaging sense: engineering (EWP), procurement, or construction/installation (CWP / IWP) packages.
+
+- **Key fields:** `package_id`, `project_id`, `kind` ∈ `{engineering, procurement, construction, installation, commissioning}`, `wbs_id`, `contract_id?`, `asset_ids[]`, `package_lead_user_id`, `planned_start`, `planned_finish`, `status` ∈ `{planned, ready, released, in_progress, complete, on_hold}`, `progress_pct`, `quantities[]` (planned vs installed, for earned value).
+- **Readiness constraints** (all must be met, or overridden with an audited reason, before `released`): approved-for-construction drawings current, no blocking RFIs open, materials and long-lead items on site, crew and equipment assigned, permits in hand, HSE prerequisites (job hazard analysis, permits to work) complete, hold points defined in the ITP. Each constraint: `kind`, `status`, `owner`, `evidence_ref`.
+- **Plan compliance:** a weekly record of packages planned to complete vs actually completed (percent plan complete), with a `variance_reason` per miss drawn from the project-loss categories, so the reasons accumulate as data.
+
+### RFI / Submittal / ChangeOrder
+The administrative flow that EPCM projects run on, modeled so its delays are measured.
+
+- `RFI` — `rfi_id`, `project_id`, `package_id?`, `raised_by` (often a contributor), `discipline`, `question`, `attachments[]`, `assigned_to`, `due_at`, `answered_at?`, `answer`, `resulting_change_order_id?`, `resulting_document_revisions[]`, `status`.
+- `Submittal` — `submittal_id`, `project_id`, `contract_id`, `package_id?`, `kind` ∈ `{shop_drawing, product_data, sample, method_statement, vendor_data, test_report}`, `revision`, `submitted_at`, `review_due_at`, `disposition` ∈ `{approved, approved_as_noted, revise_resubmit, rejected}`, `reviewed_by`, `document_refs[]` (via Doci or local).
+- `ChangeOrder` — `co_id`, `project_id`, `contract_id`, `change_request_id?` (the internal CR it implements), `description`, `cost_impact`, `schedule_impact_days`, `status`, approval workflow ref. Distinct from `ChangeRequest` (owner-internal scope/budget change).
+- **Cycle time** (raised → closed) is stored on every row; aging feeds the `waiting_*` project losses.
+
+### InspectionTestPlan / HoldPoint
+Built-in quality during construction (the quality-maintenance pillar applied to the project).
+
+- `InspectionTestPlan` — per package or asset: the ordered inspections and tests, acceptance criteria, and which are **hold points** (work cannot proceed until released) vs **witness points** (notify, may proceed).
+- `HoldPoint` — `hold_point_id`, `itp_id`, `package_id`, `criteria`, `inspector_role`, `status` ∈ `{pending, released, failed}`, `released_by`, `released_at`, `evidence[]` (photos, test results).
+- Failed inspections create non-conformances; recurring non-conformance causes are proposed as specification lessons (MPInformation with `source_kind = quality_pattern`) for future projects.
+
+### ProjectDeviation
+A tag raised by anyone close to the work — a site supervisor, contractor lead, or owner's rep — when something is off on the project itself: an interface clash, incomplete prior work, a missing material, an emerging risk. The project-side counterpart to an operator's abnormality tag.
+
+- **Key fields:** `deviation_id`, `project_id`, `package_id?`, `asset_id?`, `raised_by`, `raised_at`, `category` (a project-loss category), `description`, `photos[]`, `location`, `assigned_to`, `resolved_at?`, `escalated_to?` (RFI, issue, risk, or change request).
+
+### ProjectLossEvent / ProjectLossCategory
+The losses of the project itself, measured the way a plant measures equipment losses.
+
+- `ProjectLossCategory` — default set: `waiting_information` (RFIs, drawings), `waiting_approval` (submittals, change orders, internal approvals), `rework` (non-conformance, design error), `interface_clash`, `unready_package` (released or started without readiness), `safety_stop`, `skill_gap_error`; extensible.
+- `ProjectLossEvent` (pm-TSDB) — `project_id`, `package_id?`, `category`, `ts_start`, `ts_end`, `duration_days`, `cost` (rework cost, or delay days × the project's cost-of-delay rate where configured), `source_ref` (RFI, deviation, NCR, plan-compliance miss, incident).
+- Most events are derived automatically: RFI and submittal aging, plan-compliance misses with their variance reasons, non-conformances, deviations, and HSE stops.
+
+### TeamCompetency (Phase 3)
+Role-based competency for the project team — owner, EPCM, and contractor staff — complementing the operator certification gate.
+
+- `CompetencyRequirement` (per workflow role or package kind) and `TeamCompetency` (`user_id`, `competency`, `level`, `evidence`, `expires_at?`). Gaps on a package's assigned team surface as a readiness warning, not a block.
 - **Workflow (`§08`):** BenefitsRealization carries its own closeout workflow. The project does not move to `Archived` until BenefitsRealization is closed (except when the window itself is explicitly waived with admin override + audited reason).
 - **MDEMG binding:** at closeout of BenefitsRealization, pro_manage writes a `decision` observation to the governance space summarizing what was realized vs promised, with `scope` tags that let similar future projects surface it during their own business-case drafting.
 
@@ -246,8 +293,8 @@ A periodic structured review of an in-flight project — the capital-side counte
 
 | Store | Lives in | Holds | Written by | Read by |
 |---|---|---|---|---|
-| **Postgres** (pro_manage) | Docker | All transactional domain (`Project`, members, ACLs, budgets, schedule, scope, risk, docs metadata, workflows, templates, assets, loss categories, business-case promises, health reviews, audit, outcomes) | Go backend | Go backend; Python sidecar for analytics/exports |
-| **TimescaleDB** (pro_manage) | Docker | Metric readings, loss events | Metrici / HSEi connectors, Python sidecar for derived metrics | Go backend, dashboards |
+| **Postgres** (pro_manage) | Docker | All transactional domain (`Project`, members, ACLs, budgets, schedule, scope, risk, docs metadata, workflows, templates, assets, loss categories, business-case promises, health reviews, contracts, work packages, RFIs, submittals, change orders, ITPs, deviations, audit, outcomes) | Go backend | Go backend; Python sidecar for analytics/exports |
+| **TimescaleDB** (pro_manage) | Docker | Metric readings, loss events, project loss events | Metrici / HSEi connectors, Python sidecar for derived metrics | Go backend, dashboards |
 | **Neo4j (MDEMG)** | Docker | Observations, constraints, outcomes graph, decisions, concepts | pro_manage via `/v1/conversation/observe`; MDEMG internal | pro_manage via `/v1/jiminy/*` |
 | **TimescaleDB (MDEMG)** | Docker | MDEMG metrics and effectiveness telemetry | MDEMG internal | Platform operators (Grafana) |
 | **Redis** (pro_manage) | Docker | Session, cache, rate-limit, warmed-guidance snapshots | Go backend | Go backend |

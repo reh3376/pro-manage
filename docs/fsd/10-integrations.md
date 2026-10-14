@@ -37,6 +37,7 @@ To be prioritized once the owner confirms the first production ERP (pending). Ca
 - Auth: user+password, OAuth, service account, cert-based
 - Chart-of-accounts filter (which accounts to include)
 - Project-code mapping (how pm-core's `project.code` maps to the ERP's project / WBS / cost-center id)
+- Contract mapping (which ERP purchase orders / commitments correspond to which pro_manage `Contract`; contract value and invoiced-to-date flow from here)
 - Pull cadence per feed (actuals daily, commitments hourly, invoices weekly — defaults; backend overrides)
 - Reasonable-value bounds for data quality
 
@@ -144,7 +145,7 @@ Import and (optionally) export project schedules from external tools. Preserves 
 
 ### Config knobs
 - Credentials per backend
-- Mapping template (how source task fields map to pm-core milestones/activities)
+- Mapping template (how source task fields map to pm-core milestones, activities, and work packages — P6 activity codes or WBS levels commonly carry the package id)
 - Default mapping behaviors (every source milestone becomes a pro_manage milestone? only summary tasks?)
 - Round-trip policy (allow export → edit → re-import, or import only)
 

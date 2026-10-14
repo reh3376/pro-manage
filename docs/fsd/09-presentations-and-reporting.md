@@ -7,6 +7,7 @@
 - **2026-10-13** — Exports (PDF + PPTX) are rendered by **pm-sidecar** using versioned templates. The authoring source of truth for the template is Git-tracked; the active deployed template is cached in Postgres with a hash.
 - **2026-10-13** — External stakeholder sharing is via **tokenized dashboard links** (short-lived, revocable) with per-view attestation and audit, as defined in `§04`.
 - **2026-10-14** — Added **Loss & opportunity** and **Startup & Early Management** dashboard presets, and **mobile field flows** (CQV/SAT walkdowns, punchlists, turnover inspections, design-review input) with photo/QR proof, Phase 2.
+- **2026-10-14** — Added a **Project reliability** preset (project-loss Pareto, package readiness, plan compliance, RFI/submittal aging) and contractor-facing field flows (progress updates, deviation tagging, hold-point inspections).
 - **2026-10-13** — All charts follow a single, cohesive visual language (`dataviz` skill guidance), with a validated palette, light/dark mode, and consistent typography.
 
 ## Dashboards
@@ -25,6 +26,7 @@
 - **Resources** — allocation heatmap, overallocation flags, equipment utilization.
 - **Loss & opportunity** — portfolio ranked by recoverable loss: top priced losses by asset and Six Big Losses bucket, which are already addressed by an open project, and which are not (FEL1 candidates). For closed projects, promised vs verified recovery. Gives Finance, CI, and Engineering one shared priority list.
 - **Startup & Early Management** — startup curve vs nameplate per asset in Early Management, exit-criteria checklist status (incl. operator certification), and punchlist burn-down.
+- **Project reliability** — the project-side counterpart to an OEE board (`§14`): project-loss Pareto by category and package, package readiness for the next N weeks, weekly plan compliance with variance reasons, RFI / submittal / change-order aging, open deviations, and hold-point first-pass rate. Contributors see a version filtered to their own contract's packages.
 
 Admins can create and share custom dashboards. Users with `write:dashboards` grant on a project can modify project-scope dashboards.
 
@@ -71,6 +73,9 @@ Some capital work happens at the equipment, not at a desk. These flows get a pho
 - **CQV / SAT walkdowns** — step through the test protocol at the asset; photo evidence per step; pass / fail / punchlist captured on the spot.
 - **Punchlist capture and closeout** — photo, location (asset QR), severity, owner; closure requires an "after" photo.
 - **Turnover inspections** — verify spares on the shelf, labels, LOTO points, and procedures posted, against the TurnoverPackage checklist.
+- **Hold-point inspections** — inspector steps through the ITP criteria at the work face, attaches evidence, and releases or fails the hold point.
+- **Deviation tagging** — anyone close to the work (owner's rep, supervisor, contractor lead) tags an interface clash, missing material, or incomplete prior work with a photo and location; it routes to an owner and can be escalated to an RFI, issue, or change request.
+- **Contractor progress updates** — contributors record installed quantities and close assigned punchlist items, scoped to their own packages.
 - **Design-review input at the equipment** — operators and maintenance techs comment on a model, drawing, or existing asset with photos, feeding the "easy-to" findings.
 
 Asset QR codes resolve to the pro_manage asset page (role-filtered). Offline capture with later sync is required for plant areas without coverage; conflicts resolve last-write-wins per field with the full history kept in audit.

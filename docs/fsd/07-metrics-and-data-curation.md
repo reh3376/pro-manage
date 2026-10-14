@@ -5,6 +5,7 @@
 - **2026-10-13** — First-class metric families: **Financial, Schedule/Milestones, Scope/Risk/Issues, Safety/Quality/Compliance, Resource utilization, and TPM / Plant Operations** (post-startup).
 - **2026-10-13** — **TPM / Plant Operations** is the metric family that proves a capital project actually delivered. During Early Management Period and Benefits Realization, pro_manage pulls OEE, MTBF, MTTR, FPY/RFT, EPU, OLE, Startup Curve, Changeover Time, and Capacity Utilization via **Metrici** (plant historian / OPC UA) and **HSEi** (MES/QMS) and compares against the project's business-case promises.
 - **2026-10-14** — **Priced losses** (Six Big Losses + site loss tree) are a first-class metric family harvested from the operations TPM stack. Business cases promise loss recovery in dollars; Benefits Realization verifies recovery of those losses on those assets against a CAR-time baseline.
+- **2026-10-14** — **Project losses** (the project's own losses under an EPCM model) are a first-class family alongside plant losses, with project-administration cycle times, package readiness, and plan compliance. A composite "package effectiveness" score is deliberately *not* a headline metric: composites are easy to game; the component losses are what health reviews act on.
 - **2026-10-13** — **TIC** (Total Installed Cost) and **LCC** (Lifecycle Cost) are separate first-class concepts. TIC is tracked throughout the project; LCC is estimated during Design and compared to actuals during Benefits Realization.
 - **2026-10-13** — Harvest architecture: pluggable `Metrici` connectors (relational, time-series, generic Historian / OPC UA) with per-backend throttles and schema contracts governed by UATS/UNTS.
 - **2026-10-13** — Metric readings land in **pro_manage's own TimescaleDB** (not MDEMG's). ERP actuals come via `ERPi` and settle into both the financial domain tables (Postgres) and the metric time series (ours).
@@ -153,6 +154,21 @@ quality:
 - Disallowed: file I/O, network, subprocess, imports beyond the allowed math library.
 - Formulas are versioned (`formula_version`); a changed formula produces a new MetricDefinition version so historical readings remain reproducible.
 - Evaluation cadence: on schedule (per `MetricDefinition.aggregation.cadence`) or on-demand (dashboard refresh triggers a push-compute if the reading is stale beyond its freshness tolerance).
+
+### Project losses (delivery)
+
+TPM applied to the project itself: the project is the "equipment," and its losses are measured and attacked the same way. Concept, OEE mapping, and open questions in `§14`. Sourced from pro_manage's own EPCM objects (`§03`), so no connector is needed.
+
+- `project_loss.by_category` — days and dollars by `ProjectLossCategory` (waiting on information, waiting on approval, rework, interface clash, unready package, safety stop, skill-gap error), per project and package, trailing period. The Pareto a health review uses to pick its dominant loss.
+- `project_loss.cost_of_delay` — delay days × the project's configured cost-of-delay rate (where Finance has set one).
+- `admin.rfi_cycle_time`, `admin.rfi_open_aged` — median raise-to-answer days; count open past SLA.
+- `admin.submittal_cycle_time`, `admin.submittal_first_pass_rate` — review days; share approved on first submission (a project-side first-pass yield).
+- `admin.change_order_cycle_time`, `admin.approval_wait_days` — including internal CAR / baseline approvals.
+- `package.readiness_pct` — share of packages due to start in the next N weeks with all readiness constraints met.
+- `package.plan_compliance` — percent plan complete: packages completed as planned ÷ packages planned, weekly, with variance reasons.
+- `quality.ncr_count`, `quality.rework_cost`, `quality.hold_point_first_pass_rate`.
+- `hse.leading_indicators` per package — near misses reported, job hazard analyses complete before start, permits-to-work compliance.
+- `team.competency_gap_count` (Phase 3) — required competencies unmet on assigned package teams.
 
 ## Rollups
 

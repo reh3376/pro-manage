@@ -84,6 +84,12 @@
   | `approval.shutdown_tiein_plan` | A | Production and safety exposure on a running plant |
   | `approval.early_mgmt_exit` | A | Hands the asset to operations |
   | `approval.benefits_realization_review` | B | Retrospective; no write to the asset |
+  | `approval.change_order` (≥ contract threshold) | A | Contractual dollars |
+  | `approval.change_order` (< threshold) | B | — |
+  | `approval.work_package_release` (readiness override) | A | Starting work that isn't ready is the loss we're preventing |
+  | `approval.work_package_release` (all constraints met) | C | Mechanical; no judgment to advise |
+  | `approval.hold_point_release` | B | Inspection evidence is the control |
+  | `rfi.answer`, `submittal.review` | B | Engineering judgment; guidance advisory |
   | `approval.closeout` | A | Final gate |
   | `project.transfer_ownership` | A | High-impact admin action |
   | `project.set_lifecycle_state → Archived` | A | Irreversible-ish |
@@ -126,6 +132,8 @@
   | Design-review disposition | `decision` | project | `[design_review, criterion:easy_to_maintain, disposition:design_change]` |
   | Lesson learned (manual tag by operator / maintainer) | `learning` | governance (if generalized) or project | `[lesson, project:XYZ, scope:equipment:<type>]` |
   | Policy exception granted | `decision` | project | `[policy_exception, scope:X]` |
+  | Recurring project-loss pattern at closeout (e.g. submittals for one equipment class repeatedly revise-resubmit) | `learning` | governance | `[project_loss, category:<cat>, package_kind:<kind>, asset_class:<cls>, contracting_model:<model>]` |
+  | Recurring non-conformance cause | `learning` | governance | `[quality_pattern, asset_class:<cls>, spec_ref:<doc>]` |
 
 ### MP information flow — the flagship use case
 
