@@ -160,7 +160,7 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 | § | File | What's in it |
 |---|---|---|
 | 01 | [vision-and-scope.md](./01-vision-and-scope.md) | Mission, problem statement, in/out of scope, success criteria (incl. startup curve, benefits realization, MP flow) |
-| 02 | [personas-and-use-cases.md](./02-personas-and-use-cases.md) | 14 personas (incl. policy owner, site operations & maintenance reps, commissioning engineer, construction manager, EPCM / contractor contributors), 21 use cases, 4 end-to-end journeys |
+| 02 | [personas-and-use-cases.md](./02-personas-and-use-cases.md) | 18 personas (incl. policy owner, site operations & maintenance reps, commissioning engineer, construction manager, document controller, procurement lead, PMO lead, change lead, EPCM / contractor contributors), 26 use cases, 5 end-to-end journeys |
 | 03 | [domain-model.md](./03-domain-model.md) | Site, Project, members, ACLs, budget (TIC/LCC, estimate artifacts, quantified risks and contingency), staged CAR, schedule, scope, documents and document control (register, revisions, transmittals), procurement items, metrics, approvals, EEM entities (DesignReview, MPInformation, CommissioningRecord, TurnoverPackage, BenefitsRealization), Asset/AssetClass, Loss/LossCategory, BusinessCasePromise, ProjectHealthReview; EPCM objects (Contract, WorkPackage, RFI, Submittal, ChangeOrder, ITP/HoldPoint, ProjectDeviation, ProjectLoss) |
 | 04 | [access-control-and-identity.md](./04-access-control-and-identity.md) | SSO (OIDC + SAML), platform / project / workflow roles, contract-scoped EPCM contributors, full ACL per section/doc/field, 4-layer enforcement |
 | 05 | [architecture.md](./05-architecture.md) | Service inventory, gRPC/REST surfaces, modular connector framework, deployment topology |
@@ -174,11 +174,13 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 | 13 | [glossary.md](./13-glossary.md) | Terms and acronyms (TPM, EEM, CAR, AACE, LCC, TIC, OEE, MTBF, …) |
 | 14 | [project-as-equipment.md](./14-project-as-equipment.md) | **Core concept.** The project as equipment: OEE and Six Big Losses mapped to project delivery, the eight pillars applied, version-1 implementation, open questions, prior art |
 | 15 | [connector-sdk.md](./15-connector-sdk.md) | Connector SDK: module runtime, integration helpers (OAuth, SAML/OIDC, OData, idempotency, ETags, polling, inbound events), mapping layer, conformance kit, scaffolding CLI, module manifest, versioning |
+| 16 | [onboarding-migration-and-adoption.md](./16-onboarding-migration-and-adoption.md) | Onboarding levels, data migration sources and the bulk-import tool, cut-over rules (history imported, never re-approved), waves, change management (sponsor, change lead, champions), mandatory-use dates, training, support, adoption scorecard |
 | n/a | [roadmap.md](./roadmap.md) | Phased delivery, milestones, dependencies, risks |
 
 ### Quick paths
 
-- **Capital Engineering leader:** §14, §01, §08, §03, §07, §09
+- **Capital Engineering leader:** §14, §01, §08, §03, §07, §09, §16
+- **PMO / change lead:** §16, §02, §08 (capital plan cycle), §09 (Capital plan & funnel, Adoption scorecard)
 - **Plant operations / maintenance stakeholder:** §14, §01 (success criteria), §07 (TPM/Plant-Ops family), §08 (Early Management exit, Turnover), §06 (MP-information flow)
 - **Platform engineer:** §05, §15, §06, §11, §12
 - **Finance / Compliance:** §04, §07 (TIC/LCC, Benefits Realization), §08 (CAR + chained-hash audit), §11
@@ -192,8 +194,8 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 |---|---|---|---|
 | 0 | 1–6 | Foundation | Connector SDK + Dev env + CI + auth + MDEMG adapter + first governed round-trip on a toy project |
 | 1 | 7–16 | MVP vertical slice | One real project through Initiate → Execute with CAR (loss-baselined business case) + asset registry + Jiminy guidance + Sigi + one ERPi backend + SSO |
-| 2 | 17–28 | Breadth | Risk/scope/documents, Metrici connectors, HSEi (incl. loss events, abnormality tags), CMMSi, spreadsheet I/O, dashboards, mobile field flows, external shares |
-| 3 | 29–40 | Depth | More backends, resource allocation, closeout + Benefits Realization window, legal hold, UPMTS |
+| 2 | 17–28 | Breadth | Risk/scope/documents, document control, procurement status, Metrici connectors, HSEi (incl. loss events, abnormality tags), CMMSi, spreadsheet I/O, dashboards, mobile field flows, external shares, onboarding wave 1 with the bulk-import tool |
+| 3 | 29–40 | Depth | More backends, capital plan cycle, resource allocation, closeout + Benefits Realization window, legal hold, UPMTS, onboarding wave 2 |
 | 4 | 41–52 | Harden & scale | Load testing, DR drill, security review, K8s-readiness, site-wide rollout prep |
 | GA | year-two | Rollout | Site-wide, Pattern-B MDEMG plugin, additional backends per demand |
 

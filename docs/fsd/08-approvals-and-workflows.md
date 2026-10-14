@@ -57,6 +57,16 @@ Approval-chain conditions (a stage is included when `amount >= {car.threshold.vp
 | `car.full.requires_basic_design_review` | boolean | true | A closed `basic` design review with no open high findings before the full CAR |
 | `car.supplemental.reapproval_pct` | percent | 10% | Cost growth on an approved CAR that forces a supplemental |
 | `fx.rate.<from>.<to>` | decimal (dated) | per Finance | Currency conversion for thresholds and roll-ups |
+| `capital_plan.fiscal_year_start` | enum: month | per Finance | Fiscal year the plan cycle runs on |
+| `capital_plan.submission_deadline` | date (annual) | per Finance | Last day opportunities can be proposed for the coming year's plan |
+| `capital_plan.hurdle.payback_years` | decimal | 3.0 | Screening hurdle for `cost_reduction` and `growth` opportunities (mandatory and compliance are exempt) |
+| `capital_plan.hurdle.irr_pct` | percent | per Finance | Alternative or additional hurdle |
+| `capital_plan.screening_weights` | JSON | benefit 40, cost 20, urgency 20, strategic fit 10, risk 10 | Weights behind `Opportunity.screening_score` |
+| `capital_plan.approval.threshold_committee` | money | per DoA | Envelope above which the capital committee stage applies |
+| `adoption.car_only_from` | date | unset | From this date a CAR is only approvable in pro_manage (`§16`) |
+| `adoption.health_review_only_from` | date | unset | From this date high-value health reviews are recorded here |
+| `adoption.status_deck_sunset` | date | unset | Legacy status deck retired for Governed and Full projects |
+| `onboarding.required_level.<band>` | enum: `registered`, `governed`, `full` | `governed` above `{car.threshold.finance_approver}`, `full` above `{car.threshold.vp_finance}` | Onboarding level a project must reach by amount band (`§16`) |
 | `risk.quantify_above_score` | integer | 12 | Risks at or above this score must carry three-point cost and schedule impacts |
 | `contingency.coverage_warn_below` | decimal | 1.0 | Health-review flag when contingency remaining falls below the expected value of open risks |
 | `document.ifc_requires_detailed_review` | boolean | true | A document cannot go IFC without a closed `detailed` design review for its scope |
@@ -123,6 +133,28 @@ An `ApprovalWorkflow` has an ordered list of `ApprovalStage` rows:
 - When a stage completes with `approve`, the workflow advances to the next stage; the final stage approving transitions the workflow to `approved`.
 - `delegate` reassigns the stage to another eligible approver without changing state (logged as such).
 - `reject` terminates the workflow.
+
+### Example: Opportunity screening (gate 0)
+
+Not a money gate; the decision to spend attention. Runs continuously, with a cut-off at `{capital_plan.submission_deadline}` for the coming year's plan.
+
+| Order | Role required | SLA | Gate |
+|---|---|---|---|
+| 1 | `sponsor` (any owner-eligible user) proposes | n/a | One-page case: problem, origin and source (the priced loss, the obligation, the asset), order-of-magnitude cost, benefit kind and estimate, urgency |
+| 2 | `pmo_lead` or `portfolio_executive` screens | 10 business days | `/jiminy/guide` surfaces Benefits Realization history and MP information for the asset class; the screening score is computed from `{capital_plan.screening_weights}`; hurdle per `{capital_plan.hurdle.*}` unless `urgency = mandatory` or origin is a compliance obligation |
+
+Outcomes: `shortlisted` (eligible for the plan), `deferred` (with a revisit date), `rejected` (with reason). Rejections and deferrals are written to the project-less portfolio space as `decision` observations so the same idea proposed again next year meets its own history.
+
+### Example: Capital plan approval (annual, with mid-year revisions)
+
+| Order | Role required | Pool | SLA |
+|---|---|---|---|
+| 1 | `pmo_lead` assembles the draft plan: shortlisted opportunities ranked, continuing projects carried forward, envelope by portfolio | n/a | per cycle calendar |
+| 2 | `portfolio_executive` approves the portfolio's lines | configured per portfolio | 10 business days |
+| 3 | `finance_approver` (controller) validates the envelope, cash phasing, and carry-over | `finance_approver_eligible` | 10 business days |
+| 4 (if envelope ≥ `{capital_plan.approval.threshold_committee}`) | `capital_committee` | named pool (CFO, COO, Capital Engineering leader, others per DoA) | per cycle calendar |
+
+On approval: planned opportunities move to `planned`; in the ERP-led profile, lines release to the ERP capital budget as placeholders. A mid-year revision creates a new plan version with `supersedes_plan_id` and runs the same chain on the changed lines only. Converting a planned opportunity into a project is an owner action (UC-25) that needs no further approval; its first money comes through a CAR (`fel_funding` or `full`) against the plan line, and the plan shows planned vs authorized vs forecast per line.
 
 ### Example: CAR approval chain (year-one defaults, admin-tunable)
 

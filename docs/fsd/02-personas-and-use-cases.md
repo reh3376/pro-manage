@@ -7,7 +7,7 @@
 
 ## Personas
 
-The sixteen canonical roles below cover every pro_manage interaction in year one. Role is distinct from permission: a user may hold several roles across different projects and the portfolio.
+The eighteen canonical roles below cover every pro_manage interaction in year one. Role is distinct from permission: a user may hold several roles across different projects and the portfolio.
 
 ### Primary roles (people who do work in pro_manage daily)
 
@@ -34,9 +34,9 @@ Read-only access to specific sections of a project.
 - Can comment where comments are enabled; cannot change state.
 
 #### Portfolio Executive
-Reads across many projects. Does not perform day-to-day work in individual projects. May approve CARs above a certain threshold (`§08`).
+Reads across many projects. Does not perform day-to-day work in individual projects. May approve CARs above a certain threshold (`§08`). Screens opportunities and approves the portfolio's lines of the annual capital plan.
 
-- Primary surface is cross-project dashboards (`§09`) and the on-demand steering deck generator.
+- Primary surface is cross-project dashboards (`§09`), the capital plan and funnel, and the on-demand steering deck generator.
 - Receives scheduled executive digests (`Commsi`).
 - Jiminy guidance aggregates portfolio-level signals when they engage with a project directly.
 
@@ -72,6 +72,12 @@ Operates pro_manage. Configures connector modules (ERPi, IdPi, Sigi, Schedulei, 
 
 #### Policy Owner
 Sets the policy variables that drive workflows (`§08`): CAR approval thresholds, variance thresholds, SLAs, review cadences, and windows, at global, project-type, portfolio, and per-project scope. Typically someone in Finance controls who maintains the company's approval-limits matrix. Can override values for a specific project (with a reason, and a second approver where required) but never on a project where they sit in the approval chain.
+
+#### PMO Lead
+Runs the capital plan cycle for a portfolio: collects and screens opportunities with the Portfolio Executive, assembles the draft plan against the envelope, and tracks planned vs authorized vs forecast through the year. Also the migration team's anchor during onboarding waves (`§16`).
+
+#### Change Lead
+Owns adoption (`§16`): the champion network, persona training, the mandatory-use dates with the sponsor, the adoption scorecard, and the weekly triage of `AdoptionFeedback`. Half-time from Phase 1.
 
 #### Governance Author
 Authors Jiminy constraints via a dedicated admin UI that fronts MDEMG's `/v1/jiminy/rules` endpoint. May be the same person as Compliance Officer or a separate role.
@@ -230,9 +236,22 @@ Each use case lists its primary actor, the trigger, the main success scenario in
 - **Flow:** The lead updates the forecast and expediting notes on the `ProcurementItem`; pro_manage recomputes delivery float, flags the dependent construction package, and surfaces it in the next health review; if the package is already released, `waiting_material` loss accrues from the planned start.
 - **Accept when:** The package's readiness and the health review both show the item; the PO itself stays in the ERP with its reference mirrored.
 
+### UC-25: Propose, screen, and plan an opportunity
+- **Actor:** Sponsor, then PMO Lead and Portfolio Executive · **Trigger:** The Loss & opportunity dashboard shows a priced loss nobody is addressing, or a site raises a request, or a compliance date is set.
+- **Flow:** The sponsor files a one-page opportunity (origin, source loss or obligation, order-of-magnitude cost, benefit kind); screening sees Benefits Realization history for similar past projects and MP information for the asset class via `/jiminy/guide`; the score and hurdle apply; shortlisted opportunities are ranked onto the draft capital plan; the approved plan line is converted into a project at Initiate carrying the promises as `proposed`.
+- **Accept when:** The funnel (proposed → screened → planned → converted → realized) is a query, not a slide; an opportunity rejected last year meets its own history when re-proposed.
+
+### UC-26: Onboard an in-flight project
+- **Actor:** Project Owner with the migration team · **Trigger:** The project's wave begins (`§16`).
+- **Flow:** The owner fills the registration workbook (Registered level); the CAR-history and budget-baseline workbooks are validated, dry-run, and imported with provenance (Governed level); the reconciliation report compares imported totals to the ERP mirror; the owner accepts the imported state; the project space is created in MDEMG with the history as `imported` decisions.
+- **Accept when:** The project shows its level on the dashboard, imported records are visibly marked and read-only, the next CAR starts in pro_manage, and onboarding took under the wave's target days.
+
 ## Key journeys
 
 Journeys are end-to-end narratives that cross multiple use cases and give sections 03–09 a concrete reference point.
+
+### Journey 0: Capital plan cycle (annual)
+Opportunities proposed through the year (UC-25) → screening with Benefits Realization history → draft plan ranked against the envelope → plan approval chain (`§08`) → planned opportunities converted to projects at Initiate → FEL funding and full CARs against plan lines (UC-22, UC-02) → planned vs authorized vs forecast tracked on the Capital plan dashboard (`§09`) → Benefits Realization outcomes (UC-18) feed next year's screening.
 
 ### Journey A: Project lifecycle (Initiate → Close)
 UC-01 → UC-22 (FEL funding) → UC-03 (several times) → UC-02 (full CAR) → UC-23 (IFC issue) and UC-24 (expediting) through Execute → UC-04 (weekly) → UC-05 (as milestones close) → UC-17 (commissioning and turnover walkdowns) → UC-15 → UC-18. Threaded through: UC-16 health reviews during Plan and Execute, continuous UC-09 metric and loss harvest, UC-13 constraint evolution, UC-12 occasional audit retrievals.

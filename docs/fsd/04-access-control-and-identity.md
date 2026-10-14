@@ -103,6 +103,9 @@ Approval stages in `§08` name a **workflow role**, not a person. pm-core resolv
 | `discipline_engineer` | Named per project and discipline | RFI response, submittal review, IFC readiness |
 | `inspector` | Named per ITP (owner QA, EPCM QA, or third party) | Hold point release |
 | `document_controller` | Named per project (owner-side or EPCM staff) | Transmittals and IFC issue; maintains the document register |
+| `sponsor` | Any user eligible to own a project | Proposes an opportunity |
+| `pmo_lead` | Named per portfolio (admin-configured) | Opportunity screening; assembles the capital plan |
+| `capital_committee` | Named pool per the DoA (admin-configured) | Capital plan approval above the committee threshold |
 | `procurement_lead` | Named per project (owner-side or EPCM staff) | Expediting review; receiving status on procurement items |
 
 Site representatives and the commissioning engineer get `read + comment` on the project sections their stages touch (scope, schedule, documents, design reviews, CQV, turnover) for the life of their assignment. Budget sections stay deny-by-default for them.

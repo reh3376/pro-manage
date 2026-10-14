@@ -18,8 +18,8 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 |---|---|---|---|
 | 0 | 1–6 | Foundation | Dev environment + CI + auth + MDEMG wiring reachable; first governed `/approvals` round-trip works end-to-end on a toy project |
 | 1 | 7–16 | MVP vertical slice | One project through Initiate → Execute, with real budget/schedule/approvals, Sigi, one ERPi backend, SSO, Jiminy guidance surfaced |
-| 2 | 17–28 | Breadth | Risk/issue/scope, documents+Doci, metrics via Metrici, HSEi (first vendor), spreadsheet I/O, scheduled exports, on-demand decks, external shares |
-| 3 | 29–40 | Depth | More connector backends, portfolio dashboards, resource allocation, closeout + legal hold, UPMTS, UVTS guidance-relevance candidate, delegation richness |
+| 2 | 17–28 | Breadth | Risk/issue/scope, documents+Doci, document control, procurement status, metrics via Metrici, HSEi (first vendor), spreadsheet I/O, scheduled exports, on-demand decks, external shares, onboarding wave 1 with the bulk-import tool |
+| 3 | 29–40 | Depth | More connector backends, capital plan cycle, portfolio dashboards, resource allocation, closeout + legal hold, UPMTS, UVTS guidance-relevance candidate, delegation richness, onboarding wave 2 |
 | 4 | 41–52 | Harden & scale | Perf tuning, load testing at 1.5× peak, DR drill, manifest pin tests, security review, Kubernetes-readiness verification |
 | GA | year-two | Rollout | Site-wide rollout to all projects + Pattern B plugin + additional connector backends per demand |
 
@@ -92,6 +92,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **Risk / Issue management:** risk register with aging rules + Jiminy guidance; issue log; three-point quantification above the policy score, contingency basis on baselines, drawdowns naming their cause, contingency coverage on the health-review agenda.
 - **Documents:** local-mode doc management (upload/version/permission); first `Doci` backend (SharePoint or Drive); permission mirroring + drift detection.
 - **Engineering document control:** master document register per package, `DocumentRevision` issue statuses, transmittals, the IFC-issue workflow gated by detailed design review, and the mechanical "drawings current" readiness check. EDMS mirroring via Doci only if the EPCM runs one (open item in `§10`).
+- **Onboarding wave 1 (`§16`):** bulk-import tool (registration, CAR history, budget baseline, milestones, risks, document register workbooks) with validation, dry run, idempotency, provenance, and reconciliation; onboarding levels on the project; every in-flight project above the finance-approver threshold at Governed level; the CAR-only date announced; adoption scorecard dashboard live.
 - **Procurement and expediting:** `ProcurementItem` with delivery float against site-need dates; `ERPi` `FetchPurchaseOrders` / `FetchReceipts` mirrored onto items; expediting cadence; `waiting_material` losses.
 - **Metrics via Metrici:** relational connectors (Postgres, SQL Server), Timescale/Influx, and the first historian backend; derived-metric formulas via pm-sidecar; dashboards against real harvested data.
 - **HSEi:** first MES/WMS/QMS backend wired for one site; incidents + inspections flowing.
@@ -131,7 +132,8 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **UPMTS** (pro_manage-minted UxTS framework): governs derived-metric contracts; replaces the Go pin tests used for the few derived metrics that shipped earlier.
 - **UVTS candidate:** a graded corpus of design-screen queries and the MP information each should surface, live-gated on governance-space changes (`§12`).
 - **Delegation richness:** chained delegation, OOO calendars, workflow-specific overrides.
-- **Portfolio-level approvals** (if applicable): cross-project CapEx roll-ups for executive view.
+- **Capital plan cycle:** `Opportunity` intake and screening (with Benefits Realization history via guidance), `CapitalPlan` with envelope and ranking, the plan approval chain, conversion to projects, the Capital plan & funnel dashboard; run for the first time on the coming fiscal year's plan.
+- **Onboarding wave 2 (`§16`):** all remaining in-flight projects at Registered level or above; the CAR-only date in force; legacy status deck sunset for Governed and Full projects.
 - **Governance effectiveness dashboard:** per-constraint surfacing/followed/ignored metrics drawn from MDEMG.
 
 ### Success criteria
@@ -148,7 +150,8 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **Manifest pin tests:** Go pin tests over compose and Kubernetes manifests (resource limits, probes, non-root, no secrets in env). Not a new UxTS framework; MDEMG lists K8s/Helm as an open UOTS gap, and pin tests are the right size (`§12`).
 - Security review (internal or third-party).
 - Kubernetes-readiness verification: a parallel K8s cluster running the same images with the same manifests, serving a canary of traffic.
-- Documentation hardening: operational runbooks, admin UX docs, user onboarding materials.
+- Documentation hardening: operational runbooks, admin UX docs, the per-persona training set versioned with the release (`§16`).
+- **Onboarding wave 3 (`§16`):** every new project starts in pro_manage from Initiate (or from a plan line); adoption review chaired by the sponsor against the scorecard's GA targets.
 - Governance space promoted from Phase 1 pilot content to the final production constraint corpus.
 
 ### Success criteria
@@ -197,7 +200,8 @@ Vault provisioned              ──▶ Phase 0 complete
 | Local-LLM classify latency on the chosen host exceeds budget | Medium | Medium | Pre-classification cache, parallel space calls, `mdemg.classify.timeout_ms` tunable; tier down to B per action kind via policy variable |
 | ERP connector effort larger than estimated | Medium | Medium | Scope Phase 1 ERPi to actuals-only; defer commitments/invoices if needed |
 | Full-ACL complexity delivers slower than hoped | Medium | High | Ship section-level in Phase 1; defer document-level and field-level to Phase 2 if under pressure |
-| 200+ projects migration from current tools is heavy | High | Medium | Build a bulk-import tool as a Phase 2 scope; onboard in waves |
+| 200+ projects migration from current tools is heavy | High | Medium | Bulk-import tool and onboarding levels in Phase 2; waves with playbooks and reconciliation (`§16`) |
+| Adoption stalls at registration; parallel approval paths survive | Medium | High | CAR-only date set by the sponsor as Finance policy; required level by amount band; adoption scorecard reviewed monthly; champions per persona (`§16`) |
 | Governance Author bandwidth insufficient | Medium | High | Secure part-time commitment early; make constraint authoring UX fast |
 | Load at 100–500 users surfaces infra gaps | Medium | Medium | Load test at 1.5× peak in Phase 4; horizontal headroom in design |
 | Jiminy false-positive block rate too high | Low | Medium | Lower initial Tier A tier mapping; invest in `blocked_false_positive` feedback cycle |
@@ -215,7 +219,8 @@ A **5–7 person core team** for Phase 0–2:
 - 2 × TS/React frontend engineers (one leads dashboards, one leads workflow UIs)
 - 1 × Platform engineer (vault, CI/CD, observability, deployment)
 - 0.5 × Governance Author (from compliance team)
-- 0.25 × Product / PMO (translating owner needs, pilot coordination)
+- 0.5 × Change Lead (adoption plan, champions, training, scorecard; `§16`)
+- 0.25 × Product / PMO (translating owner needs, pilot coordination, wave imports with the Change Lead)
 
 Grows to **7–9** for Phase 3–4 as connector breadth and ops hardening expand.
 
@@ -225,8 +230,8 @@ Each phase produces concrete, named artifacts that enable the next phase:
 
 - **Phase 0 end:** `MVP-Spec-Addendum v0.1` (narrows the FSD to Phase-1 actionable features); `demo video` of the end-to-end CAR round-trip; `docs/tests/UXTS_FRAMEWORK_MATRIX.md` v1 with a CI disposition per framework.
 - **Phase 1 end:** `Pilot-Readiness Review` document; onboarding runbooks for pilot projects; framework matrix showing UATS, UDTS, UNTS, UOTS, USTS merge-blocking and the adjudication registries green.
-- **Phase 2 end:** `Breadth Review` and `Governance Effectiveness Baseline`.
-- **Phase 3 end:** `DR Drill Report`, `Capacity-Plan Addendum`, `Pattern-B Readiness Assessment`.
+- **Phase 2 end:** `Breadth Review`, `Governance Effectiveness Baseline`, `Migration Playbook v1` and the wave-1 reconciliation report, first `Adoption Scorecard`.
+- **Phase 3 end:** `DR Drill Report`, `Capacity-Plan Addendum`, `Pattern-B Readiness Assessment`, the first approved `Capital Plan` produced in the system.
 - **Phase 4 end:** `GA Readiness Review`, `Security Review Report`, `Rollout Plan`.
 
 ## Open items for the roadmap

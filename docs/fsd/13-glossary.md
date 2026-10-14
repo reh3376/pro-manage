@@ -106,6 +106,11 @@ Terms, acronyms, and project-specific names.
 | **Contingency drawdown** | Rate at which contingency is being used relative to percent-complete. Burning faster than progress is an early warning. In pro_manage each drawdown names the risk or change that consumed it. |
 | **Contingency coverage** | Contingency remaining ÷ expected value (probability × likely cost) of open quantified risks. Below 1.0 the project is under-covered. |
 | **Three-point estimate (risk)** | Low, likely, and high cost and schedule impacts on a risk; required above a policy-set score. Year one uses expected value; P50/P80 need a simulation that is out of scope. |
+| **Opportunity** | A candidate for capital before it is a project: origin (loss ranking, site request, compliance, asset end of life), priced benefit, order-of-magnitude cost, urgency, screening score. Converted into a project at Initiate when planned. |
+| **Capital plan** | The fiscal-year plan of which opportunities and continuing projects get money, against an envelope, by period; approved annually and revised mid-year. |
+| **Funnel** | Opportunities by status from proposed to realized; conversion and realization rates say whether the plan picks the right things. |
+| **Onboarding level** | Registered, Governed, or Full: how much of a project lives in pro_manage; required level set by amount band (`§16`). |
+| **Imported record** | A record loaded from a spreadsheet, scan, or legacy tool with provenance; visibly marked, read-only, never re-approved. |
 | **Site** | The physical place a project builds at and an asset lives in: time zone, currency, units, calendar, regulatory and privacy regimes, loss tree, and connector routing. Policy variables have a `site` scope. |
 | **CAR kinds (FEL funding / full / supplemental)** | Staged capital authorization: money for front-end work before sanction (Class 5 or 4), the sanction itself at FEL3 (Class 3, basic design reviewed), and re-authorization of cost growth routed on the cumulative amount. |
 | **Estimate artifact** | The estimate behind a baseline or CAR: AACE class, basis of estimate, scope definition, accuracy range, contingency method. A baseline cannot claim a class its estimate does not carry. |
@@ -144,6 +149,7 @@ Terms, acronyms, and project-specific names.
 
 | Term | Meaning |
 |---|---|
+| **Pareto (chart)** | A bar chart of loss categories sorted largest to smallest, with a cumulative-percentage line, used to decide what to attack first (the 80/20 rule: a few categories carry most of the cost). In pro_manage, plant losses and project losses are priced in the same dollars so they can sit on one Pareto. Pronounced pah-RAY-toh. |
 | **TPM** | Total Productive Maintenance. Discipline for maximizing equipment effectiveness through operator engagement, autonomous maintenance, planned maintenance, focused improvement, early equipment management, and five other pillars. |
 | **TPM pillars** | The eight canonical pillars: Autonomous Maintenance, Planned Maintenance, Focused Improvement, Early Equipment Management (EEM), Quality Maintenance, Training & Education, Office TPM, Safety/Health/Environment. |
 | **EEM** | Early Equipment Management. The TPM pillar for new equipment and new lines. Goal: **vertical startup**: reaching target performance immediately at startup rather than after months of debugging. |
