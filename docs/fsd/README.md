@@ -24,7 +24,7 @@ A TPM plant knows what share of planned time each line ran, how fast it ran, and
 
 pro_manage treats **the project as the equipment**. Its work fronts are the machines and its work packages the production runs. Work-front availability, productivity, and first-time-right stand in for OEE's availability, performance, and quality; a project-loss taxonomy stands in for the Six Big Losses; and all eight pillars are applied to project delivery. Losses are captured automatically from normal work (RFIs, submittals, package readiness, hold points, deviations), priced in the same dollars as plant losses, shown on a Project reliability board, and attacked one dominant loss at a time in each health review. Recurring project losses become lessons the next project sees in design review: MP information for projects.
 
-This is the idea pro_manage is built to develop. The full statement, mappings, open questions, and prior art to check are in [§14](./14-project-as-equipment.md).
+It builds on Last Planner, Advanced Work Packaging, Koskela's flow view of construction, and earlier work adapting OEE loss groups to site workflow (Kalsaas); what is new is the combination, and a first prior-art search found no source that presents it. This is the idea pro_manage is built to develop. The full statement, mappings, related work, and open questions are in [§14](./14-project-as-equipment.md).
 
 ---
 
