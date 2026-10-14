@@ -1,17 +1,30 @@
-# 10 — Integrations Catalog
+# 10: Integrations Catalog
 
 ## Decisions on record
 
-- **2026-10-13** — All external integrations are **modular** (`§01`, `§05`). Each is a separately-deployed container implementing a stable per-connector-type gRPC interface, admin-registered via the `connector_instances` registry.
-- **2026-10-13** — Every connector type ships with a **UATS spec** covering its gRPC + HTTP surface. Every connector instance presents a **standard `HealthCheck` + `Capabilities`** RPC so pm-core can route around unhealthy or capability-mismatched instances.
-- **2026-10-13** — Secrets per connector instance live in the deployment vault; the `config_ref` in `connector_instances` points to the vault entry.
-- **2026-10-13** — Connectors never bypass pro_manage's authorization. All project/data access from pm-core to a connector is already pre-authorized at pm-core's edge.
+- **2026-10-13:** All external integrations are **modular** (`§01`, `§05`). Each is a separately-deployed container implementing a stable per-connector-type gRPC interface, admin-registered via the `connector_instances` registry.
+- **2026-10-13:** Every connector type ships with a **UATS spec** covering its gRPC + HTTP surface. Every connector instance presents a **standard `HealthCheck` + `Capabilities`** RPC so pm-core can route around unhealthy or capability-mismatched instances.
+- **2026-10-13:** Secrets per connector instance live in the deployment vault; the `config_ref` in `connector_instances` points to the vault entry.
+- **2026-10-13:** Connectors never bypass pro_manage's authorization. All project/data access from pm-core to a connector is already pre-authorized at pm-core's edge.
 
 This section is a catalog. The architecture, framework, and gRPC contract templates are in `§05`. The admin UX for routing and health is in `§05` and `§11`. This section records the specifics per module.
 
+## Connector module naming
+
+Every backend implementation is a connector module named **`<Type>i_<CODE>`**:
+
+- `<Type>i` is the connector type: `ERPi`, `IdPi`, `Sigi`, `Schedulei`, `Doci`, `Commsi`, `Metrici`, `HSEi`, `CMMSi`.
+- `<CODE>` is a short uppercase code for the vendor or protocol, unique within the type: `ERPi_NS` is the NetSuite ERP connector, `ERPi_SAP` the SAP connector, `CMMSi_MX` the MaintainX connector.
+- A module implements its type's gRPC contract and passes that type's UDTS specs, so swapping `ERPi_NS` for `ERPi_SAP` is a configuration change, not a core release.
+- Modules are listed in a code registry (the tables below and the `connector_modules` table). New codes are added there when a module is written.
+- **Instances vs modules:** a deployment registers one or more *instances* of a module in `connector_instances` (`§05`), e.g. `ERPi_NS` for one business unit and `ERPi_SAP` for another, each with its own vault config.
+- **Container and proto names** are lowercase because Docker requires it: `ERPi_NS` ships as image `pm-erpi-ns` and service `pm.connector.v1.Erpi` with backend id `ns`.
+
+Codes are assigned for the candidate backends below. The specific modules a deployment needs are chosen once the company's ERP, CMMS, MES/QMS, and identity provider are confirmed.
+
 ---
 
-## ERPi — ERP Integration
+## ERPi: ERP Integration
 
 ### Purpose
 Pull financial actuals, commitments, invoices, chart of accounts, and vendors from the company ERP. Read-only. Writes stay in the ERP.
@@ -26,11 +39,13 @@ Pull financial actuals, commitments, invoices, chart of accounts, and vendors fr
 
 ### Year-one backends
 To be prioritized once the owner confirms the first production ERP (pending). Candidate backends:
-- `erpi-sap` (SAP ECC via OData/BAPI; S/4HANA via CDS views)
-- `erpi-oracle` (EBS tables or Fusion REST APIs)
-- `erpi-netsuite` (SuiteTalk REST)
-- `erpi-dynamics` (Dynamics 365 F&O REST)
-- `erpi-odoo` (Odoo XML-RPC / JSON-RPC)
+- `ERPi_SAP` (SAP ECC via OData/BAPI; S/4HANA via CDS views)
+- `ERPi_ORA` (EBS tables or Fusion REST APIs)
+- `ERPi_NS` (SuiteTalk REST)
+- `ERPi_D365` (Dynamics 365 F&O REST)
+- `ERPi_ODOO` (Odoo XML-RPC / JSON-RPC)
+
+Further ERP modules follow the same pattern (e.g. `ERPi_INFOR`, `ERPi_EPICOR`, `ERPi_SAGE`).
 
 ### Config knobs (per instance)
 - Base URL / tenant id
@@ -38,7 +53,7 @@ To be prioritized once the owner confirms the first production ERP (pending). Ca
 - Chart-of-accounts filter (which accounts to include)
 - Project-code mapping (how pm-core's `project.code` maps to the ERP's project / WBS / cost-center id)
 - Contract mapping (which ERP purchase orders / commitments correspond to which pro_manage `Contract`; contract value and invoiced-to-date flow from here)
-- Pull cadence per feed (actuals daily, commitments hourly, invoices weekly — defaults; backend overrides)
+- Pull cadence per feed (actuals daily, commitments hourly, invoices weekly as defaults; backend overrides)
 - Reasonable-value bounds for data quality
 
 ### Operational
@@ -53,7 +68,7 @@ To be prioritized once the owner confirms the first production ERP (pending). Ca
 
 ---
 
-## IdPi — Identity Integration (SSO)
+## IdPi: Identity Integration (SSO)
 
 ### Purpose
 Front SSO for pro_manage. OIDC + SAML abstractions. Resolve IdP claims into pro_manage platform roles.
@@ -67,8 +82,8 @@ Front SSO for pro_manage. OIDC + SAML abstractions. Resolve IdP claims into pro_
 - `Logout(LogoutRequest) → LogoutResponse`
 
 ### Year-one backends
-- `idpi-oidc` (generic OIDC — Entra ID, Okta, Keycloak, Google Workspace, etc. via the generic flow)
-- `idpi-saml` (generic SAML 2.0 — ADFS, Shibboleth, PingFederate, etc.)
+- `IdPi_OIDC` (generic OIDC: Entra ID, Okta, Keycloak, Google Workspace, etc. via the generic flow)
+- `IdPi_SAML` (generic SAML 2.0: ADFS, Shibboleth, PingFederate, etc.)
 - Backend convenience wrappers (optional) for Okta, Entra ID, ADFS to simplify admin config.
 
 ### Config knobs (per instance)
@@ -90,7 +105,7 @@ Front SSO for pro_manage. OIDC + SAML abstractions. Resolve IdP claims into pro_
 
 ---
 
-## Sigi — E-signature Integration
+## Sigi: E-signature Integration
 
 ### Purpose
 Formal e-signature on CAR approvals, change requests, closeout, and other configured workflow kinds. Envelope lifecycle, status polling, webhook ingestion, signed-artifact capture.
@@ -104,9 +119,9 @@ Formal e-signature on CAR approvals, change requests, closeout, and other config
 - `OnWebhook(Webhook) → WebhookAck` (backend → connector → pm-core)
 
 ### Year-one backends
-- `sigi-docusign` (DocuSign eSignature REST)
-- `sigi-adobesign` (Adobe Acrobat Sign)
-- `sigi-onespan` (OneSpan Sign)
+- `Sigi_DS` (DocuSign eSignature REST)
+- `Sigi_AS` (Adobe Acrobat Sign)
+- `Sigi_OS` (OneSpan Sign)
 
 ### Config knobs
 - Account id / integration key
@@ -126,7 +141,7 @@ Formal e-signature on CAR approvals, change requests, closeout, and other config
 
 ---
 
-## Schedulei — Schedule Tool Integration
+## Schedulei: Schedule Tool Integration
 
 ### Purpose
 Import and (optionally) export project schedules from external tools. Preserves the original file as attachment; maps to pm-core's `Milestone` + dependency model.
@@ -139,13 +154,13 @@ Import and (optionally) export project schedules from external tools. Preserves 
 - `Subscribe(SubscribeRequest) → stream ScheduleEvent` (where supported)
 
 ### Year-one backends
-- `schedulei-msproject` (MPP via XML/MPX export; .mpp read-only requires an unofficial lib — likely MVP uses XML export)
-- `schedulei-p6` (Primavera P6 XER file; XER export/import)
-- `schedulei-smartsheet` (Smartsheet API; project sheets)
+- `Schedulei_MSP` (MPP via XML/MPX export; .mpp read-only requires an unofficial lib, so MVP likely uses XML export)
+- `Schedulei_P6` (Primavera P6 XER file; XER export/import)
+- `Schedulei_SS` (Smartsheet API; project sheets)
 
 ### Config knobs
 - Credentials per backend
-- Mapping template (how source task fields map to pm-core milestones, activities, and work packages — P6 activity codes or WBS levels commonly carry the package id)
+- Mapping template (how source task fields map to pm-core milestones, activities, and work packages; P6 activity codes or WBS levels commonly carry the package id)
 - Default mapping behaviors (every source milestone becomes a pro_manage milestone? only summary tasks?)
 - Round-trip policy (allow export → edit → re-import, or import only)
 
@@ -160,7 +175,7 @@ Import and (optionally) export project schedules from external tools. Preserves 
 
 ---
 
-## Doci — Document Store Integration
+## Doci: Document Store Integration
 
 ### Purpose
 Mirror external document stores (SharePoint, Drive, Confluence) into pro_manage for linked-reference, permission mirroring, and search.
@@ -174,9 +189,9 @@ Mirror external document stores (SharePoint, Drive, Confluence) into pro_manage 
 - `OnChange(SubscribeRequest) → stream ChangeEvent`
 
 ### Year-one backends
-- `doci-sharepoint` (Microsoft Graph / SharePoint REST)
-- `doci-drive` (Google Drive v3 API)
-- `doci-confluence` (Confluence Cloud REST)
+- `Doci_SP` (Microsoft Graph / SharePoint REST)
+- `Doci_GD` (Google Drive v3 API)
+- `Doci_CF` (Confluence Cloud REST)
 
 ### Config knobs
 - OAuth client config per backend
@@ -186,7 +201,7 @@ Mirror external document stores (SharePoint, Drive, Confluence) into pro_manage 
 ### Operational
 - Change subscriptions reduce load vs re-scan.
 - Permission drift between upstream and pro_manage is surfaced to project Owners.
-- Content is **not** copied by default — pro_manage holds metadata + a reference. Owners can opt-in to local cache for offline reliability.
+- Content is **not** copied by default; pro_manage holds metadata + a reference. Owners can opt-in to local cache for offline reliability.
 
 ### Open items
 - Confirm the preferred backends (likely SharePoint if the company is M365; Drive if Google Workspace).
@@ -194,7 +209,7 @@ Mirror external document stores (SharePoint, Drive, Confluence) into pro_manage 
 
 ---
 
-## Commsi — Communication / Notification Integration
+## Commsi: Communication / Notification Integration
 
 ### Purpose
 Deliver notifications (approval prompts, overdue nudges, digests, alerts, dashboard shares) through channels users already use.
@@ -206,9 +221,9 @@ Deliver notifications (approval prompts, overdue nudges, digests, alerts, dashbo
 - `OnDeliveryReceipt(Receipt) → Ack` (for channels that support it)
 
 ### Year-one backends
-- `commsi-smtp` (email)
-- `commsi-teams` (Microsoft Teams via adaptive cards + bot or webhook)
-- `commsi-slack` (Slack API + blocks)
+- `Commsi_SMTP` (email)
+- `Commsi_TEAMS` (Microsoft Teams via adaptive cards + bot or webhook)
+- `Commsi_SLACK` (Slack API + blocks)
 
 ### Config knobs
 - SMTP server, from-address, DKIM/SPF alignment
@@ -228,7 +243,7 @@ Deliver notifications (approval prompts, overdue nudges, digests, alerts, dashbo
 
 ---
 
-## Metrici — Metric Harvest Integration
+## Metrici: Metric Harvest Integration
 
 ### Purpose
 Read-only metric harvesting from relational DBs, time-series DBs, plant historians, and OPC UA endpoints. Feeds pm-core's TSDB (`§07`).
@@ -240,14 +255,14 @@ Read-only metric harvesting from relational DBs, time-series DBs, plant historia
 - `Subscribe(SubscribeRequest) → stream Reading` (where supported)
 
 ### Year-one backends
-- `metrici-postgres` (generic Postgres with configurable queries)
-- `metrici-oracle`
-- `metrici-sqlserver`
-- `metrici-timescale`
-- `metrici-influx`
-- `metrici-pi` (OSIsoft PI Web API)
-- `metrici-opcua` (generic OPC UA)
-- `metrici-historian` (generic Historian — Honeywell PHD, Wonderware, Aveva, etc.)
+- `Metrici_PG` (generic Postgres with configurable queries)
+- `Metrici_ORA`
+- `Metrici_MSSQL`
+- `Metrici_TS`
+- `Metrici_INFLUX`
+- `Metrici_PI` (OSIsoft PI Web API)
+- `Metrici_OPCUA` (generic OPC UA)
+- `Metrici_HIST` (generic Historian: Honeywell PHD, Wonderware, Aveva, etc.)
 
 ### Config knobs
 - Connection string + credentials (read-only account strongly recommended)
@@ -263,11 +278,11 @@ Read-only metric harvesting from relational DBs, time-series DBs, plant historia
 
 ### Open items
 - Prioritize backends per the company's actual stack (owner's intel pending).
-- Decide whether `metrici-opcua` needs certificate-based auth from day one.
+- Decide whether `Metrici_OPCUA` needs certificate-based auth from day one.
 
 ---
 
-## HSEi — Plant Operations Signals (Safety / Quality / Compliance / Losses)
+## HSEi: Plant Operations Signals (Safety / Quality / Compliance / Losses)
 
 ### Purpose
 Pull signals from MES, WMS, QMS, HSE, and operations TPM / connected-worker systems: incidents, inspections, non-conformances, sign-off states, **priced loss events, operator abnormality tags, and skill certifications**. Feeds pro_manage's safety/quality/compliance and loss metrics, MP-information harvest, the Early Management certification gate, and Benefits Realization verification. Read-only.
@@ -278,15 +293,16 @@ Pull signals from MES, WMS, QMS, HSE, and operations TPM / connected-worker syst
 - `FetchInspections(FetchRequest) → stream Inspection`
 - `FetchNonconformances(FetchRequest) → stream Nonconformance`
 - `FetchSignoffs(FetchRequest) → stream Signoff`
-- `FetchLossEvents(FetchRequest) → stream LossEvent` — OEE / Six Big Losses events per asset, with category and (where the platform prices them) dollar value.
-- `FetchAbnormalityTags(FetchRequest) → stream AbnormalityTag` — operator-raised tags from autonomous-maintenance (CIL/CILT) routines; feeds MP-information pattern detection (`§06`).
-- `FetchSkillCertifications(FetchRequest) → stream Certification` — operator/technician certification status per asset or standard-work item; feeds the Early Management exit gate (`§08`).
+- `FetchLossEvents(FetchRequest) → stream LossEvent`: OEE / Six Big Losses events per asset, with category and (where the platform prices them) dollar value.
+- `FetchAbnormalityTags(FetchRequest) → stream AbnormalityTag`: operator-raised tags from autonomous-maintenance (CIL/CILT) routines; feeds MP-information pattern detection (`§06`).
+- `FetchSkillCertifications(FetchRequest) → stream Certification`: operator/technician certification status per asset or standard-work item; feeds the Early Management exit gate (`§08`).
 
 Not every backend supports every RPC; `Capabilities` declares which, and pm-core degrades gracefully (e.g. certification recorded manually in pro_manage when no skills platform is connected).
 
 ### Year-one backends
+Modules are named `HSEi_<CODE>` per vendor (e.g. `HSEi_OPCENTER`, `HSEi_MII`, `HSEi_ETQ`, `HSEi_FABRICO`, `HSEi_CRYOTOS`) once the installed systems are known.
 - Vendor-specific adapters per the company's installed MES/WMS/QMS (owner's intel pending). Likely candidates: Honeywell MES, SAP MII, Siemens Opcenter, EtQ Reliance, MasterControl QMS, Intelex HSE.
-- **Operations TPM / connected-worker platforms** (loss events, abnormality tags, skills): candidates from the owner's market review — Fabrico (priced Six Big Losses, verified recovery), Cryotos (pillar-structured, abnormality register), Redzone, L2L, LeanSuite (abnormality tagging, operator certification), Augmentir and Poka/IFS Connected Worker (skills matrix, guided work). pro_manage integrates with these; it does not replicate them (`§01`).
+- **Operations TPM / connected-worker platforms** (loss events, abnormality tags, skills): candidates from the owner's market review: Fabrico (priced Six Big Losses, verified recovery), Cryotos (pillar-structured, abnormality register), Redzone, L2L, LeanSuite (abnormality tagging, operator certification), Augmentir and Poka/IFS Connected Worker (skills matrix, guided work). pro_manage integrates with these; it does not replicate them (`§01`).
 
 ### Config knobs
 - Vendor API endpoint + auth
@@ -300,46 +316,46 @@ Not every backend supports every RPC; `Capabilities` declares which, and pm-core
 
 ### Open items
 - Confirm vendor list (owner's intel pending). Likely a longer tail than other connector types.
-- Decide whether MES/QMS write-back is desired (first instinct: no — HSEi stays read-only to simplify audit).
+- Decide whether MES/QMS write-back is desired (first instinct: no; HSEi stays read-only to simplify audit).
 
 ---
 
-## CMMSi — Computerized Maintenance Management System Integration
+## CMMSi: Computerized Maintenance Management System Integration
 
 ### Purpose
 Bidirectional integration with the plant CMMS. The symmetry makes this distinct from HSEi:
-- **Read**: harvest MP (Maintenance Prevention) information — equipment failure history, repeat work orders, high-MTTR assets, aged open work — into pro_manage's `MPInformation` entity, which then surfaces via MDEMG during Design-stage reviews on later projects.
-- **Write**: at Early Management exit, push the TurnoverPackage into the CMMS — equipment master data, spares, PM task library, operating procedures, cleaning procedures, LOTO procedures, calibration schedule — so Operations and Maintenance inherit a loaded, ready-to-run asset.
+- **Read**: harvest MP (Maintenance Prevention) information (equipment failure history, repeat work orders, high-MTTR assets, aged open work) into pro_manage's `MPInformation` entity, which then surfaces via MDEMG during Design-stage reviews on later projects.
+- **Write**: at Early Management exit, push the TurnoverPackage into the CMMS (equipment master data, spares, PM task library, operating procedures, cleaning procedures, LOTO procedures, calibration schedule) so Operations and Maintenance inherit a loaded, ready-to-run asset.
 
 ### gRPC interface (summary; see `pm.connector.v1.cmmsi.proto`)
 - `HealthCheck`, `Capabilities`
 - **Read side:**
-  - `FetchEquipmentHistory(FetchEquipmentHistoryRequest) → stream EquipmentHistoryEntry` — failures, work orders, downtime by asset.
-  - `FetchHighFailureAssets(FetchHighFailureAssetsRequest) → stream AssetFailureSummary` — top-N by failure count / MTBF / MTTR across a filter.
-  - `FetchAgedWork(FetchAgedWorkRequest) → stream WorkOrder` — open work orders aged past threshold.
-  - `FetchSpareUsage(FetchSpareUsageRequest) → stream SpareUsageEntry` — spare parts consumption, lead-time outliers.
+  - `FetchEquipmentHistory(FetchEquipmentHistoryRequest) → stream EquipmentHistoryEntry`: failures, work orders, downtime by asset.
+  - `FetchHighFailureAssets(FetchHighFailureAssetsRequest) → stream AssetFailureSummary`: top-N by failure count / MTBF / MTTR across a filter.
+  - `FetchAgedWork(FetchAgedWorkRequest) → stream WorkOrder`: open work orders aged past threshold.
+  - `FetchSpareUsage(FetchSpareUsageRequest) → stream SpareUsageEntry`: spare parts consumption, lead-time outliers.
 - **Write side:**
-  - `UpsertEquipment(UpsertEquipmentRequest) → UpsertResponse` — create or update the equipment hierarchy.
-  - `UpsertSpares(UpsertSparesRequest) → UpsertResponse` — spares with suppliers, min/max, criticality.
-  - `UpsertPMTasks(UpsertPMTasksRequest) → UpsertResponse` — PM task library with frequencies and procedures.
-  - `UpsertProcedures(UpsertProceduresRequest) → UpsertResponse` — operating / cleaning / LOTO procedures.
-  - `UpsertCalibrationSchedule(UpsertCalibrationScheduleRequest) → UpsertResponse` — calibration intervals + certificate refs.
-  - `AttachCMMSArtifact(AttachCMMSArtifactRequest) → UpsertResponse` — bind pro_manage document refs to CMMS equipment records.
+  - `UpsertEquipment(UpsertEquipmentRequest) → UpsertResponse`: create or update the equipment hierarchy.
+  - `UpsertSpares(UpsertSparesRequest) → UpsertResponse`: spares with suppliers, min/max, criticality.
+  - `UpsertPMTasks(UpsertPMTasksRequest) → UpsertResponse`: PM task library with frequencies and procedures.
+  - `UpsertProcedures(UpsertProceduresRequest) → UpsertResponse`: operating / cleaning / LOTO procedures.
+  - `UpsertCalibrationSchedule(UpsertCalibrationScheduleRequest) → UpsertResponse`: calibration intervals + certificate refs.
+  - `AttachCMMSArtifact(AttachCMMSArtifactRequest) → UpsertResponse`: bind pro_manage document refs to CMMS equipment records.
 - **Status:**
-  - `GetTurnoverStatus(GetTurnoverStatusRequest) → TurnoverStatus` — pro_manage polls after push to confirm equipment/spares/PMs landed; drift is logged.
+  - `GetTurnoverStatus(GetTurnoverStatusRequest) → TurnoverStatus`: pro_manage polls after push to confirm equipment/spares/PMs landed; drift is logged.
 
 All write operations are **idempotent** (keyed on pro_manage's turnover package id + sub-item id); retries are safe. Delivery outcome is persisted in `TurnoverPackage.delivered_to_cmms_at` and linked to the audit record.
 
 ### Year-one backends
 Candidates (prioritize based on company's installed CMMS):
-- `cmmsi-maximo` (IBM Maximo — enterprise standard in heavy industry)
-- `cmmsi-sap-pm` (SAP Plant Maintenance — common where SAP ERP is in play)
-- `cmmsi-fiix` (Fiix by Rockwell Automation — mid-market, common in food/beverage)
-- `cmmsi-infor-eam` (Infor EAM)
-- `cmmsi-mapcon` (Mapcon — smaller shops)
-- `cmmsi-upkeep` (UpKeep — SMB)
-- `cmmsi-maintainx` (MaintainX — mobile-first, common where operators raise requests directly)
-- `cmmsi-cryotos` (Cryotos — TPM-pillar-structured CMMS; also a candidate HSEi source for abnormality tags and OEE)
+- `CMMSi_MAX` (IBM Maximo: enterprise standard in heavy industry)
+- `CMMSi_SAPPM` (SAP Plant Maintenance: common where SAP ERP is in play)
+- `CMMSi_FIIX` (Fiix by Rockwell Automation: mid-market, common in food/beverage)
+- `CMMSi_EAM` (Infor EAM)
+- `CMMSi_MAPCON` (Mapcon: smaller shops)
+- `CMMSi_UPKEEP` (UpKeep: SMB)
+- `CMMSi_MX` (MaintainX: mobile-first, common where operators raise requests directly)
+- `CMMSi_CRY` (Cryotos: TPM-pillar-structured CMMS; also a candidate HSEi source for abnormality tags and OEE)
 
 ### Config knobs (per instance)
 - Base URL / tenant id / client credentials
@@ -375,5 +391,5 @@ All connectors share:
 ## Open items for Section 10
 
 - Confirm backend priorities per module (ERPi first, HSEi vendor list, Commsi channels, IdPi backend) once owner intel lands.
-- Decide whether connectors can be contributed by third parties post-launch — if yes, we need a lightweight signing/validation story for the gRPC interface + UATS specs.
+- Decide whether connectors can be contributed by third parties post-launch. If yes, we need a lightweight signing/validation story for the gRPC interface + UATS specs.
 - Decide the policy on connector containers being on the same VM as pm-core vs. on a dedicated "connector VM" for defense-in-depth. First instinct: dedicated connector VM(s), especially for backends that need VPN or elevated network access.

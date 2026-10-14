@@ -1,16 +1,16 @@
-# 08 — Approvals, Workflows & Audit
+# 08: Approvals, Workflows & Audit
 
 ## Decisions on record
 
-- **2026-10-13** — Approvals are a core feature. pro_manage owns the workflow engine; MDEMG provides advisory + classify at the gates (`§06`).
-- **2026-10-13** — The primary approval instance in a TPM shop is the **CAR (Capital Authorization Request)**. "CapEx" is retained as the generic framing.
-- **2026-10-13** — Workflow kinds in year one: **CAR, Baseline change, Design review sign-off, CQV sign-off, Milestone sign-off, Change request, Shutdown & tie-in plan, Early Management exit, Closeout, Benefits Realization review**, plus a configurable **Custom** kind for policies pro_manage doesn't ship with.
-- **2026-10-14** — CAR submission requires every business-case promise to carry a CAR-time baseline and measurement basis. Early Management exit requires operator and maintenance certification on the new asset. A recurring **Project health review** (not a gate) is added.
-- **2026-10-14** — EPCM administration workflows added: **RFI response, submittal review, change order, work package release, hold point release**. Each records cycle time; delays become project-loss events. Design reviews add constructability, commissionability, and safety-in-design lenses with a Construction Manager stage. Health reviews select one dominant project loss from data.
-- **2026-10-13** — Pre-authorization workflow enforces **FEL stage** progression (FEL1 → FEL2 → FEL3) and **AACE Estimate Class** gates: Class 5 at concept, Class 3 required at CAR submission, Class 1 required at execution kickoff. Violations block submit (Tier A fail-closed).
-- **2026-10-13** — Formal e-signature via `Sigi` (DocuSign at launch). Workflow kinds for which Sigi is mandatory are configurable per policy; the rest rely on the authenticated AuditEvent as the sign-off of record.
-- **2026-10-13** — AuditEvents are append-only with chained signed hashes (tamper evidence). Retention aligned with the longest applicable regime (`§11`); baseline is 7 years for financial-impacting events.
-- **2026-10-13** — Routing resolves approvers from **eligibility pools** by **amount thresholds + delegation chain**. Pools are populated by platform roles (`finance_approver_eligible`, etc.) + per-project overrides.
+- **2026-10-13:** Approvals are a core feature. pro_manage owns the workflow engine; MDEMG provides advisory + classify at the gates (`§06`).
+- **2026-10-13:** The primary approval instance in a TPM shop is the **CAR (Capital Authorization Request)**. "CapEx" is retained as the generic framing.
+- **2026-10-13:** Workflow kinds in year one: **CAR, Baseline change, Design review sign-off, CQV sign-off, Milestone sign-off, Change request, Shutdown & tie-in plan, Early Management exit, Closeout, Benefits Realization review**, plus a configurable **Custom** kind for policies pro_manage doesn't ship with.
+- **2026-10-14:** CAR submission requires every business-case promise to carry a CAR-time baseline and measurement basis. Early Management exit requires operator and maintenance certification on the new asset. A recurring **Project health review** (not a gate) is added.
+- **2026-10-14:** EPCM administration workflows added: **RFI response, submittal review, change order, work package release, hold point release**. Each records cycle time; delays become project-loss events. Design reviews add constructability, commissionability, and safety-in-design lenses with a Construction Manager stage. Health reviews select one dominant project loss from data.
+- **2026-10-13:** Pre-authorization workflow enforces **FEL stage** progression (FEL1 → FEL2 → FEL3) and **AACE Estimate Class** gates: Class 5 at concept, Class 3 required at CAR submission, Class 1 required at execution kickoff. Violations block submit (Tier A fail-closed).
+- **2026-10-13:** Formal e-signature via `Sigi` (DocuSign at launch). Workflow kinds for which Sigi is mandatory are configurable per policy; the rest rely on the authenticated AuditEvent as the sign-off of record.
+- **2026-10-13:** AuditEvents are append-only with chained signed hashes (tamper evidence). Retention aligned with the longest applicable regime (`§11`); baseline is 7 years for financial-impacting events.
+- **2026-10-13:** Routing resolves approvers from **eligibility pools** by **amount thresholds + delegation chain**. Pools are populated by platform roles (`finance_approver_eligible`, etc.) + per-project overrides.
 
 ## Workflow state machine
 
@@ -59,7 +59,7 @@ An `ApprovalWorkflow` has an ordered list of `ApprovalStage` rows:
 - `delegate` reassigns the stage to another eligible approver without changing state (logged as such).
 - `reject` terminates the workflow.
 
-### Example — CAR approval chain (year-one defaults, admin-tunable)
+### Example: CAR approval chain (year-one defaults, admin-tunable)
 
 Pre-conditions for CAR submission: `project.fel_stage == fel3`, current `BudgetBaseline.aace_class ∈ {3, 2, 1}`, approved Basis of Design, at least one Design Review of `stage=detailed` closed with no `high`-severity findings open, and every `BusinessCasePromise` in `committed` state with a captured baseline and measurement basis (`§03`). A CAR whose benefits can't be measured later can't be submitted now.
 
@@ -73,18 +73,18 @@ Pre-conditions for CAR submission: `project.fel_stage == fel3`, current `BudgetB
 
 Thresholds and roles are stored in the `WorkflowPolicy` table and are editable by `platform_admin` with a logged change.
 
-### Example — Design review sign-off
+### Example: Design review sign-off
 
 Required before transitioning Project from `Plan` to `Execute`.
 
 | Order | Role required | SLA | Jiminy coupling |
 |---|---|---|---|
 | 1 | `facilitator` closes the review | at session+24h | `/jiminy/guide` surfaces MP-information from past assets of same equipment type |
-| 2 | `operator_representative` + `maintenance_representative` acknowledge | 48h | — |
+| 2 | `operator_representative` + `maintenance_representative` acknowledge | 48h | n/a |
 | 2b | `construction_manager` acknowledges constructability + commissionability findings | 48h | `/jiminy/guide` surfaces project-loss lessons (e.g. past submittal or interface problems) for this asset class |
-| 3 | `project_owner` approves | 48h | `/jiminy/evaluate` on open `high`-severity findings — must be dispositioned |
+| 3 | `project_owner` approves | 48h | `/jiminy/evaluate` on open `high`-severity findings; must be dispositioned |
 
-### Example — CQV sign-off (per equipment / per batch)
+### Example: CQV sign-off (per equipment / per batch)
 
 | Order | Role required | SLA |
 |---|---|---|
@@ -94,7 +94,7 @@ Required before transitioning Project from `Plan` to `Execute`.
 
 Fail routes back to engineering with a change request. Punchlist items block Early Management exit until closed.
 
-### Example — Shutdown & tie-in plan (brownfield)
+### Example: Shutdown & tie-in plan (brownfield)
 
 Required before any Execute-stage tie-in against a running plant. Captures the plan, operations' acknowledgment, and the restart criteria.
 
@@ -105,18 +105,18 @@ Required before any Execute-stage tie-in against a running plant. Captures the p
 | 3 | `site_maintenance_lead` acknowledges | 48h |
 | 4 | `finance_approver` if lost production > threshold | 72h |
 
-### Example — Early Management exit
+### Example: Early Management exit
 
 Project cannot move from `Monitor` to `Close` without this.
 
 | Order | Role required | SLA | Exit criteria |
 |---|---|---|---|
-| 1 | `project_owner` requests exit | — | Startup curve sustained at ≥X% nameplate for ≥Y days; CQV punchlist closed; TurnoverPackage.status == `approved`; **operators and maintenance technicians assigned to the asset certified** on its standard work, CIL routines, and changeovers (status read from the plant skills matrix / connected-worker platform via HSEi where available, else recorded in pro_manage) |
-| 2 | `site_operations_lead` co-sign | 48h | — |
-| 3 | `site_maintenance_lead` co-sign | 48h | — |
-| 4 | `compliance_officer` co-sign for regulated contexts | 72h | — |
+| 1 | `project_owner` requests exit | n/a | Startup curve sustained at ≥X% nameplate for ≥Y days; CQV punchlist closed; TurnoverPackage.status == `approved`; **operators and maintenance technicians assigned to the asset certified** on its standard work, CIL routines, and changeovers (status read from the plant skills matrix / connected-worker platform via HSEi where available, else recorded in pro_manage) |
+| 2 | `site_operations_lead` co-sign | 48h | n/a |
+| 3 | `site_maintenance_lead` co-sign | 48h | n/a |
+| 4 | `compliance_officer` co-sign for regulated contexts | 72h | n/a |
 
-### Example — Benefits Realization review
+### Example: Benefits Realization review
 
 Fired at `BenefitsRealization.window_closes_at`.
 
@@ -128,7 +128,7 @@ Fired at `BenefitsRealization.window_closes_at`.
 
 Outcome drives the project's final `Archived` transition and feeds a `decision` observation to MDEMG governance space with scope tags for similar future projects.
 
-### Example — RFI response
+### Example: RFI response
 
 | Order | Role required | SLA |
 |---|---|---|
@@ -137,7 +137,7 @@ Outcome drives the project's final `Archived` transition and feeds a `decision` 
 
 Overdue RFIs nudge via Commsi; blocked-package days accrue as `waiting_information` losses.
 
-### Example — Submittal review
+### Example: Submittal review
 
 | Order | Role required | SLA |
 |---|---|---|
@@ -146,7 +146,7 @@ Overdue RFIs nudge via Commsi; blocked-package days accrue as `waiting_informati
 
 Revise-resubmit cycles are counted per submittal; repeat offenders by supplier or asset class become MP / quality lessons at closeout.
 
-### Example — Change order (contractual)
+### Example: Change order (contractual)
 
 | Order | Role required | SLA |
 |---|---|---|
@@ -156,14 +156,14 @@ Revise-resubmit cycles are counted per submittal; repeat offenders by supplier o
 
 Approved change orders update the `Contract` value and, where they implement an internal `ChangeRequest`, close it.
 
-### Example — Work package release
+### Example: Work package release
 
 | Order | Role required | SLA | Gate |
 |---|---|---|---|
-| 1 | `construction_manager` releases | — | All readiness constraints met (`§03 WorkPackage`), or an audited override with reason; override is Tier A in `§06` |
-| 2 | Contractor `contributor` acknowledges release | 24h | — |
+| 1 | `construction_manager` releases | n/a | All readiness constraints met (`§03 WorkPackage`), or an audited override with reason; override is Tier A in `§06` |
+| 2 | Contractor `contributor` acknowledges release | 24h | n/a |
 
-### Example — Hold point release
+### Example: Hold point release
 
 | Order | Role required | SLA |
 |---|---|---|
@@ -171,7 +171,7 @@ Approved change orders update the `Contract` value and, where they implement an 
 
 Work on the package cannot progress past the hold point until released. A failed inspection opens a non-conformance and a `rework` loss.
 
-### Example — Project health review (recurring, not a gate)
+### Example: Project health review (recurring, not a gate)
 
 The capital-side counterpart to an operations huddle: short, regular, ends with owned actions rather than a grade. Records a `ProjectHealthReview` (`§03`).
 
@@ -179,17 +179,17 @@ The capital-side counterpart to an operations huddle: short, regular, ends with 
 - **Facilitator:** someone other than the project owner (peer PM, portfolio lead, or CI lead).
 - **Agenda (pre-filled from live data):** scope stability, estimate maturity vs stage (AACE class vs FEL/lifecycle stage), critical-path float, top risks and owners, change-order trend, contingency burn vs % complete, Operations/Maintenance readiness for turnover, the project-loss Pareto (from which the review selects one **dominant loss** to attack this cycle, with an owner and a countermeasure), RFI / submittal aging, plan compliance with variance reasons, and one open prompt: *"What are you worried about that isn't on the register?"*
 - **Output:** actions with owners and dates (tracked like issues), an overall green/amber/red, and an optional `/jiminy/feedback`-style observation to the project space so recurring concerns become visible guidance.
-- **No approval chain** — it is a review, not a gate. A `red` result notifies the Portfolio Executive via Commsi.
+- **No approval chain:** it is a review, not a gate. A `red` result notifies the Portfolio Executive via Commsi.
 
-### Example — Baseline change
+### Example: Baseline change
 
 | Order | Role required | Pool | SLA | Jiminy coupling |
 |---|---|---|---|---|
 | 1 | `project_owner` | project Owner | 24h | `/jiminy/guide` on open ⇒ warn if variance > 10% |
-| 2 (if variance > 5%) | `finance_approver` | per BU | 48h | — |
+| 2 (if variance > 5%) | `finance_approver` | per BU | 48h | n/a |
 | 3 (if variance > 10%) | `vp_finance` | configured | 72h | `/jiminy/classify` is Tier A (fail-closed) |
 
-### Example — Closeout
+### Example: Closeout
 
 Enforces the "closeout plan on file" constraint (from the Governance space). Final stage is `project_owner` + `compliance_officer` co-sign. Milestone-dependency rules enforced in-process beforehand.
 
@@ -250,8 +250,8 @@ Every stage record carries `guidance_id`, `classification_verdict`, and a snapsh
 
 - Append-only; writes happen in the same transaction as the mutation.
 - Each row:
-  - `audit_id`, `tenant_id`, `project_id`, `actor_user_id`, `action_type` (fine-grained — e.g., `approval.car.stage_approve`), `subject_type`, `subject_id`, `before` (JSON), `after` (JSON), `at`, `source_ip`, `request_id`, `guidance_id?`, `classification_verdict?`, `signed_hash`
-  - `signed_hash = HMAC-SHA256(prev_hash || row_canonical_payload, audit_chain_key)` — a per-tenant chain so tampering is detectable without an external ledger.
+  - `audit_id`, `tenant_id`, `project_id`, `actor_user_id`, `action_type` (fine-grained, e.g., `approval.car.stage_approve`), `subject_type`, `subject_id`, `before` (JSON), `after` (JSON), `at`, `source_ip`, `request_id`, `guidance_id?`, `classification_verdict?`, `signed_hash`
+  - `signed_hash = HMAC-SHA256(prev_hash || row_canonical_payload, audit_chain_key)`: a per-tenant chain so tampering is detectable without an external ledger.
   - A nightly job verifies the chain and writes a verification record; mismatches alert immediately.
 - Immutable via DB constraints:
   - `BEFORE UPDATE` and `BEFORE DELETE` triggers reject.
@@ -261,7 +261,7 @@ Every stage record carries `guidance_id`, `classification_verdict`, and a snapsh
 ### Audit retrieval (UC-12)
 
 - Compliance Officers (and time-boxed auditors) query by `(project_id, action_type, from, to)`. Response includes referenced artifacts: Sigi signed envelopes, MDEMG guidance snapshots, before/after payloads.
-- Query results are read-only, time-stamped at retrieval, and themselves logged (meta-audit) — "who looked at what approval chain and when."
+- Query results are read-only, time-stamped at retrieval, and themselves logged (meta-audit): "who looked at what approval chain and when."
 
 ## Edge cases
 
@@ -278,21 +278,29 @@ Every stage record carries `guidance_id`, `classification_verdict`, and a snapsh
 - **Workflow dashboard:** a user's view of workflows they initiated, workflows awaiting their decision, workflows they're observing. Grouped by SLA proximity.
 - **Approval screen:** on open, pm-core warms Jiminy. Primary view shows the subject (CAR details, baseline diff, closeout checklist). Right rail shows guidance cards. Submit button is masked by the classify result when Tier A deny.
 - **Delegate screen:** reassign button → pick from eligible pool filtered by availability.
-- **Historical workflow:** read-only reconstruction of every stage, every decision, every guidance item shown, every Sigi event — anchored by `audit_id` and linkable.
+- **Historical workflow:** read-only reconstruction of every stage, every decision, every guidance item shown, every Sigi event, anchored by `audit_id` and linkable.
 
 ## Admin surface
 
 Platform Admin UI exposes:
 
-- `WorkflowPolicy` editor — amount thresholds, SLA durations, stage definitions, Sigi requirement toggles. Changes are versioned and logged.
-- Eligibility pool management — add/remove users from `finance_approver_eligible`, `vp_finance`, etc. Also links to IdPi claim mappings so admins can see "this role is populated by the AD group `pro_manage.finance_approvers`."
-- Delegation chain editor — users can edit their own; admins can edit anyone's with audit.
-- Workflow kind registry — enable `custom` kinds with declared schemas; admins can wire them to Sigi/MDEMG/tier policy.
-- Audit chain verification dashboard — chain-verification success/failure history, nightly job state.
+- `WorkflowPolicy` editor: amount thresholds, SLA durations, stage definitions, Sigi requirement toggles. Changes are versioned and logged.
+- Eligibility pool management: add/remove users from `finance_approver_eligible`, `vp_finance`, etc. Also links to IdPi claim mappings so admins can see "this role is populated by the AD group `pro_manage.finance_approvers`."
+- Delegation chain editor: users can edit their own; admins can edit anyone's with audit.
+- Workflow kind registry: enable `custom` kinds with declared schemas; admins can wire them to Sigi/MDEMG/tier policy.
+- Audit chain verification dashboard: chain-verification success/failure history, nightly job state.
 
 ## Open items for Section 08
 
-- Confirm the dollar thresholds (sample above is a plausible baseline; the owner's company will have real figures).
+- **CAR thresholds and chain (owner gathering).** The stage table above is a placeholder. To replace it, collect the company's **Delegation of Authority (DoA) / approval-limits matrix** and its capital policy, specifically:
+  - Approval limits by role and amount (who can approve up to what), and whether limits differ by business unit, site, or project type.
+  - What the threshold is measured against: TIC only, TIC + contingency, or total project cost including expensed portions.
+  - Supplemental and overrun rules: when a cost increase on an approved CAR needs re-approval (e.g. > 10% or > $X).
+  - Board-level thresholds and any capital committee steps.
+  - Which approvals require formal e-signature (DocuSign) vs internal attestation.
+  - Required CAR content and attachments (business case template, AACE class, IRR/NPV/payback hurdle rates, risk register).
+  - Delegation rules when an approver is out (who can sign on their behalf, and up to what limit).
+  These populate the `WorkflowPolicy` table directly; no design change is expected.
 - Confirm whether `Change request` is a workflow kind of its own, or always a nested sub-step of a Budget or Scope change. First instinct: standalone, with references into Budget and Scope.
 - Decide whether "re-submit after reject" creates a brand-new workflow id or extends the existing one. First instinct: new id, with explicit linkage, so the audit record for each attempt is clean.
 - Confirm which workflow kinds are mandatory-Sigi vs. optional-Sigi.

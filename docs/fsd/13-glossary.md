@@ -1,4 +1,4 @@
-# 13 — Glossary
+# 13: Glossary
 
 Terms, acronyms, and project-specific names.
 
@@ -88,7 +88,7 @@ Terms, acronyms, and project-specific names.
 | **EAC** | Estimate at Completion. Forecast of total project cost. |
 | **EVM** | Earned Value Management. Framework tying scope, cost, and schedule through BCWP. |
 | **Contingency drawdown** | Rate at which contingency is being used relative to percent-complete. Burning faster than progress is an early warning. |
-| **Benefits Realization** | Confirming — typically 6–12 months post-startup — that the savings or capacity promised in the business case actually materialized. The third ROI calculation. |
+| **Benefits Realization** | Confirming (typically 6–12 months post-startup) that the savings or capacity promised in the business case actually materialized. The third ROI calculation. |
 | **EPC / EPCM** | Engineer-Procure-Construct (lump-sum delivery by a single contractor) / Engineering, Procurement, Construction Management (owner retains PM; contractor manages execution). Contracting models. |
 | **WBS** | Work Breakdown Structure. Hierarchical decomposition of project scope. |
 | **Change request (CR)** | A request to change scope, with declared budget and schedule impact; routes through an approval workflow. |
@@ -99,7 +99,7 @@ Terms, acronyms, and project-specific names.
 | **Package readiness** | Whether a work package's prerequisites (drawings, RFIs closed, materials, crew, permits, HSE) are all met before release. |
 | **Percent plan complete (PPC)** | Packages completed as planned ÷ packages planned for the period; misses carry a variance reason. |
 | **ITP / hold point / witness point** | Inspection & Test Plan; a hold point stops work until an inspector releases it, a witness point only requires notice. |
-| **Project as equipment / Project TPM** | pro_manage's core concept: treating the capital project itself as a piece of equipment and applying TPM to it — its losses are named, priced, and eliminated like equipment losses. See `§14`. |
+| **Project as equipment / Project TPM** | pro_manage's core concept: treating the capital project itself as a piece of equipment and applying TPM to it; its losses are named, priced, and eliminated like equipment losses. See `§14`. |
 | **Work-front availability / productivity / first-time-right** | The project analogues of OEE's availability, performance, and quality (`§14`). |
 | **Project loss** | A loss of the project itself: waiting on information or approval, rework, interface clash, unready package, safety stop, skill-gap error. |
 | **Project deviation** | A tag raised by someone close to the work when something is off on the project (the project-side analogue of an abnormality tag). |
@@ -117,7 +117,7 @@ Terms, acronyms, and project-specific names.
 |---|---|
 | **TPM** | Total Productive Maintenance. Discipline for maximizing equipment effectiveness through operator engagement, autonomous maintenance, planned maintenance, focused improvement, early equipment management, and five other pillars. |
 | **TPM pillars** | The eight canonical pillars: Autonomous Maintenance, Planned Maintenance, Focused Improvement, Early Equipment Management (EEM), Quality Maintenance, Training & Education, Office TPM, Safety/Health/Environment. |
-| **EEM** | Early Equipment Management. The TPM pillar for new equipment and new lines. Goal: **vertical startup** — reaching target performance immediately at startup rather than after months of debugging. |
+| **EEM** | Early Equipment Management. The TPM pillar for new equipment and new lines. Goal: **vertical startup**: reaching target performance immediately at startup rather than after months of debugging. |
 | **EEM stages** | Six stages, each with a gate and exit criteria: 1) Concept/Planning, 2) Design (basic → detailed), 3) Fabrication/Build (incl. FAT), 4) Installation (incl. SAT), 5) Commissioning/Trial Operation, 6) Early Management Period (initial flow control until exit criteria met). |
 | **MP information** | Maintenance Prevention information. Failures, losses, difficulties, and operability issues harvested from running equipment that get fed into the design of the next asset. The core input to EEM. |
 | **"Easy-to" criteria** | The seven design-review lenses of EEM: easy to operate, maintain, clean, change over, inspect, keep safe, and make quality product. |
@@ -211,7 +211,7 @@ Terms, acronyms, and project-specific names.
 | **Vault** | The deployment's secret store (HashiCorp Vault, cloud KMS, on-prem equivalent). |
 | **Outbox pattern** | Durable at-least-once dispatch of side-effects (MDEMG writes, notifications) via a Postgres queue drained by pm-workers. |
 | **SSE** | Server-Sent Events. Used for live dashboard updates. |
-| **RED metrics** | Rate, Errors, Duration — the standard service-health trio. |
+| **RED metrics** | Rate, Errors, Duration: the standard service-health trio. |
 | **RTO / RPO** | Recovery Time Objective / Recovery Point Objective. |
 | **ISO 9001 / 55000 / 27001** | Quality / asset management / information security standards. |
 | **SOX** | Sarbanes-Oxley. Audit discipline baseline, even without an SOX obligation. |

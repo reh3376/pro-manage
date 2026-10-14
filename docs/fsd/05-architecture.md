@@ -1,13 +1,13 @@
-# 05 — Architecture
+# 05: Architecture
 
 ## Decisions on record
 
-- **2026-10-13** — Backend: **Go** monolithic core (`pm-core`) plus **Python sidecar** (`pm-sidecar`) for scripting-heavy work (document rendering, spreadsheet I/O, data transforms, derived-metric computation).
-- **2026-10-13** — Frontend: **Next.js (TypeScript/React)**, served as a container alongside the backend.
-- **2026-10-13** — Internal APIs: **gRPC** between services (core ↔ sidecar, core ↔ connector modules, workers ↔ core). External APIs (frontend ↔ core, external stakeholders ↔ core) are **HTTP REST + Server-Sent Events / WebSockets** for live dashboards.
-- **2026-10-13** — All databases run in **Docker containers**: Postgres (OLTP), TimescaleDB (ours, metric readings), Redis (session/cache), MinIO (S3-compatible object store). MDEMG runs its own stack adjacent (its own Neo4j, Timescale, Grafana, neural sidecar).
-- **2026-10-13** — Hosting footprint: **on-prem VMs with containers inside**, running docker-compose per VM. Compose topology designed to be upgraded to Kubernetes later without reshaping services.
-- **2026-10-13** — **Pluggable connector framework**: each integration module (ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi) is a separate container exposing a gRPC interface defined per-module. pm-core discovers and routes to connectors via an admin-managed registry.
+- **2026-10-13:** Backend: **Go** monolithic core (`pm-core`) plus **Python sidecar** (`pm-sidecar`) for scripting-heavy work (document rendering, spreadsheet I/O, data transforms, derived-metric computation).
+- **2026-10-13:** Frontend: **Next.js (TypeScript/React)**, served as a container alongside the backend.
+- **2026-10-13:** Internal APIs: **gRPC** between services (core ↔ sidecar, core ↔ connector modules, workers ↔ core). External APIs (frontend ↔ core, external stakeholders ↔ core) are **HTTP REST + Server-Sent Events / WebSockets** for live dashboards.
+- **2026-10-13:** All databases run in **Docker containers**: Postgres (OLTP), TimescaleDB (ours, metric readings), Redis (session/cache), MinIO (S3-compatible object store). MDEMG runs its own stack adjacent (its own Neo4j, Timescale, Grafana, neural sidecar).
+- **2026-10-13:** Hosting footprint: **on-prem VMs with containers inside**, running docker-compose per VM. Compose topology designed to be upgraded to Kubernetes later without reshaping services.
+- **2026-10-13:** **Pluggable connector framework**: each integration module (ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi) is a separate container exposing a gRPC interface defined per-module. pm-core discovers and routes to connectors via an admin-managed registry.
 
 ## Logical architecture
 
@@ -65,11 +65,11 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  Connector modules (each a separate container, admin-registered)             │
 │                                                                              │
-│   ERPi(-sap, -oracle, -netsuite, -odoo…)    Schedulei(-msproject, -p6, -ss)  │
-│   IdPi(-oidc, -saml, -adfs…)                Doci(-sharepoint, -drive, -conf) │
-│   Sigi(-docusign, -adobesign…)              Metrici(-postgres, -oracle,      │
-│   Commsi(-smtp, -teams, -slack…)              -timescale, -influx, -pi, -opcua)│
-│   CMMSi(-maximo, -sap-pm, -fiix, -maintainx…) HSEi(-{mes,qms,oee/loss}…)     │
+│   ERPi_{SAP,ORA,NS,D365,ODOO…}            Schedulei_{MSP,P6,SS}              │
+│   IdPi_{OIDC,SAML}                        Doci_{SP,GD,CF}                    │
+│   Sigi_{DS,AS,OS}                         Metrici_{PG,ORA,MSSQL,TS,INFLUX,   │
+│   Commsi_{SMTP,TEAMS,SLACK}                        PI,OPCUA,HIST}            │
+│   CMMSi_{MAX,SAPPM,FIIX,MX,…}             HSEi_{<vendor>}                    │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -91,22 +91,22 @@
 | **Metrici** | Go (connector shell) + per-backend adapters (Go, or Python if backend SDK is Python-only) | Read-only metric harvest. | Horizontal; backend-specific throttles. |
 | **HSEi** | Go | Read-only plant operations signals: MES/WMS/QMS/HSE events, priced loss events, operator abnormality tags, skill certifications. | Horizontal. |
 | **CMMSi** | Go | CMMS read (failure history, aged work, asset mirror) and write (turnover-package delivery: equipment, spares, PM tasks, procedures). Idempotent writes. | One per configured CMMS backend. |
-| **Postgres** | — | OLTP source of truth. | Primary + hot standby; async WAL replica off-box for DR. |
-| **TimescaleDB (ours)** | — | Metric readings and loss events. | Single node with HA pair; tiered retention. |
-| **Redis** | — | Session store, rate-limit counters, warmed-guidance snapshot cache. | Sentinel pair. |
-| **MinIO** | — | Object storage for documents, exports, archived signed envelopes. | 4-node erasure-coded, or SAN-backed if the company has standard storage. |
+| **Postgres** | n/a | OLTP source of truth. | Primary + hot standby; async WAL replica off-box for DR. |
+| **TimescaleDB (ours)** | n/a | Metric readings and loss events. | Single node with HA pair; tiered retention. |
+| **Redis** | n/a | Session store, rate-limit counters, warmed-guidance snapshot cache. | Sentinel pair. |
+| **MinIO** | n/a | Object storage for documents, exports, archived signed envelopes. | 4-node erasure-coded, or SAN-backed if the company has standard storage. |
 | **MDEMG stack** | Go + Python | Advisory layer. Operates alongside pm-core on an internal Docker network, reachable only from pm-core. | Follows MDEMG's own deployment guide. |
 
 ### gRPC surface (internal)
 
 Internal gRPC is grouped into services with stable `.proto` contracts governed by UDTS:
 
-- `pm.core.v1.ProjectService` — project CRUD, member management, ACL grants.
-- `pm.core.v1.BudgetService`, `.ScheduleService`, `.ScopeService`, `.RiskService`, `.DocumentService`, `.MetricService`, `.WorkflowService`, `.AuditService`, `.GuidanceService` — per-section surfaces.
-- `pm.sidecar.v1.RenderService` — PDF/PPTX render; input is a template id + bound data payload, output is a stream of chunks + a final `storage_key`.
-- `pm.sidecar.v1.SpreadsheetService` — xlsx/csv import/export.
-- `pm.sidecar.v1.DerivedMetricService` — formula evaluation with versioned, sandboxed Python.
-- `pm.connector.v1.Erpi`, `.Idpi`, `.Sigi`, `.Schedulei`, `.Doci`, `.Commsi`, `.Metrici`, `.Hsei`, `.Cmmsi` — one service per connector type (see "Modular connector framework" below).
+- `pm.core.v1.ProjectService`: project CRUD, member management, ACL grants.
+- `pm.core.v1.BudgetService`, `.ScheduleService`, `.ScopeService`, `.RiskService`, `.DocumentService`, `.MetricService`, `.WorkflowService`, `.AuditService`, `.GuidanceService`: per-section surfaces.
+- `pm.sidecar.v1.RenderService`: PDF/PPTX render; input is a template id + bound data payload, output is a stream of chunks + a final `storage_key`.
+- `pm.sidecar.v1.SpreadsheetService`: xlsx/csv import/export.
+- `pm.sidecar.v1.DerivedMetricService`: formula evaluation with versioned, sandboxed Python.
+- `pm.connector.v1.Erpi`, `.Idpi`, `.Sigi`, `.Schedulei`, `.Doci`, `.Commsi`, `.Metrici`, `.Hsei`, `.Cmmsi`: one service per connector type (see "Modular connector framework" below).
 
 Every gRPC contract has a UDTS spec in `docs/api-spec/udts/` and the generated code is governed by UNTS hash integrity so renames are visible in CI.
 
@@ -124,11 +124,12 @@ All external-system connectors share a common shell + a per-connector-type inter
 ### Framework pieces
 
 - **Connector interface (gRPC):** every connector-type service declares its RPCs in its own `.proto`. Health, capability discovery, and lifecycle RPCs are standard; backend-specific RPCs are per-connector-type (ERPi has `FetchActuals`; Sigi has `CreateEnvelope`; etc.).
-- **Connector registry (Postgres):** `connector_instances` table — `instance_id`, `type` (`erpi|idpi|sigi|…`), `backend` (`sap|oracle|…`), `name` (admin-chosen), `endpoint` (gRPC target), `enabled`, `config_ref` (vault pointer), `health_status`, `last_health_at`. One ERPi-sap and one ERPi-oracle can coexist for different BUs.
+- **Module naming:** each backend implementation is a module named `<Type>i_<CODE>`, e.g. `ERPi_NS` (NetSuite), `CMMSi_MX` (MaintainX). Full convention and code registry in `§10`.
+- **Connector registry (Postgres):** `connector_instances` table with `instance_id`, `type` (`erpi|idpi|sigi|…`), `module` (e.g. `ERPi_SAP`, `ERPi_NS`), `name` (admin-chosen), `endpoint` (gRPC target), `enabled`, `config_ref` (vault pointer), `health_status`, `last_health_at`. An `ERPi_SAP` instance and an `ERPi_NS` instance can coexist for different business units.
 - **Routing (pm-core):** when pm-core needs an operation, it looks up registered connector instances for that `type`, filters by `enabled` + `health_status`, picks one (round-robin for stateless; routed by `project_id → connector_instance_id` mapping for stateful cases).
 - **Config:** per-instance config lives in the deployment vault; the `config_ref` on the registry row points to it. Admin UI edits the ref; it does not reveal secret values.
 - **Health check:** every connector exposes `HealthCheck() → Status`. pm-core polls on a configurable cadence (default 60s); unhealthy instances are routed away.
-- **UDTS contract:** every connector-type `.proto` has UDTS specs. Backend implementations (ERPi-sap vs ERPi-oracle) run the same contract tests, so swapping backends surfaces behavior gaps immediately.
+- **UDTS contract:** every connector-type `.proto` has UDTS specs. Modules of the same type (e.g. `ERPi_SAP` vs `ERPi_NS`) run the same contract tests, so swapping backends surfaces behavior gaps immediately.
 
 ### Per-connector-type contract (sketch)
 
@@ -177,14 +178,14 @@ service Metrici {
 }
 ```
 
-Other connector types follow the same shape: `HealthCheck`, `Capabilities`, and type-specific RPCs. Full per-type RPC lists — including CMMSi's symmetric read/write surface and HSEi's loss, abnormality-tag, and certification feeds — are in `§10`.
+Other connector types follow the same shape: `HealthCheck`, `Capabilities`, and type-specific RPCs. Full per-type RPC lists, including CMMSi's symmetric read/write surface and HSEi's loss, abnormality-tag, and certification feeds, are in `§10`.
 
 ### Admin surface for connectors
 
 Platform Admin UI exposes:
 - Register a new connector instance (pick type, pick backend, name it, point to its endpoint, link to a vault config).
 - Enable / disable / probe-health per instance.
-- Route rules (e.g., "all projects in portfolio X use ERPi-sap-primary; failover to ERPi-sap-dr").
+- Route rules (e.g., "all projects in portfolio X use the `ERPi_SAP` primary instance; fail over to the `ERPi_SAP` DR instance").
 - View recent calls, errors, latencies per instance.
 
 ## Deployment topology (on-prem VMs with containers)
@@ -236,11 +237,11 @@ Later migration to Kubernetes is a lift-and-shift, not a redesign.
 
 - **Logs:** structured JSON to stdout; shipped to Loki (or company log aggregator) with correlation ids (`trace_id`, `request_id`, `session_id`, `audit_id`, MDEMG `request_id`).
 - **Metrics:** Prometheus scrapes `/metrics` on every service. Standard RED metrics plus domain counters (approvals in-flight, metric harvest lag, Jiminy guidance rate, outbox depth, connector error rates, etc.).
-- **Traces:** OpenTelemetry; traces exported to Jaeger or Tempo. End-to-end tracing is a hard requirement — a slow approval flow should be diagnosable across pm-core → connector → MDEMG → sidecar.
+- **Traces:** OpenTelemetry; traces exported to Jaeger or Tempo. End-to-end tracing is a hard requirement: a slow approval flow should be diagnosable across pm-core → connector → MDEMG → sidecar.
 - **Dashboards:** operational dashboards for ops (service health, DB health, connector health, outbox depth, MDEMG health). Business dashboards built on top of pm-core are a different surface (`§09`).
 - **Alerts:** Alertmanager routes to Commsi (email + Teams/Slack) with on-call rotations configurable per class.
 
-## Data flow — illustrative sequences
+## Data flow: illustrative sequences
 
 ### DF-01: User approves a CAR (UC-02)
 ```
@@ -299,7 +300,7 @@ pm-core ──► browser (presigned URL)
 ## Open items for Section 05
 
 - Confirm Kubernetes migration timeline target (year two? year three?). Shapes how much compose-only tooling we invest in now.
-- Decide where PDF/PPTX templates are authored and stored — in the repo (Git-tracked)? In an admin UI (DB-stored)? Both?
+- Decide where PDF/PPTX templates are authored and stored: in the repo (Git-tracked)? In an admin UI (DB-stored)? Both?
 - Decide on message bus for the outbox: Postgres-backed outbox + worker (simple, our default), vs. NATS/Kafka for higher-throughput asynchronous flows. First instinct: Postgres outbox for MVP; revisit if we see >1M events/day.
 - Decide whether pm-sidecar runs the Python-based Metrici backends (keeping all Python together) or whether each Python-dependent backend ships as its own container (keeping the sidecar lean). First instinct: separate per-backend containers for isolation.
 - Confirm whether derived-metric formulas run in a sandboxed Python (via pm-sidecar) or in a safer expression language (CEL, Starlark). The research signal: user said "Python sidecar for scripting." Default to sandboxed Python with an allowlist.
