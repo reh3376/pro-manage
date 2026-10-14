@@ -4,6 +4,7 @@
 
 - **2026-10-13** — First-class metric families: **Financial, Schedule/Milestones, Scope/Risk/Issues, Safety/Quality/Compliance, Resource utilization, and TPM / Plant Operations** (post-startup).
 - **2026-10-13** — **TPM / Plant Operations** is the metric family that proves a capital project actually delivered. During Early Management Period and Benefits Realization, pro_manage pulls OEE, MTBF, MTTR, FPY/RFT, EPU, OLE, Startup Curve, Changeover Time, and Capacity Utilization via **Metrici** (plant historian / OPC UA) and **HSEi** (MES/QMS) and compares against the project's business-case promises.
+- **2026-10-14** — **Priced losses** (Six Big Losses + site loss tree) are a first-class metric family harvested from the operations TPM stack. Business cases promise loss recovery in dollars; Benefits Realization verifies recovery of those losses on those assets against a CAR-time baseline.
 - **2026-10-13** — **TIC** (Total Installed Cost) and **LCC** (Lifecycle Cost) are separate first-class concepts. TIC is tracked throughout the project; LCC is estimated during Design and compared to actuals during Benefits Realization.
 - **2026-10-13** — Harvest architecture: pluggable `Metrici` connectors (relational, time-series, generic Historian / OPC UA) with per-backend throttles and schema contracts governed by UATS/UNTS.
 - **2026-10-13** — Metric readings land in **pro_manage's own TimescaleDB** (not MDEMG's). ERP actuals come via `ERPi` and settle into both the financial domain tables (Postgres) and the metric time series (ours).
@@ -80,7 +81,18 @@ This family only becomes meaningful once an asset is in Early Management or beyo
 
 **Industry-specific metrics are template-driven.** For distilling: `distillery.yield_pg_per_bushel`, `distillery.proof_gallon_per_day`, `distillery.beer_system_water_use_gpd`. For bottling: `bottling.line_speed_bpm`, `bottling.changeover_time_sku_to_sku`. Templates ship with the pm-core release; new industries add their own via the admin `MetricDefinition` surface.
 
-**Business-case linking.** Every TPM metric used in a project's business case is captured as a `BenefitsRealization.business_case_promises[]` entry, with the promised value and the measurement cadence. During the realization window, actuals are measured and the delta is recorded.
+**Business-case linking.** Every TPM metric used in a project's business case is captured as a `BusinessCasePromise` (`§03`), with baseline, promised value, measurement basis, and dollar value. During the realization window, actuals are measured on the promised assets and the delta is recorded.
+
+### Losses (priced)
+
+Losses are the common currency between operations and capital. pro_manage does not originate loss data — it harvests `LossEvent`s from the plant's MES / OEE / loss platforms via HSEi (and Metrici where losses are derived from historian signals), categorized by the **Six Big Losses** and the site loss tree (`§03 LossCategory`), and priced in dollars per the category's cost basis.
+
+- `loss.priced_annualized` — per asset and loss category, trailing 12 months, dollars. The baseline for any `loss_recovery` business-case promise.
+- `loss.by_six_big` — breakdowns, setup/changeover, minor stops, reduced speed, startup rejects, production rejects.
+- `loss.recoverable_candidates` — top losses by dollar value on assets with no open project addressing them. Feeds portfolio ranking (`§09`) and FEL1 idea generation.
+- `loss.recovered` — for a closed project, priced loss during the Benefits Realization window vs the CAR-time baseline on the same assets and categories. This is **verified recovery**: the promise and the measurement use the same assets, categories, and pricing basis, fixed at CAR time.
+
+Pricing basis (cost per downtime hour, per scrapped unit, etc.) is owned by Finance and versioned; a pricing change does not retroactively alter a committed promise's basis.
 
 Admin can add `MetricDefinition`s per-project or per-portfolio for domain-specific KPIs.
 

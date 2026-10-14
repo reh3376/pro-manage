@@ -5,6 +5,7 @@
 - **2026-10-13** — Approvals are a core feature. pro_manage owns the workflow engine; MDEMG provides advisory + classify at the gates (`§06`).
 - **2026-10-13** — The primary approval instance in a TPM shop is the **CAR (Capital Authorization Request)**. "CapEx" is retained as the generic framing.
 - **2026-10-13** — Workflow kinds in year one: **CAR, Baseline change, Design review sign-off, CQV sign-off, Milestone sign-off, Change request, Shutdown & tie-in plan, Early Management exit, Closeout, Benefits Realization review**, plus a configurable **Custom** kind for policies pro_manage doesn't ship with.
+- **2026-10-14** — CAR submission requires every business-case promise to carry a CAR-time baseline and measurement basis. Early Management exit requires operator and maintenance certification on the new asset. A recurring **Project health review** (not a gate) is added.
 - **2026-10-13** — Pre-authorization workflow enforces **FEL stage** progression (FEL1 → FEL2 → FEL3) and **AACE Estimate Class** gates: Class 5 at concept, Class 3 required at CAR submission, Class 1 required at execution kickoff. Violations block submit (Tier A fail-closed).
 - **2026-10-13** — Formal e-signature via `Sigi` (DocuSign at launch). Workflow kinds for which Sigi is mandatory are configurable per policy; the rest rely on the authenticated AuditEvent as the sign-off of record.
 - **2026-10-13** — AuditEvents are append-only with chained signed hashes (tamper evidence). Retention aligned with the longest applicable regime (`§11`); baseline is 7 years for financial-impacting events.
@@ -59,7 +60,7 @@ An `ApprovalWorkflow` has an ordered list of `ApprovalStage` rows:
 
 ### Example — CAR approval chain (year-one defaults, admin-tunable)
 
-Pre-conditions for CAR submission: `project.fel_stage == fel3`, current `BudgetBaseline.aace_class ∈ {3, 2, 1}`, approved Basis of Design, at least one Design Review of `stage=detailed` closed with no `high`-severity findings open.
+Pre-conditions for CAR submission: `project.fel_stage == fel3`, current `BudgetBaseline.aace_class ∈ {3, 2, 1}`, approved Basis of Design, at least one Design Review of `stage=detailed` closed with no `high`-severity findings open, and every `BusinessCasePromise` in `committed` state with a captured baseline and measurement basis (`§03`). A CAR whose benefits can't be measured later can't be submitted now.
 
 | Order | Role required | Pool | SLA |
 |---|---|---|---|
@@ -108,7 +109,7 @@ Project cannot move from `Monitor` to `Close` without this.
 
 | Order | Role required | SLA | Exit criteria |
 |---|---|---|---|
-| 1 | `project_owner` requests exit | — | Startup curve sustained at ≥X% nameplate for ≥Y days; CQV punchlist closed; TurnoverPackage.status == `approved` |
+| 1 | `project_owner` requests exit | — | Startup curve sustained at ≥X% nameplate for ≥Y days; CQV punchlist closed; TurnoverPackage.status == `approved`; **operators and maintenance technicians assigned to the asset certified** on its standard work, CIL routines, and changeovers (status read from the plant skills matrix / connected-worker platform via HSEi where available, else recorded in pro_manage) |
 | 2 | `site_operations_lead` co-sign | 48h | — |
 | 3 | `site_maintenance_lead` co-sign | 48h | — |
 | 4 | `compliance_officer` co-sign for regulated contexts | 72h | — |
@@ -124,6 +125,16 @@ Fired at `BenefitsRealization.window_closes_at`.
 | 3 | `portfolio_executive` approves closure | 14d |
 
 Outcome drives the project's final `Archived` transition and feeds a `decision` observation to MDEMG governance space with scope tags for similar future projects.
+
+### Example — Project health review (recurring, not a gate)
+
+The capital-side counterpart to an operations huddle: short, regular, ends with owned actions rather than a grade. Records a `ProjectHealthReview` (`§03`).
+
+- **Cadence:** monthly by default during `Plan` and `Execute`; biweekly for projects ≥ $25M or flagged `red`; on demand by a Portfolio Executive.
+- **Facilitator:** someone other than the project owner (peer PM, portfolio lead, or CI lead).
+- **Agenda (pre-filled from live data):** scope stability, estimate maturity vs stage (AACE class vs FEL/lifecycle stage), critical-path float, top risks and owners, change-order trend, contingency burn vs % complete, Operations/Maintenance readiness for turnover, and one open prompt: *"What are you worried about that isn't on the register?"*
+- **Output:** actions with owners and dates (tracked like issues), an overall green/amber/red, and an optional `/jiminy/feedback`-style observation to the project space so recurring concerns become visible guidance.
+- **No approval chain** — it is a review, not a gate. A `red` result notifies the Portfolio Executive via Commsi.
 
 ### Example — Baseline change
 

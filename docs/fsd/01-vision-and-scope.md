@@ -14,6 +14,9 @@
 - **2026-10-13** — **Target vertical: TPM-driven process industry** (distilling, bottling, food & beverage, chemicals, similar manufacturing). The FSD is written in the vocabulary of that vertical: **CAR, FEL, EEM, Vertical Startup, Benefits Realization, MP information, AACE Estimate Class, TIC vs LCC**. pro_manage is not pretending to be a generic PM tool.
 - **2026-10-13** — The project lifecycle maps **one-to-one** onto the six EEM stages (Concept/Planning → Design → Fabrication/Build → Installation → Commissioning → Early Management Period), with explicit gates and exit criteria at each. See §03.
 - **2026-10-13** — The organizing success question for every project, from the operator's seat: *"Did the asset start up clean, and did operations and maintenance inherit something they could run?"*
+- **2026-10-14** — **Pillar scope.** pro_manage is the system for the **EEM pillar and capital-scale Focused Improvement** projects. It **integrates with, and does not replace,** the operations TPM stack (CMMS, connected-worker, OEE/loss platforms such as Cryotos, Fabrico, Redzone, L2L, Augmentir, MaintainX, Fiix). It reads losses, abnormality tags, and failure history in; it hands assets and turnover packages out. Informed by the owner's TPM software market review (Oct 2026), which found no PM application structured around TPM.
+- **2026-10-14** — **Losses are the common currency.** Business cases state their promises as recoverable losses (Six Big Losses, priced in dollars); Benefits Realization verifies recovery of *those* losses against production data; the portfolio can be ranked by recoverable loss.
+- **2026-10-14** — **Asset is a first-class entity**, mirrored from the plant CMMS. MP information, startup curve, OEE, turnover, and Benefits Realization all key off the same physical asset and asset class.
 
 ## Mission
 
@@ -53,6 +56,7 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 - **Not a schedule-tool replacement.** Primavera / MS Project / Smartsheet schedules are first-class imports but pro_manage does not aspire to be a critical-path planner.
 - **Not an HR system.** Resource utilization is tracked at a project-allocation level; names, titles, and reporting lines come from the identity provider.
 - **Not a document management system.** Documents are stored, versioned, and permission-filtered within pro_manage, but SharePoint/Drive/Confluence remain the canonical home for large collaborative docs when they already live there — pro_manage links and mirrors permissions.
+- **Not an operations TPM platform.** Autonomous Maintenance (CIL/CILT) routines, abnormality tagging, Andon, shift huddles, daily management, and live OEE boards belong in CMMS / connected-worker / MES tools. pro_manage reads their losses, tags, and history and hands them turnover packages; it does not rebuild them.
 - **Not a general-purpose "projects for any purpose" tool.** The domain model is tuned to capital projects. Software sprint tracking, marketing campaigns, and operational tickets belong in tools built for them (Jira, Asana, ServiceNow).
 
 ## In-scope capabilities (MVP + first year)

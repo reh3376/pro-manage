@@ -33,7 +33,7 @@ Terms, acronyms, and project-specific names.
 | **Doci** | Document-store connector with permission mirroring. SharePoint, Drive, Confluence. |
 | **Commsi** | Notification / communication connector. SMTP, Teams, Slack. |
 | **Metrici** | Metric harvest connector. Relational, time-series, historian, OPC UA. |
-| **HSEi** | MES/WMS/QMS / HSE system connector for safety, quality, compliance signals. |
+| **HSEi** | Plant operations signals connector: MES/WMS/QMS/HSE plus operations TPM / connected-worker platforms (priced losses, abnormality tags, skill certifications). |
 
 ## MDEMG terms
 
@@ -115,6 +115,15 @@ Terms, acronyms, and project-specific names.
 | **Standard work** | Documented, agreed-on way to perform a task repeatably. |
 | **5S** | Workplace organization method: Sort, Set-in-order, Shine, Standardize, Sustain. |
 | **SMED** | Single-Minute Exchange of Die. Reducing changeover time via distinction between internal and external setup elements. |
+| **Six Big Losses** | The standard OEE loss taxonomy: breakdowns and setup/changeover (availability), minor stops and reduced speed (performance), startup rejects and production rejects (quality). pro_manage's default `LossCategory` set. |
+| **Priced loss** | A loss converted to dollars using a Finance-owned cost basis (per downtime hour, per scrapped unit). The common currency between operations and capital in pro_manage. |
+| **Verified recovery** | Confirming that a project recovered the specific losses its business case promised, on the specific assets, against a CAR-time baseline. |
+| **CIL / CILT / CILR** | Clean-Inspect-Lubricate (–Tighten / –Repair). Operator-performed autonomous-maintenance routines. Live in operations TPM tools; pro_manage reads their abnormality tags. |
+| **Abnormality tag** | An operator-raised flag on equipment (leak, looseness, contamination, hard-to-clean point). Patterns of tags across an asset class are an MP-information source. |
+| **Centerline** | The documented optimal setting for a process variable on a line; part of standard work and turnover. |
+| **Skills matrix** | Record of which people are certified on which equipment and tasks. pro_manage reads it for the Early Management exit gate. |
+| **Connected worker platform** | Frontline software for guided work, digital checklists, training, and skills (e.g. Augmentir, Poka). |
+| **Project health review** | Recurring structured review of an in-flight capital project; ends in owned actions, not a grade. |
 
 ## Plant Operations KPIs
 
