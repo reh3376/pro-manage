@@ -6,6 +6,7 @@
 
 - **2026-10-14:** The owner's thesis is adopted as a core design concept of pro_manage: **treat the capital project itself as a piece of equipment, and manage it with TPM.** Its "losses" are delays, rework, interface clashes, and waiting on information and approvals, and they are measured, priced, and eliminated the way a plant eliminates equipment losses.
 - **2026-10-14:** The concept is developed in this section and referenced from `§01`, `§03`, `§07`, `§08`, and `§09`. Novelty is not claimed publicly until a prior-art search is complete (see below).
+- **2026-10-14:** A first prior-art search is complete (Related work, below). Finding: every element has prior art on its own, but no source found combines them. The public position is "builds on" named earlier work and claims only the combination, worded as "no prior source found", never "first" or "novel". The two strongest critiques (Kalsaas on throughput, Bølviken et al. on monetizing waste) are adopted as open design questions.
 
 ## The thesis
 
@@ -80,25 +81,65 @@ The FSD's working category set (`§03 ProjectLossCategory`) uses these; the mapp
 
 ## Open questions to develop
 
-1. **A single "project OEE" number?** Multiplying availability × productivity × first-time-right gives one comparable figure, which executives will want. It is also easy to game (redefine "planned time", reclassify rework). Options: publish components only; publish a composite only at portfolio level; or publish it with its definitions frozen per project at CAR time.
+1. **A single "project OEE" number?** Multiplying availability × productivity × first-time-right gives one comparable figure, which executives will want. It is also easy to game (redefine "planned time", reclassify rework). Options: publish components only; publish a composite only at portfolio level; or publish it with its definitions frozen per project at CAR time. Whatever is chosen, the three factors and the loss Pareto are always shown next to any composite, and the composite is never used to rank contractors.
 2. **Unit of measurement.** Per work package, per work front, per contractor, per discipline? Probably packages roll up to contracts and projects, but this needs testing on real data.
-3. **Pricing delay.** Cost of delay is easy for capacity projects (lost margin per day) and hard for compliance or reliability projects. A default method per project type is needed.
+3. **Pricing delay.** Cost of delay is easy for capacity projects (lost margin per day) and hard for compliance or reliability projects. A default method per project type is needed. Working rule: for an owner, delay is priced as the deferred contribution margin of the asset under construction (Reinertsen's cost of delay), and only for losses that actually reached the critical path; a local delay absorbed by float or a feeding buffer is recorded in hours but priced near zero.
 4. **Benchmarks across projects.** With the same categories everywhere, MDEMG and the portfolio data could show "projects of this type and contracting model typically lose X% to waiting on approvals." How many closed projects before that is meaningful?
 5. **Leading vs lagging.** Losses are lagging. Readiness, open-RFI age, and constraint counts are leading. Which leading indicators actually predict next month's losses?
 6. **Contractor incentives.** If losses are attributed per contract, does that improve behavior or produce argument over attribution? EPCM contracts may need to reference the categories.
-7. **Validation.** Before claiming results, run the loss accounting retrospectively on two or three completed projects (from their RFI logs, NCRs, and schedules) and check whether the categories capture where the time actually went.
+7. **Validation.** Before claiming results, run the loss accounting retrospectively on two or three completed projects (from their RFI logs, NCRs, and schedules) and check whether the categories capture where the time actually went. A worked example from one real project is also the strongest answer to the critiques in items 8 and 9.
+8. **Defining the performance term (Kalsaas's critique).** The researcher who came closest to a project OEE concluded that construction workflow should be measured by work intensity, not throughput, because construction output has no natural ideal cycle time. The productivity factor therefore needs an explicit definition, for example earned hours against available hours on ready work fronts, and an argument for why it avoids that problem. The engineering phase of EPCM, where no OEE precedent exists at all, is where the index is most likely to fail and most worth piloting carefully.
+9. **Dollars as a ranking layer, not the record (Bølviken, Rooke and Koskela's critique).** Their waste taxonomy deliberately avoids money because monetizing hides production detail. Design answer: the primary record is physical (hours, days, events, by category and package); dollars are a prioritization layer computed from it with an explicit, versioned pricing rule (item 3). Dashboards always allow drilling from a dollar figure back to the events behind it.
+10. **Commercial and legal exposure.** Construction's richest loss-factor lists (MCAA factors, measured-mile methods) were built to price contractor damages in disputes. An owner that prices losses caused by its own approval delays is, in effect, documenting a contractor's delay claim. Before go-live, agree with legal and commercial on record retention, who sees owner-caused loss figures, and how they relate to contract notice and claims clauses.
 
-## Prior art to check before claiming novelty
+## Related work and prior art
 
-These overlap parts of the idea. A proper search should confirm what is genuinely new in the combination.
+Project TPM builds directly on existing work: Nakajima's TPM and the Six Big Losses; JIPM's Office TPM and Early Equipment Management; Koskela's flow view of construction and his "making-do" waste; Ballard's Last Planner System; the transformation-flow-value waste taxonomy (Bølviken, Rooke and Koskela); CII Advanced Work Packaging; and Kalsaas's adaptation of OEE loss groups to construction workflow. What pro_manage proposes is the **combination**. A first, limited literature, product, and patent search (October 2026) found no prior source that presents it; the search was not exhaustive, and references to earlier work are welcome.
 
-- **Lean Construction / Last Planner System** (Ballard, Lean Construction Institute): percent plan complete, variance reasons, and make-ready constraint analysis, close to package readiness and plan compliance.
-- **Koskela's transformation-flow-value view of production in construction** (1992 onward): waiting and rework as flow losses.
-- **Construction Industry Institute: Advanced Work Packaging** (RT-272, RT-319): readiness-driven package release.
-- **OEE applied to construction equipment or to knowledge work** (assorted academic papers): may apply OEE math to machines on site or to engineering teams, rather than to the project as a whole.
-- **Earned Value Management and Earned Schedule**: measure *how much* is off, not loss categories. That is the gap this concept fills.
+### Element-by-element comparison
 
-What appears distinctive, pending the search: (a) treating the *whole project* as the equipment within the TPM pillar structure, (b) an OEE-style loss taxonomy for project delivery, (c) pricing project losses and asset losses in **one currency** in one system, and (d) feeding project-loss lessons forward the way EEM feeds MP information forward.
+Closeness: **High** = an existing source does substantially the same thing; **Moderate** = the same idea at a different level or without a key feature; **Low** = only adjacent ideas; **None found** = nothing comparable surfaced.
+
+| Element | Closest prior art | How close | What differs |
+|---|---|---|---|
+| OEE-style project index (work-front availability × productivity × first-time-right) | Kalsaas, IGLC 2012 and 2013 (OEE downtime, speed, and defect loss groups applied to site workflow); AWP constraint-free work packages; Overall Labor Effectiveness | Moderate | Kalsaas worked at crew level from worker self-reports and never multiplied the factors into one index. AWP gates availability but computes no ratio. OLE is a manufacturing workforce metric. No precedent found for OEE in engineering or knowledge work. |
+| "Six big project losses" plus waiting on approval | Last Planner reasons for non-completion (Ballard 2000); Koskela's making-do; TFV waste taxonomy; Morgan and Liker's product-development wastes; JIPM "management loss" | High on content, low on form | The categories are well documented, and Last Planner already puts them on a Pareto, counted in occurrences rather than dollars. None of these taxonomies descends from the Six Big Losses, and none treats waiting on approval as a top-level project loss. |
+| Eight TPM pillars applied to EPCM delivery | Scattered lean analogues (root-cause loops, make-ready, coaching); the EEM pillar itself | None found | "TPM in construction" literature is about maintaining construction machines, not the project. |
+| Project and plant losses in one dollar currency on one Pareto | IPA's front-end loading and early-operability studies; CII PDRI correlations; rework cost studies (CII Field Rework Index, Hwang et al.); Reinertsen's cost of delay | Low | IPA and CII link project practice to operating results through portfolio statistics, reported as separate indices. Rework is priced on its own. No owner system found ranks individual project and plant loss events in one ledger. |
+| Project-loss lessons fed forward like MP information | EEM / MP information (plant losses into the next design); CII constructability programs and lessons-learned research (RT-230) | Moderate | EEM carries *plant* losses into projects; Project TPM carries the project's *own* delivery losses forward. Existing lessons-learned programs are mostly free text at close-out, not quantified, priced loss categories. |
+| Automatic capture from normal project records | Procore RFI analytics; Autodesk Construction IQ; Touchplan / Outbuild variance and constraint logs | High for capture, low for loss accounting | The data is already captured routinely; converting it into lost hours and dollars by category is what is missing. |
+| One dominant loss attacked per health review | TPM focused improvement; Last Planner Pareto with 5 Whys; Critical Chain buffer-cause ranking | Moderate | Last Planner works weekly at site level on counted reasons; Critical Chain ranks causes in days within one project. Neither selects a dollar-dominant loss at an owner-level review. |
+
+The pattern: the closer an element sits to day-to-day site production control, the more prior art it has; the closer it sits to owner-level economics and TPM's management system, the less. Project TPM is therefore best positioned as an **owner-level economic layer over Last Planner and AWP**, consuming their records rather than replacing them.
+
+### Confidence
+
+- **High** that the loss categories, automatic capture of RFI and constraint data, and lessons-learned feed-forward are not new in themselves.
+- **Moderate** that no published English-language source presents a multiplied project OEE, a "six big project losses" grouping, or an eight-pillar project framework.
+- **Low to moderate** that no one has combined project and plant losses in one dollar ledger, because benchmarking databases (IPA) and owner-internal systems are not public.
+- **Low** for JIPM's own texts, Japanese-language TPM literature, non-English patents, and paywalled journals, which the search did not reach.
+
+Patentability is a separate question from originality: applying a public equipment-loss structure to a project could be argued as obvious, so the concept is positioned as a management contribution, not an invention.
+
+### Remaining checks
+
+1. Google Scholar and Scopus queries combining "overall equipment effectiveness", "total productive maintenance", and "six big losses" with "construction project", "Last Planner", "capital project", "EPC", and "EPCM".
+2. Forward citations of Kalsaas 2012 and 2013 (anyone who built a project OEE most likely cited them).
+3. Two unread papers that could already price or index project losses: a 2021 *Production Planning & Control* paper on waste in engineer-to-order projects, and Lagos et al. (IGLC 2020) on the impact of Last Planner reasons for non-compliance.
+4. JIPM primary texts and a Japanese-language search.
+5. A patent search by classification (CPC G06Q 10/06, G06Q 50/08), including non-English patents.
+
+### Key sources
+
+- Ballard, G. (2000). *The Last Planner System of Production Control.* PhD thesis, University of Birmingham.
+- Ballard, G. and Tommelein, I. (2016). *Current Process Benchmark for the Last Planner System.* P2SL, UC Berkeley.
+- Bølviken, T., Rooke, J., and Koskela, L. (2014). "The wastes of production in construction: a TFV based taxonomy." IGLC-22.
+- Construction Industry Institute. Advanced Work Packaging (RT-272, RT-319); *Lessons Learned About Lessons Learned* (RT-230).
+- Kalsaas, B. T. (2012, 2013). Papers on measuring workflow in construction using OEE loss groups. IGLC-20 and IGLC-21 (iglc.net).
+- Koskela, L. (1992). *Application of the New Production Philosophy to Construction.* CIFE Technical Report 72, Stanford.
+- Koskela, L. (2004). "Making-do: the eighth category of waste." IGLC-12.
+- Nakajima, S. (1988). *Introduction to TPM.* Productivity Press.
+- Reinertsen, D. (2009). *The Principles of Product Development Flow.* Celeritas.
 
 ## Related sections
 
