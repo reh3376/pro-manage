@@ -5,11 +5,11 @@
 - **2026-10-13** — Design for site-wide scale: 100–500 users, 200+ concurrent active projects.
 - **2026-10-13** — Capital project budget range: $25K to $250M per project.
 - **2026-10-13** — Access model: full ACL per section, per document, per field.
-- **2026-10-13** — First-class metric families: Financial, Schedule/Milestones, Scope/Risk/Issues, Safety/Quality/Compliance + Resource utilization. Plus read-only connectors to relational and time-series databases, and spreadsheet import/export.
+- **2026-10-13** — First-class metric families: Financial, Schedule/Milestones, Scope/Risk/Issues, Safety/Quality/Compliance + Resource utilization; extended 2026-10-13/14 with TPM / Plant Operations (OEE, MTBF, startup curve, …) and priced losses (`§07`). Plus read-only connectors to relational and time-series databases, and spreadsheet import/export.
 - **2026-10-13** — MDEMG J17 + Jiminy integrated at runtime as advisory + memory layer, with pro_manage owning identity, ACL, workflows, and audit.
 - **2026-10-13** — Approvals are a core feature.
 - **2026-10-13** — Progress presentations include live dashboards, scheduled exports (PDF/PPTX), and on-demand deck generation.
-- **2026-10-13** — **All external-system connectors are modular.** No ERP, IdP, e-signature, schedule tool, document store, communication platform, or MES/WMS/QMS vendor is hard-wired into the core. Each is a pluggable module with a declared contract (gRPC interface + UATS-governed REST surface) that an administrator can configure, enable, or swap without a core release. First-class modules in year one: ERPi (ERP), IdPi (SSO), Sigi (e-signature), Schedulei (schedule tools), Doci (document stores), Commsi (notifications), Metrici (relational + time-series connectors), HSEi (MES/WMS/QMS).
+- **2026-10-13** — **All external-system connectors are modular.** No ERP, IdP, e-signature, schedule tool, document store, communication platform, or MES/WMS/QMS vendor is hard-wired into the core. Each is a pluggable module with a declared contract (gRPC interface + UATS-governed REST surface) that an administrator can configure, enable, or swap without a core release. First-class modules in year one: ERPi (ERP), IdPi (SSO), Sigi (e-signature), Schedulei (schedule tools), Doci (document stores), Commsi (notifications), Metrici (relational + time-series connectors), HSEi (MES/WMS/QMS and operations TPM platforms), CMMSi (CMMS read/write; added 2026-10-13).
 - **2026-10-13** — Compliance regime: ISO (specific standards TBD). Baseline is ISO-aligned practices; SOX-grade audit log is a target quality bar even without an explicit SOX obligation.
 - **2026-10-13** — **Target vertical: TPM-driven process industry** (distilling, bottling, food & beverage, chemicals, similar manufacturing). The FSD is written in the vocabulary of that vertical: **CAR, FEL, EEM, Vertical Startup, Benefits Realization, MP information, AACE Estimate Class, TIC vs LCC**. pro_manage is not pretending to be a generic PM tool.
 - **2026-10-13** — The project lifecycle maps **one-to-one** onto the six EEM stages (Concept/Planning → Design → Fabrication/Build → Installation → Commissioning → Early Management Period), with explicit gates and exit criteria at each. See §03.
@@ -46,8 +46,8 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 
 - A **project management system** with full lifecycle support from initiation to closeout.
 - A **data curation platform** that lets the company harvest metrics from existing systems of record without re-entering data, and present them in context next to the decisions they shaped.
-- A **metric tracking application** with first-class support for financial, schedule, scope/risk/issue, safety/quality/compliance, and resource utilization measures.
-- An **approval and audit backbone** with formal state machines for CapEx, budget changes, milestone sign-offs, and closeouts, backed by a SOX-grade audit log.
+- A **metric tracking application** with first-class support for financial, schedule, scope/risk/issue, safety/quality/compliance, resource utilization, TPM / plant-operations measures (OEE, MTBF, startup curve), and priced losses.
+- An **approval and audit backbone** with formal state machines for the CAR, baseline changes, design reviews, CQV, shutdown & tie-in plans, Early Management exit, closeout, and Benefits Realization, backed by a SOX-grade audit log.
 - An **oversight-governed system** where advisory guidance from MDEMG surfaces at every decision gate — not as a replacement for pro_manage's authoritative rules, but as institutional memory and comprehension-tracked recommendation at the point of action.
 
 ## What pro_manage is not
@@ -96,12 +96,16 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
     - **Commsi** — notification delivery. Email (SMTP), Microsoft Teams, Slack.
     - **Metrici** — read-only metric harvest connectors. Relational, time-series, OSIsoft PI, OPC UA, generic Historian.
     - **HSEi** — MES/WMS/QMS connectors for safety, quality, and compliance signals.
-    - **CMMSi** — CMMS read/write for MP-information harvest and turnover-package delivery. Maximo, SAP PM, Fiix, Infor EAM, Mapcon.
+    - **CMMSi** — CMMS read/write for MP-information harvest and turnover-package delivery. Maximo, SAP PM, Fiix, Infor EAM, Mapcon, MaintainX, Cryotos.
+28. **Asset registry** (Asset / AssetClass), mirrored from the CMMS once in service; MP information, startup curve, turnover, and Benefits Realization key off the asset.
+29. **Priced losses** (Six Big Losses + site loss tree) harvested from the operations TPM stack; business cases promise loss recovery against a CAR-time baseline; Benefits Realization verifies recovery; portfolio ranked by recoverable loss.
+30. **Project health reviews** — recurring, pre-filled from live data, ending in owned actions.
+31. **Phone-first field flows** (Phase 2) — CQV/SAT walkdowns, punchlist capture, turnover inspections, with photo/QR proof and offline sync.
 
 ## Explicitly out of scope (first year)
 
 - Multi-tenant hosting (single-company deployment).
-- Mobile native apps (responsive web is in-scope).
+- Native mobile apps. Field work is served by phone-first web views (Phase 2, `§09`); the rest of the app is responsive web.
 - Public API for third-party developers (internal gRPC + REST are internal only in year one).
 - In-app GL / invoice posting (that remains in the ERP).
 - Automated contract redlining or e-signature (DocuSign or similar is called out as an integration seam, not an internal feature).
@@ -119,7 +123,7 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 | **MP information flow** | ≥90% of closeouts generate at least one MP-information observation into the governance space; measurable rate of Design-stage guidance referencing MP observations from prior projects. |
 | **Forecast accuracy** | Baseline-to-actual variance surfaced within 24 hours of actual landing in the ERP (connector lag budget). |
 | **Audit** | Zero audit findings tied to missing or unreconstructable approval chains in year-one SOX review of in-scope projects. |
-| **Governance adoption** | ≥90% of governed submits (CapEx > threshold, baseline change > variance threshold) show evidence of Jiminy guidance consulted (via `guidance_id` referenced in the audit record). |
+| **Governance adoption** | ≥90% of governed submits (CAR > threshold, baseline change > variance threshold) show evidence of Jiminy guidance consulted (via `guidance_id` referenced in the audit record). |
 | **User satisfaction** | Net Promoter Score ≥ 40 among project owners after 6 months of production use. |
 | **Operational** | p99 of core page loads ≤ 2.0s; MDEMG-dependent gates (classify) resolved in ≤ 1.5s; application monthly availability ≥ 99.5%. |
 
@@ -132,7 +136,7 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 
 ## Open items for Section 01
 
-- Confirm the first ERP backend to implement for ERPi (owner has intel coming 2026-10-14). Second-priority backends to list under "Phase 2" in the roadmap.
+- Confirm the first ERP backend to implement for ERPi (pending owner confirmation). Second-priority backends to list under "Phase 2" in the roadmap.
 - Confirm specific schedule tools in use (which Schedulei backends to prioritize).
 - Confirm MES/WMS/QMS vendors in play (which HSEi backends to prioritize).
 - Confirm which ISO standards are binding (ISO 9001, ISO 55000, ISO 27001, industry-specific). Shapes retention, access-review cadence, and change-control detail in §08 and §11.

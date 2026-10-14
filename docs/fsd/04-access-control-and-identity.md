@@ -78,8 +78,27 @@ Platform roles are global, assigned via IdPi claims-mapping, and grant abilities
 | `platform_admin` | Operate the platform. Configure modules. Manage users. **Does not** have blanket read on project content. |
 | `governance_author` | Author Jiminy constraints via the Governance admin UI. Scope: `space=org.<id>.governance`. No project-content access. |
 | `compliance_officer` | Read access to safety/quality/compliance sections of projects under their jurisdiction (configured per-officer). May be composed with `governance_author`. |
-| `portfolio_executive` | Read across all projects in configured portfolios. May be configured as `finance_approver_eligible` for CapEx chains. |
+| `portfolio_executive` | Read across all projects in configured portfolios. May be configured as `finance_approver_eligible` for CAR chains. |
 | `finance_approver_eligible` | Eligibility, not grant. Approval workflows (`§08`) can route to this pool and resolve the specific approver by amount threshold + delegation chain. |
+
+### Workflow roles (stage assignment)
+
+Approval stages in `§08` name a **workflow role**, not a person. pm-core resolves each role to an eligibility pool when the stage opens. Workflow roles grant the right to *decide a stage* plus the read access that stage needs; they are not standing access to project content.
+
+| Workflow role | Pool resolved from | Typical stages |
+|---|---|---|
+| `project_owner` | The project's Owner | First stage of most workflows |
+| `finance_approver` | `finance_approver_eligible` ∩ business unit | CAR, baseline change, Benefits Realization |
+| `vp_finance`, `cfo`, `ceo` | Named holders + one delegate each (admin-configured) | CAR above amount thresholds |
+| `site_operations_lead`, `site_maintenance_lead` | Per-site assignment (admin-configured; may map from IdPi groups) | Shutdown & tie-in plan, Early Management exit |
+| `operator_representative`, `maintenance_representative` | Named per project by the Owner from site pools | Design review sign-off, CQV co-sign |
+| `commissioning_engineer` | Named per project | CQV records and sign-off |
+| `qa_lead` | Per-site, regulated contexts only | Final CQV sign-off |
+| `compliance_officer` | Platform role, by jurisdiction | Early Management exit (regulated), closeout |
+| `portfolio_executive` | Platform role, by portfolio | Benefits Realization closure |
+| `facilitator` | Any user other than the Owner, named per review | Design review, project health review |
+
+Site representatives and the commissioning engineer get `read + comment` on the project sections their stages touch (scope, schedule, documents, design reviews, CQV, turnover) for the life of their assignment. Budget sections stay deny-by-default for them.
 
 ### Base roles (project-scoped)
 
@@ -198,7 +217,7 @@ Access checks happen at four layers, each a defense:
   - S3 object-storage credentials
   - `Sigi` provider API keys
   - `Commsi` SMTP/Teams/Slack webhook credentials
-  - `ERPi`, `Schedulei`, `Doci`, `Metrici`, `HSEi` backend credentials (per-backend, per-tenant)
+  - `ERPi`, `Schedulei`, `Doci`, `Metrici`, `HSEi`, `CMMSi` backend credentials (per-backend, per-tenant). CMMSi credentials carry **write** scope for turnover delivery and get the same rotation discipline as the MDEMG key.
 - Rotation: automated for secrets with programmatic rotation (DB passwords, pro_manage ↔ MDEMG shared key via overlap-rotate). Documented quarterly review for the rest.
 
 ## Open items for Section 04

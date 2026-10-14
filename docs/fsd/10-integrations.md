@@ -25,7 +25,7 @@ Pull financial actuals, commitments, invoices, chart of accounts, and vendors fr
 - `FetchVendors(FetchVendorsRequest) → stream Vendor`
 
 ### Year-one backends
-To be prioritized once the owner confirms the first production ERP (expected 2026-10-14). Candidate backends:
+To be prioritized once the owner confirms the first production ERP (pending). Candidate backends:
 - `erpi-sap` (SAP ECC via OData/BAPI; S/4HANA via CDS views)
 - `erpi-oracle` (EBS tables or Fusion REST APIs)
 - `erpi-netsuite` (SuiteTalk REST)
@@ -47,7 +47,7 @@ To be prioritized once the owner confirms the first production ERP (expected 202
 - UNTS hashes the field-mapping YAML; any schema drift upstream is caught in CI.
 
 ### Open items
-- Confirm first production backend (owner intel 2026-10-14).
+- Confirm first production backend (pending owner confirmation).
 - Confirm whether multiple ERP instances will run concurrently (e.g., SAP for industrial division, NetSuite for services). Design supports this.
 
 ---
@@ -92,7 +92,7 @@ Front SSO for pro_manage. OIDC + SAML abstractions. Resolve IdP claims into pro_
 ## Sigi — E-signature Integration
 
 ### Purpose
-Formal e-signature on CapEx approvals, change requests, closeout, and other configured workflow kinds. Envelope lifecycle, status polling, webhook ingestion, signed-artifact capture.
+Formal e-signature on CAR approvals, change requests, closeout, and other configured workflow kinds. Envelope lifecycle, status polling, webhook ingestion, signed-artifact capture.
 
 ### gRPC interface (summary)
 - `HealthCheck`, `Capabilities`
@@ -121,7 +121,7 @@ Formal e-signature on CapEx approvals, change requests, closeout, and other conf
 
 ### Open items
 - Confirm DocuSign tenant model (one tenant for the whole company, or per-BU).
-- Decide templates mapping for CapEx vs change requests vs closeout.
+- Decide templates mapping for CARs vs change requests vs closeout.
 
 ---
 

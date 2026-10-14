@@ -1,6 +1,6 @@
 # pro_manage — Functional Specification Document (FSD)
 
-**Status:** Working draft under active construction · **Last updated:** 2026-10-13 · **Owner:** Roger Henley
+**Status:** Working draft under active construction · **Last updated:** 2026-10-14 · **Owner:** Roger Henley
 
 ---
 
@@ -44,7 +44,7 @@ pro_manage's project lifecycle maps one-to-one onto the six EEM stages, each wit
 | **Close** | Normal operations handover | Turnover Package to Operations + Maintenance (via CMMSi), Benefits Realization window begins |
 | **Archived** | — | Post-benefits-realization retention; readable, un-editable |
 
-Every gate carries a **CAR / baseline-change / design-review / CQV / Early-Management-exit** workflow with multi-stage routing, delegation, SLA, and (where applicable) formal e-signature via DocuSign.
+Every gate carries a **CAR / baseline-change / design-review / CQV / shutdown & tie-in / Early-Management-exit / Benefits-Realization** workflow with multi-stage routing, delegation, SLA, and (where applicable) formal e-signature via DocuSign.
 
 ---
 
@@ -98,6 +98,8 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 - External stakeholder sharing via tokenized links
 - SOX/ISO-grade audit log with chained signed hashes
 - Jiminy guidance at every governed action
+- Recurring project health reviews ending in owned actions
+- Phone-first field flows for walkdowns, punchlists, and turnover inspections (Phase 2)
 
 ---
 
@@ -137,14 +139,14 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 | § | File | What's in it |
 |---|---|---|
 | 01 | [vision-and-scope.md](./01-vision-and-scope.md) | Mission, problem statement, in/out of scope, success criteria (incl. startup curve, benefits realization, MP flow) |
-| 02 | [personas-and-use-cases.md](./02-personas-and-use-cases.md) | 9 personas, 15 use cases, 4 end-to-end journeys |
-| 03 | [domain-model.md](./03-domain-model.md) | Project, members, ACLs, budget (TIC/LCC), schedule, scope, risks, documents, metrics, approvals, EEM entities (DesignReview, MPInformation, TurnoverPackage, BenefitsRealization) |
-| 04 | [access-control-and-identity.md](./04-access-control-and-identity.md) | SSO (OIDC + SAML), full ACL per section/doc/field, 4-layer enforcement |
+| 02 | [personas-and-use-cases.md](./02-personas-and-use-cases.md) | 11 personas (incl. site operations & maintenance representatives, commissioning engineer), 18 use cases, 4 end-to-end journeys |
+| 03 | [domain-model.md](./03-domain-model.md) | Project, members, ACLs, budget (TIC/LCC), schedule, scope, risks, documents, metrics, approvals, EEM entities (DesignReview, MPInformation, CommissioningRecord, TurnoverPackage, BenefitsRealization), Asset/AssetClass, Loss/LossCategory, BusinessCasePromise, ProjectHealthReview |
+| 04 | [access-control-and-identity.md](./04-access-control-and-identity.md) | SSO (OIDC + SAML), platform / project / workflow roles, full ACL per section/doc/field, 4-layer enforcement |
 | 05 | [architecture.md](./05-architecture.md) | Service inventory, gRPC/REST surfaces, modular connector framework, deployment topology |
-| 06 | [mdemg-integration.md](./06-mdemg-integration.md) | J17/Jiminy call surfaces, hybrid space model, fail-closed tiering, MP-information flow |
-| 07 | [metrics-and-data-curation.md](./07-metrics-and-data-curation.md) | Financial, Schedule, Scope/Risk, Safety/Quality/Compliance, TPM/Plant-Ops families; connectors; spreadsheets |
-| 08 | [approvals-and-workflows.md](./08-approvals-and-workflows.md) | CAR workflow, baseline change, design review, CQV, Early Management exit, closeout, Sigi, admin override, audit chain |
-| 09 | [presentations-and-reporting.md](./09-presentations-and-reporting.md) | Live dashboards, scheduled exports, on-demand decks, external sharing |
+| 06 | [mdemg-integration.md](./06-mdemg-integration.md) | J17/Jiminy call surfaces, hybrid space model, fail-closed tiering, MP-information flow (incl. abnormality-tag and loss patterns from the operations TPM stack) |
+| 07 | [metrics-and-data-curation.md](./07-metrics-and-data-curation.md) | Financial, Schedule, Scope/Risk, Safety/Quality/Compliance, TPM/Plant-Ops and priced-loss families; verified recovery; connectors; spreadsheets |
+| 08 | [approvals-and-workflows.md](./08-approvals-and-workflows.md) | CAR workflow, baseline change, design review, CQV, shutdown & tie-in, Early Management exit, closeout, Benefits Realization, project health review, Sigi, admin override, audit chain |
+| 09 | [presentations-and-reporting.md](./09-presentations-and-reporting.md) | Live dashboards (incl. Loss & opportunity, Startup & Early Management), scheduled exports, on-demand decks, external sharing, phone-first field flows |
 | 10 | [integrations.md](./10-integrations.md) | ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi |
 | 11 | [ops-and-nfr.md](./11-ops-and-nfr.md) | SLOs, availability, backup/DR, observability, security, retention |
 | 12 | [test-governance-uxts.md](./12-test-governance-uxts.md) | UATS + UDTS + UNTS from MVP; UBTS, USTS, UOTS, UPMTS roadmap |
@@ -166,8 +168,8 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 | Phase | Weeks | Theme | Headline |
 |---|---|---|---|
 | 0 | 1–6 | Foundation | Dev env + CI + auth + MDEMG adapter + first governed round-trip on a toy project |
-| 1 | 7–16 | MVP vertical slice | One real project through Initiate → Execute with CAR + Jiminy guidance + Sigi + one ERPi backend + SSO |
-| 2 | 17–28 | Breadth | Risk/scope/documents, Metrici connectors, HSEi vendor, CMMSi, spreadsheet I/O, dashboards, external shares |
+| 1 | 7–16 | MVP vertical slice | One real project through Initiate → Execute with CAR (loss-baselined business case) + asset registry + Jiminy guidance + Sigi + one ERPi backend + SSO |
+| 2 | 17–28 | Breadth | Risk/scope/documents, Metrici connectors, HSEi (incl. loss events, abnormality tags), CMMSi, spreadsheet I/O, dashboards, mobile field flows, external shares |
 | 3 | 29–40 | Depth | More backends, resource allocation, closeout + Benefits Realization window, legal hold, UPMTS |
 | 4 | 41–52 | Harden & scale | Load testing, DR drill, security review, K8s-readiness, site-wide rollout prep |
 | GA | year-two | Rollout | Site-wide, Pattern-B MDEMG plugin, additional backends per demand |
@@ -181,12 +183,12 @@ See [roadmap.md](./roadmap.md) for milestones, dependencies, team shape, and ris
 - Each section is self-contained; cross-references use relative links.
 - Decisions made in dialogue with the owner are captured here, not re-litigated. A **Decisions on record** block at the top of each section records the choice and date.
 - Open items for later resolution are tracked under **Open items for Section N** at the bottom of each section.
-- The source of truth for MDEMG capabilities is the MDEMG repo at the pinned version plus the research briefs in `scratchpad/fsd/00-mdemg-findings-synthesis.md`.
+- The source of truth for MDEMG capabilities is the MDEMG repo at the pinned version. Integration-relevant findings from the owner's MDEMG research are captured in `§06`; supporting research (MDEMG briefs, TPM software market review) is held privately by the owner.
 
 ---
 
 ## Attribution
 
 **Author / Owner:** Roger Henley.
-**Drafting assistance:** Claude Opus 4.7 via Claude Code, under direction of the owner, 2026-10-13 onward.
+**Drafting assistance:** Claude (Anthropic) via Claude Code, under direction of the owner, 2026-10-13 onward.
 **MDEMG** by Roger Henley (separate project): [github.com/reh3376/mdemg](https://github.com/reh3376/mdemg).

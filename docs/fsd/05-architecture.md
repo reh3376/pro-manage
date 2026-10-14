@@ -7,7 +7,7 @@
 - **2026-10-13** — Internal APIs: **gRPC** between services (core ↔ sidecar, core ↔ connector modules, workers ↔ core). External APIs (frontend ↔ core, external stakeholders ↔ core) are **HTTP REST + Server-Sent Events / WebSockets** for live dashboards.
 - **2026-10-13** — All databases run in **Docker containers**: Postgres (OLTP), TimescaleDB (ours, metric readings), Redis (session/cache), MinIO (S3-compatible object store). MDEMG runs its own stack adjacent (its own Neo4j, Timescale, Grafana, neural sidecar).
 - **2026-10-13** — Hosting footprint: **on-prem VMs with containers inside**, running docker-compose per VM. Compose topology designed to be upgraded to Kubernetes later without reshaping services.
-- **2026-10-13** — **Pluggable connector framework**: each integration module (ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi) is a separate container exposing a gRPC interface defined per-module. pm-core discovers and routes to connectors via an admin-managed registry.
+- **2026-10-13** — **Pluggable connector framework**: each integration module (ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi) is a separate container exposing a gRPC interface defined per-module. pm-core discovers and routes to connectors via an admin-managed registry.
 
 ## Logical architecture
 
@@ -69,7 +69,7 @@
 │   IdPi(-oidc, -saml, -adfs…)                Doci(-sharepoint, -drive, -conf) │
 │   Sigi(-docusign, -adobesign…)              Metrici(-postgres, -oracle,      │
 │   Commsi(-smtp, -teams, -slack…)              -timescale, -influx, -pi, -opcua)│
-│                                              HSEi(-{mes,wms,qms-vendor}…)    │
+│   CMMSi(-maximo, -sap-pm, -fiix, -maintainx…) HSEi(-{mes,qms,oee/loss}…)     │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -80,7 +80,7 @@
 | **pm-core** | Go | Transactional heart. Serves REST+WS to the frontend; gRPC to sidecar/workers/connectors. Edge auth, RBAC, service handlers, projection, workflow engine, outbox author. | Horizontal (stateless; stickiness only for WS). Multiple replicas behind an in-cluster load balancer. |
 | **pm-sidecar** | Python 3.12 | Scripting-heavy ops: PDF/PPTX render for exports, xlsx import/export, custom derived-metric formulas, ad-hoc data transforms, image/thumbnail handling for documents. gRPC server; stateless. | Horizontal. |
 | **pm-workers** | Go | Scheduled jobs (metric harvest triggers, scheduled exports, periodic ACL review notices, SLA tick, auto-close of inert sessions), outbox drain to MDEMG and `Commsi`, long-running imports. | Horizontal with per-job leasing (one worker claims a tick). |
-| **pm-frontend** | TS/React (Next.js) | Authenticated UI. SSR for first paint, CSR for interaction. Reads live data via SSE/WS. | Horizontal (stateless). |
+| **pm-frontend** | TS/React (Next.js) | Authenticated UI. SSR for first paint, CSR for interaction. Reads live data via SSE/WS. Includes phone-first field views (CQV/SAT walkdowns, punchlists, turnover inspections) with photo/QR capture and offline sync, Phase 2 (`§09`). | Horizontal (stateless). |
 | **pm-frontend-public** | TS/React (Next.js, slim bundle) | Read-only renderer for tokenized dashboard shares. Hardened: no auth-ed APIs reachable, strict CSP, no editorial UI. | Horizontal. |
 | **ERPi** (per backend) | Go (unless backend SDK is JVM-only, then Kotlin wrapper acceptable) | Pull actuals, commitments, invoices, chart-of-accounts, vendor records. | One per configured ERP backend. Horizontal within a backend. |
 | **IdPi** | Go | OIDC + SAML abstractions. Session issuing. Claims resolution. | Horizontal. |
@@ -89,9 +89,10 @@
 | **Doci** | Go | External document store proxy + permission mirror. | Horizontal. |
 | **Commsi** | Go | Notification delivery with per-channel backoff and dedupe. | Horizontal. |
 | **Metrici** | Go (connector shell) + per-backend adapters (Go, or Python if backend SDK is Python-only) | Read-only metric harvest. | Horizontal; backend-specific throttles. |
-| **HSEi** | Go | MES/WMS/QMS signal pull. | Horizontal. |
+| **HSEi** | Go | Read-only plant operations signals: MES/WMS/QMS/HSE events, priced loss events, operator abnormality tags, skill certifications. | Horizontal. |
+| **CMMSi** | Go | CMMS read (failure history, aged work, asset mirror) and write (turnover-package delivery: equipment, spares, PM tasks, procedures). Idempotent writes. | One per configured CMMS backend. |
 | **Postgres** | — | OLTP source of truth. | Primary + hot standby; async WAL replica off-box for DR. |
-| **TimescaleDB (ours)** | — | Metric readings. | Single node with HA pair; tiered retention. |
+| **TimescaleDB (ours)** | — | Metric readings and loss events. | Single node with HA pair; tiered retention. |
 | **Redis** | — | Session store, rate-limit counters, warmed-guidance snapshot cache. | Sentinel pair. |
 | **MinIO** | — | Object storage for documents, exports, archived signed envelopes. | 4-node erasure-coded, or SAN-backed if the company has standard storage. |
 | **MDEMG stack** | Go + Python | Advisory layer. Operates alongside pm-core on an internal Docker network, reachable only from pm-core. | Follows MDEMG's own deployment guide. |
@@ -105,7 +106,7 @@ Internal gRPC is grouped into services with stable `.proto` contracts governed b
 - `pm.sidecar.v1.RenderService` — PDF/PPTX render; input is a template id + bound data payload, output is a stream of chunks + a final `storage_key`.
 - `pm.sidecar.v1.SpreadsheetService` — xlsx/csv import/export.
 - `pm.sidecar.v1.DerivedMetricService` — formula evaluation with versioned, sandboxed Python.
-- `pm.connector.v1.Erpi`, `.Idpi`, `.Sigi`, `.Schedulei`, `.Doci`, `.Commsi`, `.Metrici`, `.Hsei` — one service per connector type (see "Modular connector framework" below).
+- `pm.connector.v1.Erpi`, `.Idpi`, `.Sigi`, `.Schedulei`, `.Doci`, `.Commsi`, `.Metrici`, `.Hsei`, `.Cmmsi` — one service per connector type (see "Modular connector framework" below).
 
 Every gRPC contract has a UDTS spec in `docs/api-spec/udts/` and the generated code is governed by UNTS hash integrity so renames are visible in CI.
 
@@ -176,7 +177,7 @@ service Metrici {
 }
 ```
 
-Other connector types follow the same shape: `HealthCheck`, `Capabilities`, and type-specific RPCs.
+Other connector types follow the same shape: `HealthCheck`, `Capabilities`, and type-specific RPCs. Full per-type RPC lists — including CMMSi's symmetric read/write surface and HSEi's loss, abnormality-tag, and certification feeds — are in `§10`.
 
 ### Admin surface for connectors
 
@@ -241,7 +242,7 @@ Later migration to Kubernetes is a lift-and-shift, not a redesign.
 
 ## Data flow — illustrative sequences
 
-### DF-01: User approves a CapEx (UC-02)
+### DF-01: User approves a CAR (UC-02)
 ```
 browser ──► pm-core.Edge (REST POST)
 pm-core.Edge ──► pm-core.Service.Workflow (gRPC in-process)

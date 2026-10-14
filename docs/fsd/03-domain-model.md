@@ -42,7 +42,7 @@
                                  ▼
                         ┌─────────────────────┐
                         │  ApprovalWorkflow   │─────┐
-                        │  (per gate: CapEx,  │     │
+                        │  (per gate: CAR,    │     │
                         │   baseline change,  │     │ fed by
                         │   milestone, close) │     │ constraints
                         └─────────────────────┘     ▼
@@ -141,7 +141,7 @@ Two layers: definitions and readings.
 ### ApprovalWorkflow
 A multi-stage approval instance (`§08` details the state machine).
 
-- `ApprovalWorkflow` — `workflow_id`, `project_id`, `kind` ∈ `{capex, baseline_change, milestone_signoff, change_request, closeout, custom}`, `subject_ref` (what's being approved: a budget baseline id, a change request id, …), `initiated_by`, `initiated_at`, `current_stage`, `status` ∈ `{in_flight, approved, rejected, cancelled, expired}`, `signed_artifact_ref?` (Sigi reference when applicable).
+- `ApprovalWorkflow` — `workflow_id`, `project_id`, `kind` ∈ `{car, baseline_change, design_review_signoff, cqv_signoff, milestone_signoff, change_request, shutdown_tiein_plan, early_mgmt_exit, closeout, benefits_realization_review, custom}`, `subject_ref` (what's being approved: a budget baseline id, a change request id, …), `initiated_by`, `initiated_at`, `current_stage`, `status` ∈ `{in_flight, approved, rejected, cancelled, expired}`, `signed_artifact_ref?` (Sigi reference when applicable).
 - `ApprovalStage` — `stage_id`, `workflow_id`, `order`, `role_required` (e.g., `vp_finance`), `assignees[]`, `sla_duration`, `completed_at?`, `completed_by?`, `decision` ∈ `{approve, reject, delegate}`, `comment?`, `guidance_id?` (MDEMG reference captured when the approver viewed guidance), `signed_envelope_ref?` (Sigi envelope ID).
 
 ### AuditEvent (immutable)
@@ -290,4 +290,4 @@ A periodic structured review of an in-flight project — the capital-side counte
 - Confirm whether a **Program** layer (parent of multiple related Projects) is needed in year one, or if the Portfolio layer is enough.
 - Define the exact set of `MetricDefinition.category` values and their nested sub-categories (how granular do we go? Per-ISO-metric, per-industry-metric?).
 - Decide whether `BudgetActual` and `MetricReading` share a storage layer (one TSDB) or stay separated. First instinct: separate — actuals have strict financial-period semantics; metric readings are continuous.
-- Decide on the schema contract between pro_manage and `ERPi` for actuals (common chart of accounts? WBS mapping table? Both?). Depends on which ERP comes first (owner intel 2026-10-14).
+- Decide on the schema contract between pro_manage and `ERPi` for actuals (common chart of accounts? WBS mapping table? Both?). Depends on which ERP comes first (pending owner confirmation).

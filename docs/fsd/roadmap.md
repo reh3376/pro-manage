@@ -1,6 +1,6 @@
 # Roadmap — Phased Delivery, Milestones, Dependencies, Risks
 
-Status: **Draft v0, under active construction** · Last updated: 2026-10-13
+Status: **Draft v0, under active construction** · Last updated: 2026-10-14
 
 Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team delivery (sizing in "Team shape" below). Dates will firm up once team shape and ERP intel are confirmed.
 
@@ -34,14 +34,14 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - `pm-core` edge: auth middleware + ACL plumbing (section-level grants minimum).
 - `MDEMG` reachable from pm-core; `pkg/mdemgadapter` with `/guide`, `/classify`, `/feedback`, `/conversation/observe` wrappers; outbox worker drains to MDEMG.
 - First governance space seeded (`space=org.pm_dev.governance`); 2–3 toy constraints authored.
-- `pm.core.v1.ProjectService` + `ApprovalWorkflow` plumbing, enough to run a toy CapEx approval end-to-end.
+- `pm.core.v1.ProjectService` + `ApprovalWorkflow` plumbing, enough to run a toy CAR approval end-to-end.
 - Prometheus/Grafana/Loki/Jaeger stack reachable; standard dashboards for RED metrics.
 - Connector framework: registry table, admin UI stub, standard `HealthCheck`/`Capabilities` RPCs implemented.
 - First UATS, UDTS, UNTS specs for the thin surfaces that exist.
 
 ### Success criteria
 - A new developer can `make dev` and have the full stack running inside 30 minutes.
-- A CapEx approval from a seeded test user runs end-to-end: form render → `/jiminy/guide` renders a card → submit → `/jiminy/classify` round-trip → DB-written AuditEvent + GuidanceOutcome → `/jiminy/feedback` outbox dispatched.
+- A CAR approval from a seeded test user runs end-to-end: form render → `/jiminy/guide` renders a card → submit → `/jiminy/classify` round-trip → DB-written AuditEvent + GuidanceOutcome → `/jiminy/feedback` outbox dispatched.
 - CI green on every PR.
 
 ### Dependencies
@@ -58,8 +58,8 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **Membership & ACL** — ProjectMember, ACLGrant; the four enforcement layers of `§04` (edge, service, projection, DB row-security on sensitive tables).
 - **Budget** — manual baseline entry, baseline-change workflow, manual actuals (ERPi integration begins in parallel), variance computed.
 - **Schedule** — manual milestone entry + dependencies; completion rule enforcement; (Schedulei imports deferred to Phase 2).
-- **Approvals** — CapEx + Baseline change workflows live; multi-stage routing via eligibility pools; delegation (basic); SLA tick + nudges via Commsi; admin override path; signed-hash audit chain.
-- **Sigi** — DocuSign integration live for CapEx ≥ configurable threshold; signed-artifact capture to MinIO.
+- **Approvals** — CAR + Baseline change workflows live; multi-stage routing via eligibility pools; delegation (basic); SLA tick + nudges via Commsi; admin override path; signed-hash audit chain.
+- **Sigi** — DocuSign integration live for CAR ≥ configurable threshold; signed-artifact capture to MinIO.
 - **IdPi** — Entra ID *or* Okta backend production-ready (whichever is the owner's primary); SAML backend scaffolded (not necessarily live).
 - **Commsi** — SMTP + Teams (or Slack, per company culture) notifications for approvals + overdue nudges.
 - **ERPi** — one backend wired against the primary ERP (owner confirms 2026-10-14 which); `FetchActuals` live, `FetchCommitments` live, `FetchInvoices` live for in-scope projects.
@@ -70,7 +70,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 
 ### Success criteria
 - Three pilot projects live, in-scope for the pilot team's actual work.
-- Approval cycle time (CapEx) on pilot projects reduced by ≥ 30% vs the pilot team's prior baseline.
+- Approval cycle time (CAR) on pilot projects reduced by ≥ 30% vs the pilot team's prior baseline.
 - Zero audit findings in a dry-run compliance walkthrough.
 - Pilot user NPS ≥ +20.
 - SLOs hit for every metric in `§11` at the pilot load.
@@ -169,7 +169,7 @@ Vault provisioned              ──▶ Phase 0 complete
 ```
 
 **Critical-path blockers to flag:**
-- ERP intel (2026-10-14): sets Phase 1 scope.
+- ERP backend confirmation (pending): sets Phase 1 scope.
 - IdP intel: sets Phase 1 scope.
 - Governance Author staffing: sets Phase 1 scope.
 - MDEMG version pin: must be ratified before Phase 0 ends.
@@ -207,7 +207,7 @@ Grows to **7–9** for Phase 3–4 as connector breadth and ops hardening expand
 
 Each phase produces concrete, named artifacts that enable the next phase:
 
-- **Phase 0 end:** `MVP-Spec-Addendum v0.1` (narrows the FSD to Phase-1 actionable features); `demo video` of the end-to-end CapEx round-trip.
+- **Phase 0 end:** `MVP-Spec-Addendum v0.1` (narrows the FSD to Phase-1 actionable features); `demo video` of the end-to-end CAR round-trip.
 - **Phase 1 end:** `Pilot-Readiness Review` document; onboarding runbooks for pilot projects.
 - **Phase 2 end:** `Breadth Review` and `Governance Effectiveness Baseline`.
 - **Phase 3 end:** `DR Drill Report`, `Capacity-Plan Addendum`, `Pattern-B Readiness Assessment`.

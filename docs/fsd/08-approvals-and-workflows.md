@@ -163,14 +163,14 @@ Enforces the "closeout plan on file" constraint (from the Governance space). Fin
 - Each stage has `sla_duration`. pm-core writes `stage_due_at = entered_at + sla_duration`.
 - A pm-workers tick scans stages: at `75% elapsed` → nudge via Commsi; at `100%` → final nudge + flag the workflow as "overdue" in dashboards; at policy-configured `overdue_grace` → auto-escalate to the next tier in the delegation chain, or mark `expired`.
 - Expiration policy per workflow kind:
-  - CapEx: auto-escalate once, then expire if still undecided.
+  - CAR: auto-escalate once, then expire if still undecided.
   - Baseline change: expire; owner must re-initiate.
   - Milestone sign-off: expire; sign-off gets re-queued on next cycle.
   - Closeout: no expiration; just stays overdue until decision.
 
 ## E-signature coupling (Sigi)
 
-For workflow kinds where formal e-sig is mandatory (CapEx ≥ threshold, Change requests touching contractual terms, Closeout):
+For workflow kinds where formal e-sig is mandatory (CAR ≥ threshold, Change requests touching contractual terms, Closeout):
 
 - At stage entry for the signing stage, pm-core calls `Sigi.CreateEnvelope(spec)` with the subject (budget baseline + diff, change request text, closeout certificate).
 - `assignees` of the stage are mapped to Sigi recipients.
@@ -205,7 +205,7 @@ Every stage record carries `guidance_id`, `classification_verdict`, and a snapsh
 
 - Append-only; writes happen in the same transaction as the mutation.
 - Each row:
-  - `audit_id`, `tenant_id`, `project_id`, `actor_user_id`, `action_type` (fine-grained — e.g., `approval.capex.stage_approve`), `subject_type`, `subject_id`, `before` (JSON), `after` (JSON), `at`, `source_ip`, `request_id`, `guidance_id?`, `classification_verdict?`, `signed_hash`
+  - `audit_id`, `tenant_id`, `project_id`, `actor_user_id`, `action_type` (fine-grained — e.g., `approval.car.stage_approve`), `subject_type`, `subject_id`, `before` (JSON), `after` (JSON), `at`, `source_ip`, `request_id`, `guidance_id?`, `classification_verdict?`, `signed_hash`
   - `signed_hash = HMAC-SHA256(prev_hash || row_canonical_payload, audit_chain_key)` — a per-tenant chain so tampering is detectable without an external ledger.
   - A nightly job verifies the chain and writes a verification record; mismatches alert immediately.
 - Immutable via DB constraints:
@@ -231,7 +231,7 @@ Every stage record carries `guidance_id`, `classification_verdict`, and a snapsh
 ## UX patterns
 
 - **Workflow dashboard:** a user's view of workflows they initiated, workflows awaiting their decision, workflows they're observing. Grouped by SLA proximity.
-- **Approval screen:** on open, pm-core warms Jiminy. Primary view shows the subject (CapEx details, baseline diff, closeout checklist). Right rail shows guidance cards. Submit button is masked by the classify result when Tier A deny.
+- **Approval screen:** on open, pm-core warms Jiminy. Primary view shows the subject (CAR details, baseline diff, closeout checklist). Right rail shows guidance cards. Submit button is masked by the classify result when Tier A deny.
 - **Delegate screen:** reassign button → pick from eligible pool filtered by availability.
 - **Historical workflow:** read-only reconstruction of every stage, every decision, every guidance item shown, every Sigi event — anchored by `audit_id` and linkable.
 
@@ -252,4 +252,4 @@ Platform Admin UI exposes:
 - Decide whether "re-submit after reject" creates a brand-new workflow id or extends the existing one. First instinct: new id, with explicit linkage, so the audit record for each attempt is clean.
 - Confirm which workflow kinds are mandatory-Sigi vs. optional-Sigi.
 - Confirm whether an approver can approve while on OOO with a dated-override ("I'll approve from vacation this once"). First instinct: yes, with a confirm-OOO dialog that logs the override.
-- Decide whether external stakeholders can be approvers on specific workflow kinds (e.g., JV partner co-signs on CapEx). If yes, their IdPi federation path and their eligibility pool model needs attention.
+- Decide whether external stakeholders can be approvers on specific workflow kinds (e.g., JV partner co-signs on a CAR). If yes, their IdPi federation path and their eligibility pool model needs attention.

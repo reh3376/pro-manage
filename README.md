@@ -14,6 +14,8 @@ It is for a single company, hosted on the company's intranet in containers, tune
 
 **Target context:** distilling, bottling, food & beverage manufacturing, chemicals, and similar process industries where TPM is the operating language.
 
+**Where it sits in TPM:** pro_manage is the system for the EEM pillar and capital-scale Focused Improvement. It integrates with the plant's operations TPM tools (CMMS, connected-worker, OEE / loss platforms) rather than rebuilding them: it reads their losses, abnormality tags, and failure history in, and hands assets and turnover packages back out. Business cases promise recoverable losses priced in dollars, and Benefits Realization verifies them.
+
 **The organizing question**, phrased the way a plant manager would: *"Did the asset start up clean, and did Operations and Maintenance inherit something they could run?"* Every capability, workflow, and metric in pro_manage ties back to that.
 
 ---
@@ -24,14 +26,14 @@ It is for a single company, hosted on the company's intranet in containers, tune
 |---|---|
 | **The hero document — read this first** | [`docs/fsd/README.md`](./docs/fsd/README.md) |
 | Vision, scope, success criteria | [`docs/fsd/01-vision-and-scope.md`](./docs/fsd/01-vision-and-scope.md) |
-| Personas, use cases, journeys | [`docs/fsd/02-personas-and-use-cases.md`](./docs/fsd/02-personas-and-use-cases.md) |
-| Domain model (EEM-stage lifecycle, DesignReview, MPInformation, TurnoverPackage, BenefitsRealization) | [`docs/fsd/03-domain-model.md`](./docs/fsd/03-domain-model.md) |
-| Access control + identity (full ACL per section/doc/field) | [`docs/fsd/04-access-control-and-identity.md`](./docs/fsd/04-access-control-and-identity.md) |
+| Personas (incl. site operations & maintenance reps), use cases, journeys | [`docs/fsd/02-personas-and-use-cases.md`](./docs/fsd/02-personas-and-use-cases.md) |
+| Domain model (EEM-stage lifecycle, Asset, Loss, BusinessCasePromise, DesignReview, MPInformation, TurnoverPackage, BenefitsRealization) | [`docs/fsd/03-domain-model.md`](./docs/fsd/03-domain-model.md) |
+| Access control + identity (platform / project / workflow roles, full ACL per section/doc/field) | [`docs/fsd/04-access-control-and-identity.md`](./docs/fsd/04-access-control-and-identity.md) |
 | Architecture (Go core + Python sidecar + Next.js + modular connectors) | [`docs/fsd/05-architecture.md`](./docs/fsd/05-architecture.md) |
 | MDEMG integration (incl. flagship MP-information flow) | [`docs/fsd/06-mdemg-integration.md`](./docs/fsd/06-mdemg-integration.md) |
-| Metrics (incl. TPM / Plant Ops family: OEE, MTBF, Startup Curve, …) | [`docs/fsd/07-metrics-and-data-curation.md`](./docs/fsd/07-metrics-and-data-curation.md) |
-| Approvals (CAR, baseline change, design review, CQV, Early Mgmt exit, closeout) | [`docs/fsd/08-approvals-and-workflows.md`](./docs/fsd/08-approvals-and-workflows.md) |
-| Presentations (live dashboards, scheduled exports, on-demand decks) | [`docs/fsd/09-presentations-and-reporting.md`](./docs/fsd/09-presentations-and-reporting.md) |
+| Metrics (incl. TPM / Plant Ops family and priced losses with verified recovery) | [`docs/fsd/07-metrics-and-data-curation.md`](./docs/fsd/07-metrics-and-data-curation.md) |
+| Approvals (CAR, baseline change, design review, CQV, shutdown & tie-in, Early Mgmt exit, closeout, Benefits Realization, health review) | [`docs/fsd/08-approvals-and-workflows.md`](./docs/fsd/08-approvals-and-workflows.md) |
+| Presentations (live dashboards, scheduled exports, on-demand decks, mobile field flows) | [`docs/fsd/09-presentations-and-reporting.md`](./docs/fsd/09-presentations-and-reporting.md) |
 | Integrations catalog (ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi) | [`docs/fsd/10-integrations.md`](./docs/fsd/10-integrations.md) |
 | Operations & non-functional requirements | [`docs/fsd/11-ops-and-nfr.md`](./docs/fsd/11-ops-and-nfr.md) |
 | Test governance (UxTS: UATS, UDTS, UNTS, …) | [`docs/fsd/12-test-governance-uxts.md`](./docs/fsd/12-test-governance-uxts.md) |
@@ -45,7 +47,7 @@ It is for a single company, hosted on the company's intranet in containers, tune
 - **Backend:** Go monolith (`pm-core`) with a Python sidecar (`pm-sidecar`) for render / spreadsheets / derived-metric formulas, and a Go workers tier (`pm-workers`) for scheduled jobs and outbox dispatch.
 - **Frontend:** Next.js (TypeScript / React) — SSR + CSR; a hardened `pm-frontend-public` variant for tokenized dashboard shares.
 - **APIs:** gRPC between internal services; REST + SSE / WebSockets to the frontend.
-- **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metric readings), Redis (sessions / cache), MinIO (S3-compatible object storage). All containerized.
+- **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metric readings and loss events), Redis (sessions / cache), MinIO (S3-compatible object storage). All containerized.
 - **Governance substrate:** [MDEMG](https://github.com/reh3376/mdemg) running adjacent on an isolated internal network, used for advisory guidance and institutional memory (MP information flow). pro_manage owns identity, authorization, workflows, and the authoritative audit log.
 - **Connectors:** nine pluggable modules — **ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi** — each a container with a stable gRPC contract. Admins swap backends without a core release.
 - **Deployment:** on-prem VMs with containers via docker-compose, designed so a later move to Kubernetes is a lift-and-shift rather than a redesign.
@@ -58,7 +60,7 @@ It is for a single company, hosted on the company's intranet in containers, tune
 - Default development branch: `pro-dev01`. Changes flow via pull requests into `main` for owner review and approval.
 - PRs are opened automatically by `.github/workflows/auto-pr.yml` (as `github-actions[bot]`) when `pro-dev01` is pushed, so the owner can formally approve each one. PRs are never opened by hand.
 - Direct commits to `main` are not permitted; `main` is the reviewed-and-merged state only.
-- Commits are attributed to the actual author (Roger Henley for human-authored work; `Claude Opus 4.7 <noreply@anthropic.com>` for AI-assisted drafting).
+- Commits are attributed to the actual author (Roger Henley for human-authored work; `Claude <noreply@anthropic.com>` for AI-assisted drafting).
 
 ---
 
@@ -74,6 +76,6 @@ Implementation begins once the FSD is ratified and the Phase 0 team shape is set
 
 **Roger Edward Henley II** — thirty years on the owner's side of industrial capital work; eleven years inside Kentucky distilleries; author and architect of pro_manage.
 
-**AI collaborator:** Claude Opus 4.7 via Claude Code, under the owner's direction, 2026-10-13 onward.
+**AI collaborator:** Claude (Anthropic) via Claude Code, under the owner's direction, 2026-10-13 onward.
 
 **Related project:** [MDEMG](https://github.com/reh3376/mdemg) — Multi-Dimensional Emergent Memory Graph, the governance substrate pro_manage integrates with.
