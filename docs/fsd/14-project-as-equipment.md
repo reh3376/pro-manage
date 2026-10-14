@@ -1,19 +1,19 @@
-# 14 — The Project as Equipment (Project TPM)
+# 14: The Project as Equipment (Project TPM)
 
 **Status: core concept, under active development.** This section states the idea, how pro_manage implements its first version, and the open questions to work through next. Other sections implement pieces of it; this is where the idea itself lives.
 
 ## Decisions on record
 
-- **2026-10-14** — The owner's thesis is adopted as a core design concept of pro_manage: **treat the capital project itself as a piece of equipment, and manage it with TPM.** Its "losses" are delays, rework, interface clashes, and waiting on information and approvals, and they are measured, priced, and eliminated the way a plant eliminates equipment losses.
-- **2026-10-14** — The concept is developed in this section and referenced from `§01`, `§03`, `§07`, `§08`, and `§09`. Novelty is not claimed publicly until a prior-art search is complete (see below).
+- **2026-10-14:** The owner's thesis is adopted as a core design concept of pro_manage: **treat the capital project itself as a piece of equipment, and manage it with TPM.** Its "losses" are delays, rework, interface clashes, and waiting on information and approvals, and they are measured, priced, and eliminated the way a plant eliminates equipment losses.
+- **2026-10-14:** The concept is developed in this section and referenced from `§01`, `§03`, `§07`, `§08`, and `§09`. Novelty is not claimed publicly until a prior-art search is complete (see below).
 
 ## The thesis
 
 A TPM plant does not accept "the line was slow this week" as an explanation. It knows what share of planned time the line ran, how fast it ran against design, and how much of what it made was right the first time. It names every loss, prices it, ranks it, and assigns a team to the biggest one. Losses shrink because they are visible.
 
-Capital projects almost never get this treatment. A project's health is usually reported as two variances — cost and schedule — that say *how far off* the project is but not *where the time and money went*. The days spent waiting on an RFI answer, the week a crew stood by because a work package started without its materials, the rework after a failed hold point, the month a change order sat in an approval queue: these are real, recurring, measurable losses, and they disappear into "schedule slip."
+Capital projects almost never get this treatment. A project's health is usually reported as two variances (cost and schedule) that say *how far off* the project is but not *where the time and money went*. The days spent waiting on an RFI answer, the week a crew stood by because a work package started without its materials, the rework after a failed hold point, the month a change order sat in an approval queue: these are real, recurring, measurable losses, and they disappear into "schedule slip."
 
-**The thesis: the project is the equipment.** Its work fronts are the machines, its work packages are the production runs, and its losses can be categorized, measured, priced, and attacked with the same discipline — and the same eight pillars — that TPM applies on the plant floor.
+**The thesis: the project is the equipment.** Its work fronts are the machines, its work packages are the production runs, and its losses can be categorized, measured, priced, and attacked with the same discipline, and the same eight pillars, that TPM applies on the plant floor.
 
 That gives pro_manage **two views of TPM on one system**:
 
@@ -24,7 +24,7 @@ That gives pro_manage **two views of TPM on one system**:
 | When it matters | Design (MP information) → Early Management → Benefits Realization | FEL → Execute → Closeout |
 | Measured from | Plant systems via HSEi / Metrici / CMMSi | pro_manage's own records (RFIs, submittals, packages, ITPs, deviations) |
 | Pillar most in play | Early Equipment Management | All eight, adapted to project delivery |
-| Currency | Priced loss ($) | Priced loss ($) — the same currency |
+| Currency | Priced loss ($) | Priced loss ($), the same currency |
 
 The shared currency matters. A dollar of project loss (a month of delay on a $40M expansion) and a dollar of asset loss (the downtime the expansion was meant to recover) can sit on the same Pareto, so a portfolio can see both "what our projects are losing" and "what our plants are losing" in one unit.
 
@@ -46,14 +46,14 @@ Whether these three should be multiplied into a single "project OEE" is an open 
 
 | Plant loss | OEE component | Project loss | Typical source |
 |---|---|---|---|
-| Breakdowns | Availability | **Safety stops and major blockers** — work halted by an incident, stand-down, or regulatory stop | HSE records |
-| Setup / changeover | Availability | **Unready packages** — work released or started without its prerequisites, then stalled or remobilized | Package readiness overrides, plan-compliance misses |
-| Minor stops | Performance | **Waiting on information** — short, frequent interruptions for RFIs, missing drawings, clarifications | RFI aging, deviations |
-| Reduced speed | Performance | **Interface clashes and skill gaps** — work proceeds, slower than planned | Productivity vs plan, deviation tags, competency gaps |
-| Startup rejects | Quality | **Commissioning rework** — punchlist and failed CQV at the end | CQV records, punchlists |
-| Production rejects | Quality | **Construction rework** — NCRs, failed hold points, revise-and-resubmit cycles | NCRs, hold points, submittals |
+| Breakdowns | Availability | **Safety stops and major blockers**: work halted by an incident, stand-down, or regulatory stop | HSE records |
+| Setup / changeover | Availability | **Unready packages**: work released or started without its prerequisites, then stalled or remobilized | Package readiness overrides, plan-compliance misses |
+| Minor stops | Performance | **Waiting on information**: short, frequent interruptions for RFIs, missing drawings, clarifications | RFI aging, deviations |
+| Reduced speed | Performance | **Interface clashes and skill gaps**: work proceeds, slower than planned | Productivity vs plan, deviation tags, competency gaps |
+| Startup rejects | Quality | **Commissioning rework**: punchlist and failed CQV at the end | CQV records, punchlists |
+| Production rejects | Quality | **Construction rework**: NCRs, failed hold points, revise-and-resubmit cycles | NCRs, hold points, submittals |
 
-Plus one category with no plant equivalent but large project impact: **waiting on approval** (submittals, change orders, and the owner's own internal approvals). It is kept separate because the owner controls it directly — it is the project's Office-TPM loss.
+Plus one category with no plant equivalent but large project impact: **waiting on approval** (submittals, change orders, and the owner's own internal approvals). It is kept separate because the owner controls it directly; it is the project's Office-TPM loss.
 
 The FSD's working category set (`§03 ProjectLossCategory`) uses these; the mapping above is a proposal to be tested against real project data.
 
@@ -92,19 +92,19 @@ The FSD's working category set (`§03 ProjectLossCategory`) uses these; the mapp
 
 These overlap parts of the idea. A proper search should confirm what is genuinely new in the combination.
 
-- **Lean Construction / Last Planner System** (Ballard, Lean Construction Institute): percent plan complete, variance reasons, and make-ready constraint analysis — close to package readiness and plan compliance.
+- **Lean Construction / Last Planner System** (Ballard, Lean Construction Institute): percent plan complete, variance reasons, and make-ready constraint analysis, close to package readiness and plan compliance.
 - **Koskela's transformation-flow-value view of production in construction** (1992 onward): waiting and rework as flow losses.
-- **Construction Industry Institute — Advanced Work Packaging** (RT-272, RT-319): readiness-driven package release.
+- **Construction Industry Institute: Advanced Work Packaging** (RT-272, RT-319): readiness-driven package release.
 - **OEE applied to construction equipment or to knowledge work** (assorted academic papers): may apply OEE math to machines on site or to engineering teams, rather than to the project as a whole.
-- **Earned Value Management and Earned Schedule**: measure *how much* is off, not loss categories — the gap this concept fills.
+- **Earned Value Management and Earned Schedule**: measure *how much* is off, not loss categories. That is the gap this concept fills.
 
 What appears distinctive, pending the search: (a) treating the *whole project* as the equipment within the TPM pillar structure, (b) an OEE-style loss taxonomy for project delivery, (c) pricing project losses and asset losses in **one currency** in one system, and (d) feeding project-loss lessons forward the way EEM feeds MP information forward.
 
 ## Related sections
 
-- `§01` — decision on the two views of TPM
-- `§03` — `WorkPackage`, `RFI`, `Submittal`, `ChangeOrder`, `InspectionTestPlan`, `ProjectDeviation`, `ProjectLossEvent`
-- `§06` — project-loss learnings in the governance space
-- `§07` — project-loss metric family
-- `§08` — EPCM workflows and dominant-loss selection in health reviews
-- `§09` — Project reliability dashboard
+- `§01`: decision on the two views of TPM
+- `§03`: `WorkPackage`, `RFI`, `Submittal`, `ChangeOrder`, `InspectionTestPlan`, `ProjectDeviation`, `ProjectLossEvent`
+- `§06`: project-loss learnings in the governance space
+- `§07`: project-loss metric family
+- `§08`: EPCM workflows and dominant-loss selection in health reviews
+- `§09`: Project reliability dashboard

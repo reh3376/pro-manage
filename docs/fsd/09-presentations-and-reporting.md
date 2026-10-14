@@ -1,32 +1,32 @@
-# 09 — Presentations & Reporting
+# 09: Presentations & Reporting
 
 ## Decisions on record
 
-- **2026-10-13** — Presentations are a top-value function with three delivery modes shipping day one: **live dashboards, scheduled exports, and on-demand deck generation**.
-- **2026-10-13** — Dashboards are **composed of tiles** bound to the metric/entity model (`§03`, `§07`). Tiles are role-filtered at render time.
-- **2026-10-13** — Exports (PDF + PPTX) are rendered by **pm-sidecar** using versioned templates. The authoring source of truth for the template is Git-tracked; the active deployed template is cached in Postgres with a hash.
-- **2026-10-13** — External stakeholder sharing is via **tokenized dashboard links** (short-lived, revocable) with per-view attestation and audit, as defined in `§04`.
-- **2026-10-14** — Added **Loss & opportunity** and **Startup & Early Management** dashboard presets, and **mobile field flows** (CQV/SAT walkdowns, punchlists, turnover inspections, design-review input) with photo/QR proof, Phase 2.
-- **2026-10-14** — Added a **Project reliability** preset (project-loss Pareto, package readiness, plan compliance, RFI/submittal aging) and contractor-facing field flows (progress updates, deviation tagging, hold-point inspections).
-- **2026-10-13** — All charts follow a single, cohesive visual language (`dataviz` skill guidance), with a validated palette, light/dark mode, and consistent typography.
+- **2026-10-13:** Presentations are a top-value function with three delivery modes shipping day one: **live dashboards, scheduled exports, and on-demand deck generation**.
+- **2026-10-13:** Dashboards are **composed of tiles** bound to the metric/entity model (`§03`, `§07`). Tiles are role-filtered at render time.
+- **2026-10-13:** Exports (PDF + PPTX) are rendered by **pm-sidecar** using versioned templates. The authoring source of truth for the template is Git-tracked; the active deployed template is cached in Postgres with a hash.
+- **2026-10-13:** External stakeholder sharing is via **tokenized dashboard links** (short-lived, revocable) with per-view attestation and audit, as defined in `§04`.
+- **2026-10-14:** Added **Loss & opportunity** and **Startup & Early Management** dashboard presets, and **mobile field flows** (CQV/SAT walkdowns, punchlists, turnover inspections, design-review input) with photo/QR proof, Phase 2.
+- **2026-10-14:** Added a **Project reliability** preset (project-loss Pareto, package readiness, plan compliance, RFI/submittal aging) and contractor-facing field flows (progress updates, deviation tagging, hold-point inspections).
+- **2026-10-13:** All charts follow a single, cohesive visual language (`dataviz` skill guidance), with a validated palette, light/dark mode, and consistent typography.
 
 ## Dashboards
 
 ### Dashboard model
 
-- `Dashboard` — `dashboard_id`, `name`, `description`, `bindings` (list of `{project_id | portfolio_id}` the dashboard scopes to), `layout` (grid), `tiles[]`, `owner_user_id`, `visibility` ∈ `{project, portfolio, global}`, `share_links[]`, standard audit stamps.
-- `Tile` — `tile_id`, `kind` (`kpi | timeseries | category | tabular | gauge | status_grid | map`), `title`, `data_binding` (metric_id + aggregation + filters, or query-shape for tabulars), `role_visibility` (optional restriction), `size` (`1x1 | 2x1 | 2x2 | 4x2 | …`).
+- `Dashboard`: `dashboard_id`, `name`, `description`, `bindings` (list of `{project_id | portfolio_id}` the dashboard scopes to), `layout` (grid), `tiles[]`, `owner_user_id`, `visibility` ∈ `{project, portfolio, global}`, `share_links[]`, standard audit stamps.
+- `Tile`: `tile_id`, `kind` (`kpi | timeseries | category | tabular | gauge | status_grid | map`), `title`, `data_binding` (metric_id + aggregation + filters, or query-shape for tabulars), `role_visibility` (optional restriction), `size` (`1x1 | 2x1 | 2x2 | 4x2 | …`).
 
 ### Dashboard types (year-one presets)
 
-- **Project overview** — one per project. Shows headline KPIs (budget variance, schedule slip, open high risks, overdue approvals), milestone timeline, recent decisions, Jiminy insights.
-- **Executive portfolio** — one per portfolio. Grid of projects with health indicators, drill-down. Aggregates CapEx committed, forecast variance, projects at risk.
-- **Finance** — budget-heavy view. Baseline vs actuals vs EAC across projects, cash-flow curves, approvals in flight.
-- **HSE** — safety and compliance across projects. Incidents, inspection pass rate, aged findings, upcoming sign-offs.
-- **Resources** — allocation heatmap, overallocation flags, equipment utilization.
-- **Loss & opportunity** — portfolio ranked by recoverable loss: top priced losses by asset and Six Big Losses bucket, which are already addressed by an open project, and which are not (FEL1 candidates). For closed projects, promised vs verified recovery. Gives Finance, CI, and Engineering one shared priority list.
-- **Startup & Early Management** — startup curve vs nameplate per asset in Early Management, exit-criteria checklist status (incl. operator certification), and punchlist burn-down.
-- **Project reliability** — the project-side counterpart to an OEE board (`§14`): project-loss Pareto by category and package, package readiness for the next N weeks, weekly plan compliance with variance reasons, RFI / submittal / change-order aging, open deviations, and hold-point first-pass rate. Contributors see a version filtered to their own contract's packages.
+- **Project overview:** one per project. Shows headline KPIs (budget variance, schedule slip, open high risks, overdue approvals), milestone timeline, recent decisions, Jiminy insights.
+- **Executive portfolio:** one per portfolio. Grid of projects with health indicators, drill-down. Aggregates CapEx committed, forecast variance, projects at risk.
+- **Finance:** budget-heavy view. Baseline vs actuals vs EAC across projects, cash-flow curves, approvals in flight.
+- **HSE:** safety and compliance across projects. Incidents, inspection pass rate, aged findings, upcoming sign-offs.
+- **Resources:** allocation heatmap, overallocation flags, equipment utilization.
+- **Loss & opportunity:** portfolio ranked by recoverable loss: top priced losses by asset and Six Big Losses bucket, which are already addressed by an open project, and which are not (FEL1 candidates). For closed projects, promised vs verified recovery. Gives Finance, CI, and Engineering one shared priority list.
+- **Startup & Early Management:** startup curve vs nameplate per asset in Early Management, exit-criteria checklist status (incl. operator certification), and punchlist burn-down.
+- **Project reliability:** the project-side counterpart to an OEE board (`§14`): project-loss Pareto by category and package, package readiness for the next N weeks, weekly plan compliance with variance reasons, RFI / submittal / change-order aging, open deviations, and hold-point first-pass rate. Contributors see a version filtered to their own contract's packages.
 
 Admins can create and share custom dashboards. Users with `write:dashboards` grant on a project can modify project-scope dashboards.
 
@@ -49,7 +49,7 @@ All charts share a visual system. Choices and defaults (see the `dataviz` skill 
 ### Role filtering
 
 - Every tile has `data_binding` that is evaluated through the caller's effective grants.
-- A tile that would be entirely empty for a caller renders a "No data visible for your role" tombstone, so the user understands the structure exists but is restricted — rather than hiding the tile silently.
+- A tile that would be entirely empty for a caller renders a "No data visible for your role" tombstone, so the user understands the structure exists but is restricted, rather than hiding the tile silently.
 - Field-level restrictions (`§04`) cause specific columns to be omitted in tabular tiles.
 
 ### Freshness and updates
@@ -70,13 +70,13 @@ All charts share a visual system. Choices and defaults (see the `dataviz` skill 
 
 Some capital work happens at the equipment, not at a desk. These flows get a phone-first UI (Phase 2; responsive web until then), borrowing from the operator-facing TPM tools' pattern of simple checklists with photo or QR proof:
 
-- **CQV / SAT walkdowns** — step through the test protocol at the asset; photo evidence per step; pass / fail / punchlist captured on the spot.
-- **Punchlist capture and closeout** — photo, location (asset QR), severity, owner; closure requires an "after" photo.
-- **Turnover inspections** — verify spares on the shelf, labels, LOTO points, and procedures posted, against the TurnoverPackage checklist.
-- **Hold-point inspections** — inspector steps through the ITP criteria at the work face, attaches evidence, and releases or fails the hold point.
-- **Deviation tagging** — anyone close to the work (owner's rep, supervisor, contractor lead) tags an interface clash, missing material, or incomplete prior work with a photo and location; it routes to an owner and can be escalated to an RFI, issue, or change request.
-- **Contractor progress updates** — contributors record installed quantities and close assigned punchlist items, scoped to their own packages.
-- **Design-review input at the equipment** — operators and maintenance techs comment on a model, drawing, or existing asset with photos, feeding the "easy-to" findings.
+- **CQV / SAT walkdowns:** step through the test protocol at the asset; photo evidence per step; pass / fail / punchlist captured on the spot.
+- **Punchlist capture and closeout:** photo, location (asset QR), severity, owner; closure requires an "after" photo.
+- **Turnover inspections:** verify spares on the shelf, labels, LOTO points, and procedures posted, against the TurnoverPackage checklist.
+- **Hold-point inspections:** inspector steps through the ITP criteria at the work face, attaches evidence, and releases or fails the hold point.
+- **Deviation tagging:** anyone close to the work (owner's rep, supervisor, contractor lead) tags an interface clash, missing material, or incomplete prior work with a photo and location; it routes to an owner and can be escalated to an RFI, issue, or change request.
+- **Contractor progress updates:** contributors record installed quantities and close assigned punchlist items, scoped to their own packages.
+- **Design-review input at the equipment:** operators and maintenance techs comment on a model, drawing, or existing asset with photos, feeding the "easy-to" findings.
 
 Asset QR codes resolve to the pro_manage asset page (role-filtered). Offline capture with later sync is required for plant areas without coverage; conflicts resolve last-write-wins per field with the full history kept in audit.
 
@@ -84,7 +84,7 @@ Asset QR codes resolve to the pro_manage asset page (role-filtered). Offline cap
 
 ### Scheduling
 
-- Each dashboard can have `ExportSchedule` rows: `kind` ∈ `{pdf, pptx}`, `cadence` (cron or named — `weekly_fri_1700`), `recipients[]` (user ids, email addresses, Teams channel refs via Commsi), `template_id`, `filter_overrides`, `active`.
+- Each dashboard can have `ExportSchedule` rows: `kind` ∈ `{pdf, pptx}`, `cadence` (cron or named, e.g. `weekly_fri_1700`), `recipients[]` (user ids, email addresses, Teams channel refs via Commsi), `template_id`, `filter_overrides`, `active`.
 - pm-workers scheduler fires at the cadence; invokes pm-core to assemble bound data; dispatches to pm-sidecar render; stores artifact in MinIO; sends via Commsi.
 
 ### Templates
@@ -104,7 +104,7 @@ Asset QR codes resolve to the pro_manage asset page (role-filtered). Offline cap
 ### Flow
 
 - Project Owner (or anyone with `read:dashboards` grant) hits "Build steering deck."
-- Modal: choose template (defaults by workflow kind — "Monthly steering," "Quarterly review," "Closeout review"), choose included sections.
+- Modal: choose template (defaults by workflow kind: "Monthly steering," "Quarterly review," "Closeout review"), choose included sections.
 - pm-core assembles bound data (budget state, schedule state, risks, metrics, outstanding approvals, recent decisions, Jiminy insights relevant to the project).
 - pm-sidecar renders PPTX.
 - Owner reviews in a preview, can edit annotations/notes before send.

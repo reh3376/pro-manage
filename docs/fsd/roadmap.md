@@ -1,4 +1,4 @@
-# Roadmap — Phased Delivery, Milestones, Dependencies, Risks
+# Roadmap: Phased Delivery, Milestones, Dependencies, Risks
 
 Status: **Draft v0, under active construction** · Last updated: 2026-10-14
 
@@ -23,7 +23,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 | 4 | 41–52 | Harden & scale | Perf tuning, load testing at 1.5× peak, DR drill, UOTS, security review, Kubernetes-readiness verification |
 | GA | year-two | Rollout | Site-wide rollout to all projects + Pattern B plugin + additional connector backends per demand |
 
-## Phase 0 — Foundation (weeks 1–6)
+## Phase 0: Foundation (weeks 1–6)
 
 ### Deliverables
 - Monorepo with Go, Python, TS/Next.js layouts; `/docs/fsd/` already in place.
@@ -49,24 +49,24 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - IdP sandbox (local Keycloak suffices for Phase 0).
 - MDEMG dev profile pinned at a specific tag.
 
-## Phase 1 — MVP vertical slice (weeks 7–16)
+## Phase 1: MVP vertical slice (weeks 7–16)
 
 ### Deliverables
-- **Projects** — full CRUD; template system shipped with 2 templates; lifecycle transitions `Initiate → Plan → Execute`.
-- **Assets & business case** — Asset / AssetClass registry (planned assets owned in pro_manage; in-service mirrored later via CMMSi); LossCategory seeded with the Six Big Losses; `BusinessCasePromise` with CAR-time baseline and measurement basis required for CAR submission.
-- **Project health review** — recurring review with pre-filled agenda and owned actions.
-- **Membership & ACL** — ProjectMember, ACLGrant; the four enforcement layers of `§04` (edge, service, projection, DB row-security on sensitive tables).
-- **Budget** — manual baseline entry, baseline-change workflow, manual actuals (ERPi integration begins in parallel), variance computed.
-- **Schedule** — manual milestone entry + dependencies; completion rule enforcement; (Schedulei imports deferred to Phase 2).
-- **Approvals** — CAR + Baseline change workflows live; multi-stage routing via eligibility pools; delegation (basic); SLA tick + nudges via Commsi; admin override path; signed-hash audit chain.
-- **Sigi** — DocuSign integration live for CAR ≥ configurable threshold; signed-artifact capture to MinIO.
-- **IdPi** — Entra ID *or* Okta backend production-ready (whichever is the owner's primary); SAML backend scaffolded (not necessarily live).
-- **Commsi** — SMTP + Teams (or Slack, per company culture) notifications for approvals + overdue nudges.
-- **ERPi** — one backend wired against the primary ERP (owner confirms 2026-10-14 which); `FetchActuals` live, `FetchCommitments` live, `FetchInvoices` live for in-scope projects.
-- **Dashboards** — Project Overview dashboard template; 6–8 built-in tiles bound to the headline metrics; live SSE updates working.
-- **MDEMG** — governance space seeded with ~20 real constraints authored by Governance Author (compliance team); project spaces created per project.
-- **Audit** — nightly chain verification job; retrieval UI for approval chains.
-- **Frontend** — authenticated UI for Project Owner + Teammate (Editor/Viewer) flows; polished enough for 3–5 pilot users.
+- **Projects:** full CRUD; template system shipped with 2 templates; lifecycle transitions `Initiate → Plan → Execute`.
+- **Assets & business case:** Asset / AssetClass registry (planned assets owned in pro_manage; in-service mirrored later via CMMSi); LossCategory seeded with the Six Big Losses; `BusinessCasePromise` with CAR-time baseline and measurement basis required for CAR submission.
+- **Project health review:** recurring review with pre-filled agenda and owned actions.
+- **Membership & ACL:** ProjectMember, ACLGrant; the four enforcement layers of `§04` (edge, service, projection, DB row-security on sensitive tables).
+- **Budget:** manual baseline entry, baseline-change workflow, manual actuals (ERPi integration begins in parallel), variance computed.
+- **Schedule:** manual milestone entry + dependencies; completion rule enforcement; (Schedulei imports deferred to Phase 2).
+- **Approvals:** CAR + Baseline change workflows live; multi-stage routing via eligibility pools; delegation (basic); SLA tick + nudges via Commsi; admin override path; signed-hash audit chain.
+- **Sigi:** DocuSign integration live for CAR ≥ configurable threshold; signed-artifact capture to MinIO.
+- **IdPi:** Entra ID *or* Okta backend production-ready (whichever is the owner's primary); SAML backend scaffolded (not necessarily live).
+- **Commsi:** SMTP + Teams (or Slack, per company culture) notifications for approvals + overdue nudges.
+- **ERPi:** one backend wired against the primary ERP (owner confirms 2026-10-14 which); `FetchActuals` live, `FetchCommitments` live, `FetchInvoices` live for in-scope projects.
+- **Dashboards:** Project Overview dashboard template; 6–8 built-in tiles bound to the headline metrics; live SSE updates working.
+- **MDEMG:** governance space seeded with ~20 real constraints authored by Governance Author (compliance team); project spaces created per project.
+- **Audit:** nightly chain verification job; retrieval UI for approval chains.
+- **Frontend:** authenticated UI for Project Owner + Teammate (Editor/Viewer) flows; polished enough for 3–5 pilot users.
 
 ### Success criteria
 - Three pilot projects live, in-scope for the pilot team's actual work.
@@ -80,31 +80,31 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - Identity provider confirmed (owner intel).
 - Governance Author (compliance team member) committed to constraint authoring part-time.
 
-## Phase 2 — Breadth (weeks 17–28)
+## Phase 2: Breadth (weeks 17–28)
 
 ### Deliverables
-- **Scope / WBS / Deliverables** — full management; change-request workflow live.
-- **Risk / Issue management** — risk register with aging rules + Jiminy guidance; issue log.
-- **Documents** — local-mode doc management (upload/version/permission); first `Doci` backend (SharePoint or Drive); permission mirroring + drift detection.
-- **Metrics via Metrici** — relational connectors (Postgres, SQL Server), Timescale/Influx, and the first historian backend; derived-metric formulas via pm-sidecar; dashboards against real harvested data.
-- **HSEi** — first MES/WMS/QMS backend wired for one site; incidents + inspections flowing.
-- **Spreadsheet import/export** — xlsx budget baseline + risk register + milestones; UATS specs for each template.
-- **Loss harvest** — HSEi `FetchLossEvents` from the plant's OEE/loss platform; priced-loss metrics; **Loss & opportunity** dashboard; portfolio ranking by recoverable loss.
-- **Operations-TPM MP sources** — HSEi `FetchAbnormalityTags` + CMMSi failure history feeding per-asset-class MP-information candidates for human confirmation.
-- **Mobile field flows** — phone-first CQV/SAT walkdowns, punchlist capture, turnover inspections, with photo/QR proof and offline sync.
-- **Certification gate** — HSEi `FetchSkillCertifications` (or manual record) wired into Early Management exit.
-- **Validate the project-as-equipment loss model (`§14`)** — before relying on it, run the project-loss accounting retrospectively on two or three completed projects (from their RFI logs, NCRs, submittal registers, and schedules) and check that the categories capture where the time actually went. Done first in this phase, so `ProjectLossCategory` is adjusted before the EPCM objects below are built on it. Prior-art search in parallel.
-- **EPCM delivery objects** — Contracts, work packages with readiness constraints and plan compliance, RFIs, submittals, change orders, ITPs and hold points, project deviations.
-- **Contributor access** — scoped `contributor` role for EPCM/contractor staff, federated identity via IdPi.
-- **Project losses** — project-loss events derived from the above; **Project reliability** dashboard; health reviews select a dominant loss.
-- **Design-review lenses** — constructability, commissionability, safety in design; Construction Manager stage.
-- **Scheduled exports** — PDF + PPTX generation via pm-sidecar; weekly steering export working for pilot projects.
-- **On-demand deck generation** — "Build steering deck" button functional against 2–3 templates.
-- **External stakeholder sharing** — tokenized dashboard links; attestation flow; `pm-frontend-public` live.
-- **Schedulei** — first schedule-tool backend (likely MS Project XML or P6 XER).
-- **Portfolio dashboards** — Executive Portfolio template live.
-- **UBTS + USTS** — Phase 2 UxTS adoption; CI gates in place.
-- **Observability** — business-health dashboards live; alert rotation documented.
+- **Scope / WBS / Deliverables:** full management; change-request workflow live.
+- **Risk / Issue management:** risk register with aging rules + Jiminy guidance; issue log.
+- **Documents:** local-mode doc management (upload/version/permission); first `Doci` backend (SharePoint or Drive); permission mirroring + drift detection.
+- **Metrics via Metrici:** relational connectors (Postgres, SQL Server), Timescale/Influx, and the first historian backend; derived-metric formulas via pm-sidecar; dashboards against real harvested data.
+- **HSEi:** first MES/WMS/QMS backend wired for one site; incidents + inspections flowing.
+- **Spreadsheet import/export:** xlsx budget baseline + risk register + milestones; UATS specs for each template.
+- **Loss harvest:** HSEi `FetchLossEvents` from the plant's OEE/loss platform; priced-loss metrics; **Loss & opportunity** dashboard; portfolio ranking by recoverable loss.
+- **Operations-TPM MP sources:** HSEi `FetchAbnormalityTags` + CMMSi failure history feeding per-asset-class MP-information candidates for human confirmation.
+- **Mobile field flows:** phone-first CQV/SAT walkdowns, punchlist capture, turnover inspections, with photo/QR proof and offline sync.
+- **Certification gate:** HSEi `FetchSkillCertifications` (or manual record) wired into Early Management exit.
+- **Validate the project-as-equipment loss model (`§14`):** before relying on it, run the project-loss accounting retrospectively on two or three completed projects (from their RFI logs, NCRs, submittal registers, and schedules) and check that the categories capture where the time actually went. Done first in this phase, so `ProjectLossCategory` is adjusted before the EPCM objects below are built on it. Prior-art search in parallel.
+- **EPCM delivery objects:** Contracts, work packages with readiness constraints and plan compliance, RFIs, submittals, change orders, ITPs and hold points, project deviations.
+- **Contributor access:** scoped `contributor` role for EPCM/contractor staff, federated identity via IdPi.
+- **Project losses:** project-loss events derived from the above; **Project reliability** dashboard; health reviews select a dominant loss.
+- **Design-review lenses:** constructability, commissionability, safety in design; Construction Manager stage.
+- **Scheduled exports:** PDF + PPTX generation via pm-sidecar; weekly steering export working for pilot projects.
+- **On-demand deck generation:** "Build steering deck" button functional against 2–3 templates.
+- **External stakeholder sharing:** tokenized dashboard links; attestation flow; `pm-frontend-public` live.
+- **Schedulei:** first schedule-tool backend (likely MS Project XML or P6 XER).
+- **Portfolio dashboards:** Executive Portfolio template live.
+- **UBTS + USTS:** Phase 2 UxTS adoption; CI gates in place.
+- **Observability:** business-health dashboards live; alert rotation documented.
 
 ### Success criteria
 - ≥ 10 projects onboarded.
@@ -113,18 +113,18 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - First HSE incident surfaced via guidance in a real project.
 - Error budget burn stays within target.
 
-## Phase 3 — Depth (weeks 29–40)
+## Phase 3: Depth (weeks 29–40)
 
 ### Deliverables
 - Additional ERPi, Schedulei, Doci, Metrici, HSEi backends per demand.
-- **Project-team competency matrix** — role competencies for owner, EPCM, and contractor staff; gaps surface as package readiness warnings.
-- **Resource allocation** — Resource + Allocation entities; overallocation detection; dashboards.
-- **Closeout workflow** — full lifecycle to `Close` + `Archived`.
-- **Legal hold** — admin-triggered retention freeze; dashboards reflect holds.
-- **UPMTS** (custom UxTS framework) — governs derived-metric contracts.
-- **Delegation richness** — chained delegation, OOO calendars, workflow-specific overrides.
-- **Portfolio-level approvals** (if applicable) — cross-project CapEx roll-ups for executive view.
-- **Governance effectiveness dashboard** — per-constraint surfacing/followed/ignored metrics drawn from MDEMG.
+- **Project-team competency matrix:** role competencies for owner, EPCM, and contractor staff; gaps surface as package readiness warnings.
+- **Resource allocation:** Resource + Allocation entities; overallocation detection; dashboards.
+- **Closeout workflow:** full lifecycle to `Close` + `Archived`.
+- **Legal hold:** admin-triggered retention freeze; dashboards reflect holds.
+- **UPMTS** (custom UxTS framework): governs derived-metric contracts.
+- **Delegation richness:** chained delegation, OOO calendars, workflow-specific overrides.
+- **Portfolio-level approvals** (if applicable): cross-project CapEx roll-ups for executive view.
+- **Governance effectiveness dashboard:** per-constraint surfacing/followed/ignored metrics drawn from MDEMG.
 
 ### Success criteria
 - ≥ 50 projects onboarded (≥ 25% of in-flight capital projects > $1M).
@@ -132,12 +132,12 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - First successful disaster-recovery drill completed.
 - UPMTS catches at least one real derived-metric regression in CI.
 
-## Phase 4 — Harden & scale (weeks 41–52)
+## Phase 4: Harden & scale (weeks 41–52)
 
 ### Deliverables
 - Load testing at 1.5× year-two projected peak; capacity-plan addendum published.
 - Full DR drill with scored outcomes.
-- **UOTS** — operations spec coverage of all compose/K8s manifests.
+- **UOTS:** operations spec coverage of all compose/K8s manifests.
 - Security review (internal or third-party).
 - Kubernetes-readiness verification: a parallel K8s cluster running the same images with the same manifests, serving a canary of traffic.
 - Documentation hardening: operational runbooks, admin UX docs, user onboarding materials.
@@ -148,7 +148,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - All year-one success criteria from `§01` met.
 - Zero P1 incidents in the last quarter.
 
-## Year-two — GA + beyond
+## Year-two: GA + beyond
 
 ### Deliverables
 - Site-wide rollout to all project tiers (including < $1M).

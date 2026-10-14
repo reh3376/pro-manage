@@ -1,17 +1,17 @@
-# 07 — Metrics & Data Curation
+# 07: Metrics & Data Curation
 
 ## Decisions on record
 
-- **2026-10-13** — First-class metric families: **Financial, Schedule/Milestones, Scope/Risk/Issues, Safety/Quality/Compliance, Resource utilization, and TPM / Plant Operations** (post-startup).
-- **2026-10-13** — **TPM / Plant Operations** is the metric family that proves a capital project actually delivered. During Early Management Period and Benefits Realization, pro_manage pulls OEE, MTBF, MTTR, FPY/RFT, EPU, OLE, Startup Curve, Changeover Time, and Capacity Utilization via **Metrici** (plant historian / OPC UA) and **HSEi** (MES/QMS) and compares against the project's business-case promises.
-- **2026-10-14** — **Priced losses** (Six Big Losses + site loss tree) are a first-class metric family harvested from the operations TPM stack. Business cases promise loss recovery in dollars; Benefits Realization verifies recovery of those losses on those assets against a CAR-time baseline.
-- **2026-10-14** — **Project losses** (the project's own losses under an EPCM model) are a first-class family alongside plant losses, with project-administration cycle times, package readiness, and plan compliance. A composite "package effectiveness" score is deliberately *not* a headline metric: composites are easy to game; the component losses are what health reviews act on.
-- **2026-10-13** — **TIC** (Total Installed Cost) and **LCC** (Lifecycle Cost) are separate first-class concepts. TIC is tracked throughout the project; LCC is estimated during Design and compared to actuals during Benefits Realization.
-- **2026-10-13** — Harvest architecture: pluggable `Metrici` connectors (relational, time-series, generic Historian / OPC UA) with per-backend throttles and schema contracts governed by UATS/UNTS.
-- **2026-10-13** — Metric readings land in **pro_manage's own TimescaleDB** (not MDEMG's). ERP actuals come via `ERPi` and settle into both the financial domain tables (Postgres) and the metric time series (ours).
-- **2026-10-13** — Spreadsheet import/export is first-class, with UATS-governed schema contracts for every supported workbook template.
-- **2026-10-13** — Derived metrics (CPI, SPI, EAC, variance) are computed in **pm-sidecar** (Python) via a sandboxed formula engine with an allowlist of operations.
-- **2026-10-13** — Data quality is modeled explicitly: every reading carries a `quality ∈ {good, questionable, bad}` with a `source_ref`. "Bad" readings are stored but excluded from aggregations by default.
+- **2026-10-13:** First-class metric families: **Financial, Schedule/Milestones, Scope/Risk/Issues, Safety/Quality/Compliance, Resource utilization, and TPM / Plant Operations** (post-startup).
+- **2026-10-13:** **TPM / Plant Operations** is the metric family that proves a capital project actually delivered. During Early Management Period and Benefits Realization, pro_manage pulls OEE, MTBF, MTTR, FPY/RFT, EPU, OLE, Startup Curve, Changeover Time, and Capacity Utilization via **Metrici** (plant historian / OPC UA) and **HSEi** (MES/QMS) and compares against the project's business-case promises.
+- **2026-10-14:** **Priced losses** (Six Big Losses + site loss tree) are a first-class metric family harvested from the operations TPM stack. Business cases promise loss recovery in dollars; Benefits Realization verifies recovery of those losses on those assets against a CAR-time baseline.
+- **2026-10-14:** **Project losses** (the project's own losses under an EPCM model) are a first-class family alongside plant losses, with project-administration cycle times, package readiness, and plan compliance. A composite "package effectiveness" score is deliberately *not* a headline metric: composites are easy to game; the component losses are what health reviews act on.
+- **2026-10-13:** **TIC** (Total Installed Cost) and **LCC** (Lifecycle Cost) are separate first-class concepts. TIC is tracked throughout the project; LCC is estimated during Design and compared to actuals during Benefits Realization.
+- **2026-10-13:** Harvest architecture: pluggable `Metrici` connectors (relational, time-series, generic Historian / OPC UA) with per-backend throttles and schema contracts governed by UATS/UNTS.
+- **2026-10-13:** Metric readings land in **pro_manage's own TimescaleDB** (not MDEMG's). ERP actuals come via `ERPi` and settle into both the financial domain tables (Postgres) and the metric time series (ours).
+- **2026-10-13:** Spreadsheet import/export is first-class, with UATS-governed schema contracts for every supported workbook template.
+- **2026-10-13:** Derived metrics (CPI, SPI, EAC, variance) are computed in **pm-sidecar** (Python) via a sandboxed formula engine with an allowlist of operations.
+- **2026-10-13:** Data quality is modeled explicitly: every reading carries a `quality ∈ {good, questionable, bad}` with a `source_ref`. "Bad" readings are stored but excluded from aggregations by default.
 
 ## Metric families (year-one catalog)
 
@@ -24,8 +24,8 @@ Each family ships with a built-in set of standard metrics (admin-extensible via 
 - `budget.forecast_eac` (point-in-time Estimate at Completion)
 - `budget.variance_pct` = `(committed + remaining_eac − baseline_total) / baseline_total`
 - `budget.cash_flow_actual` (period-based)
-- `budget.cost_performance_index` (CPI = BCWP / ACWP) — derived; requires earned-value inputs
-- `budget.schedule_performance_index` (SPI = BCWP / BCWS) — derived
+- `budget.cost_performance_index` (CPI = BCWP / ACWP): derived; requires earned-value inputs
+- `budget.schedule_performance_index` (SPI = BCWP / BCWS): derived
 
 ### Schedule
 - `schedule.milestones_total`, `milestones_completed`, `milestones_overdue`
@@ -59,26 +59,26 @@ Each family ships with a built-in set of standard metrics (admin-extensible via 
 
 This family only becomes meaningful once an asset is in Early Management or beyond. It is the direct scorecard for **vertical startup** and **benefits realization**. All of it harvests from the running plant via **Metrici** (historian / OPC UA / SCADA) and **HSEi** (MES / QMS).
 
-- `tpm.oee` — Overall Equipment Effectiveness. **Availability × Performance × Quality.**
-  - `tpm.oee.availability` — Run time ÷ planned production time.
-  - `tpm.oee.performance` — (Ideal cycle time × total count) ÷ run time.
-  - `tpm.oee.quality` — Good units first-time ÷ total units.
-- `tpm.teep` — Total Effective Equipment Performance. OEE × Loading. Reveals hidden capacity.
-- `tpm.capacity_utilization` — Actual output ÷ installed capacity.
-- `tpm.mtbf` — Mean Time Between Failures (operating time ÷ failure count).
-- `tpm.mttr` — Mean Time To Repair (repair downtime ÷ repair count).
-- `tpm.mttf` — Mean Time To Failure (non-repairable components).
-- `tpm.fpy_rft` — First Pass Yield / Right First Time.
-- `tpm.startup_curve` — Daily rate as % of nameplate, from Day 1 of production. Primary EEM scorecard.
-- `tpm.time_to_nameplate` — Days from first production to sustained target rate (point metric, computed at achievement).
-- `tpm.planned_maintenance_pct` — Planned maintenance hours ÷ total maintenance hours.
-- `tpm.changeover_time` — Per changeover.
-- `tpm.cpu` — Cost Per Unit (production cost ÷ units).
-- `tpm.copq` — Cost of Poor Quality (scrap + rework + reblend + returns + inspection + downgrades).
-- `tpm.epu` — Energy Per Unit (energy used ÷ output; e.g., therms per proof gallon for a distillery).
-- `tpm.ole` — Overall Labor Effectiveness.
-- `tpm.cycle_time` — Actual vs engineering-standard cycle time.
-- `tpm.schedule_adherence` — Actual output ÷ scheduled output.
+- `tpm.oee`: Overall Equipment Effectiveness. **Availability × Performance × Quality.**
+  - `tpm.oee.availability`: Run time ÷ planned production time.
+  - `tpm.oee.performance`: (Ideal cycle time × total count) ÷ run time.
+  - `tpm.oee.quality`: Good units first-time ÷ total units.
+- `tpm.teep`: Total Effective Equipment Performance. OEE × Loading. Reveals hidden capacity.
+- `tpm.capacity_utilization`: Actual output ÷ installed capacity.
+- `tpm.mtbf`: Mean Time Between Failures (operating time ÷ failure count).
+- `tpm.mttr`: Mean Time To Repair (repair downtime ÷ repair count).
+- `tpm.mttf`: Mean Time To Failure (non-repairable components).
+- `tpm.fpy_rft`: First Pass Yield / Right First Time.
+- `tpm.startup_curve`: Daily rate as % of nameplate, from Day 1 of production. Primary EEM scorecard.
+- `tpm.time_to_nameplate`: Days from first production to sustained target rate (point metric, computed at achievement).
+- `tpm.planned_maintenance_pct`: Planned maintenance hours ÷ total maintenance hours.
+- `tpm.changeover_time`: Per changeover.
+- `tpm.cpu`: Cost Per Unit (production cost ÷ units).
+- `tpm.copq`: Cost of Poor Quality (scrap + rework + reblend + returns + inspection + downgrades).
+- `tpm.epu`: Energy Per Unit (energy used ÷ output; e.g., therms per proof gallon for a distillery).
+- `tpm.ole`: Overall Labor Effectiveness.
+- `tpm.cycle_time`: Actual vs engineering-standard cycle time.
+- `tpm.schedule_adherence`: Actual output ÷ scheduled output.
 
 **Industry-specific metrics are template-driven.** For distilling: `distillery.yield_pg_per_bushel`, `distillery.proof_gallon_per_day`, `distillery.beer_system_water_use_gpd`. For bottling: `bottling.line_speed_bpm`, `bottling.changeover_time_sku_to_sku`. Templates ship with the pm-core release; new industries add their own via the admin `MetricDefinition` surface.
 
@@ -86,12 +86,12 @@ This family only becomes meaningful once an asset is in Early Management or beyo
 
 ### Losses (priced)
 
-Losses are the common currency between operations and capital. pro_manage does not originate loss data — it harvests `LossEvent`s from the plant's MES / OEE / loss platforms via HSEi (and Metrici where losses are derived from historian signals), categorized by the **Six Big Losses** and the site loss tree (`§03 LossCategory`), and priced in dollars per the category's cost basis.
+Losses are the common currency between operations and capital. pro_manage does not originate loss data; it harvests `LossEvent`s from the plant's MES / OEE / loss platforms via HSEi (and Metrici where losses are derived from historian signals), categorized by the **Six Big Losses** and the site loss tree (`§03 LossCategory`), and priced in dollars per the category's cost basis.
 
-- `loss.priced_annualized` — per asset and loss category, trailing 12 months, dollars. The baseline for any `loss_recovery` business-case promise.
-- `loss.by_six_big` — breakdowns, setup/changeover, minor stops, reduced speed, startup rejects, production rejects.
-- `loss.recoverable_candidates` — top losses by dollar value on assets with no open project addressing them. Feeds portfolio ranking (`§09`) and FEL1 idea generation.
-- `loss.recovered` — for a closed project, priced loss during the Benefits Realization window vs the CAR-time baseline on the same assets and categories. This is **verified recovery**: the promise and the measurement use the same assets, categories, and pricing basis, fixed at CAR time.
+- `loss.priced_annualized`: per asset and loss category, trailing 12 months, dollars. The baseline for any `loss_recovery` business-case promise.
+- `loss.by_six_big`: breakdowns, setup/changeover, minor stops, reduced speed, startup rejects, production rejects.
+- `loss.recoverable_candidates`: top losses by dollar value on assets with no open project addressing them. Feeds portfolio ranking (`§09`) and FEL1 idea generation.
+- `loss.recovered`: for a closed project, priced loss during the Benefits Realization window vs the CAR-time baseline on the same assets and categories. This is **verified recovery**: the promise and the measurement use the same assets, categories, and pricing basis, fixed at CAR time.
 
 Pricing basis (cost per downtime hour, per scrapped unit, etc.) is owned by Finance and versioned; a pricing change does not retroactively alter a committed promise's basis.
 
@@ -159,16 +159,16 @@ quality:
 
 TPM applied to the project itself: the project is the "equipment," and its losses are measured and attacked the same way. Concept, OEE mapping, and open questions in `§14`. Sourced from pro_manage's own EPCM objects (`§03`), so no connector is needed.
 
-- `project_loss.by_category` — days and dollars by `ProjectLossCategory` (waiting on information, waiting on approval, rework, interface clash, unready package, safety stop, skill-gap error), per project and package, trailing period. The Pareto a health review uses to pick its dominant loss.
-- `project_loss.cost_of_delay` — delay days × the project's configured cost-of-delay rate (where Finance has set one).
-- `admin.rfi_cycle_time`, `admin.rfi_open_aged` — median raise-to-answer days; count open past SLA.
-- `admin.submittal_cycle_time`, `admin.submittal_first_pass_rate` — review days; share approved on first submission (a project-side first-pass yield).
-- `admin.change_order_cycle_time`, `admin.approval_wait_days` — including internal CAR / baseline approvals.
-- `package.readiness_pct` — share of packages due to start in the next N weeks with all readiness constraints met.
-- `package.plan_compliance` — percent plan complete: packages completed as planned ÷ packages planned, weekly, with variance reasons.
+- `project_loss.by_category`: days and dollars by `ProjectLossCategory` (waiting on information, waiting on approval, rework, interface clash, unready package, safety stop, skill-gap error), per project and package, trailing period. The Pareto a health review uses to pick its dominant loss.
+- `project_loss.cost_of_delay`: delay days × the project's configured cost-of-delay rate (where Finance has set one).
+- `admin.rfi_cycle_time`, `admin.rfi_open_aged`: median raise-to-answer days; count open past SLA.
+- `admin.submittal_cycle_time`, `admin.submittal_first_pass_rate`: review days; share approved on first submission (a project-side first-pass yield).
+- `admin.change_order_cycle_time`, `admin.approval_wait_days`: including internal CAR / baseline approvals.
+- `package.readiness_pct`: share of packages due to start in the next N weeks with all readiness constraints met.
+- `package.plan_compliance`: percent plan complete: packages completed as planned ÷ packages planned, weekly, with variance reasons.
 - `quality.ncr_count`, `quality.rework_cost`, `quality.hold_point_first_pass_rate`.
-- `hse.leading_indicators` per package — near misses reported, job hazard analyses complete before start, permits-to-work compliance.
-- `team.competency_gap_count` (Phase 3) — required competencies unmet on assigned package teams.
+- `hse.leading_indicators` per package: near misses reported, job hazard analyses complete before start, permits-to-work compliance.
+- `team.competency_gap_count` (Phase 3): required competencies unmet on assigned package teams.
 
 ## Rollups
 
@@ -195,8 +195,8 @@ For metrics that have a plan vs actual story (budget, schedule, TPM targets):
 
 The two financial dimensions pro_manage treats distinctly:
 
-- **TIC (Total Installed Cost)** — all capital to put the asset in service. Lives in `BudgetBaseline.baseline_total`. Progresses from AACE Class 5 at concept to Class 1 at execution. Primary variance tracking during Execute stage.
-- **LCC (Lifecycle Cost)** — forecasted total cost of ownership over the asset's expected life. Captured in `LCCEstimate` entities (§03). Estimated at Design stage as part of the business case; validated against operational cost actuals during Benefits Realization and after.
+- **TIC (Total Installed Cost):** all capital to put the asset in service. Lives in `BudgetBaseline.baseline_total`. Progresses from AACE Class 5 at concept to Class 1 at execution. Primary variance tracking during Execute stage.
+- **LCC (Lifecycle Cost):** forecasted total cost of ownership over the asset's expected life. Captured in `LCCEstimate` entities (§03). Estimated at Design stage as part of the business case; validated against operational cost actuals during Benefits Realization and after.
 
 Dashboards present TIC and LCC together on projects where both exist. The Business Case view carries explicit prompts: "LCC estimated? Business case rejection likely without it on >$5M projects."
 
@@ -216,18 +216,18 @@ Dashboards present TIC and LCC together on projects where both exist. The Busine
 Supported inputs: `xlsx`, `csv`. Each import template is governed by a **UATS spec** that defines the expected sheet structure, column headers, data types, and reasonable-value bounds.
 
 Supported in year one (admin can add more):
-- **Budget baseline workbook** — WBS rows × account columns, with totals, revision notes, approver (shadow row for pm-core to resolve against users).
-- **Budget forecast workbook** — same shape as baseline + EAC column.
-- **Milestone list** — ordered milestones with baseline and target dates, dependencies.
-- **Risk register** — risks with likelihood, impact, response, owner.
-- **Manual metric table** — generic (metric_id, ts, value, quality) rows for metrics that have no connector.
-- **Resource plan** — allocations for named resources over time windows.
+- **Budget baseline workbook:** WBS rows × account columns, with totals, revision notes, approver (shadow row for pm-core to resolve against users).
+- **Budget forecast workbook:** same shape as baseline + EAC column.
+- **Milestone list:** ordered milestones with baseline and target dates, dependencies.
+- **Risk register:** risks with likelihood, impact, response, owner.
+- **Manual metric table:** generic (metric_id, ts, value, quality) rows for metrics that have no connector.
+- **Resource plan:** allocations for named resources over time windows.
 
 Flow (UC-10): user uploads → pm-sidecar validates → pm-core applies on accept. Validation surfaces per-cell errors to the UI.
 
 ### Exports
 
-For every import type above, pm-core can export the current state as the matching workbook template — allowing round-trips (export, edit in Excel, re-import). The exports include a hidden metadata sheet with the pm-core project id and the current revision hash, so pm-core can detect stale re-imports.
+For every import type above, pm-core can export the current state as the matching workbook template, allowing round-trips (export, edit in Excel, re-import). The exports include a hidden metadata sheet with the pm-core project id and the current revision hash, so pm-core can detect stale re-imports.
 
 ### Beyond templates
 
@@ -235,7 +235,7 @@ Admins can author custom export templates via a simple schema (one worksheet per
 
 ## Dashboards query layer
 
-Dashboards (`§09`) don't query pm-TSDB directly — they go through a pm-core query API:
+Dashboards (`§09`) don't query pm-TSDB directly; they go through a pm-core query API:
 
 - **`DashboardService.ResolveTile(tile_id, context)`** returns the data for a dashboard tile, scoped to the caller's effective grants and the dashboard's bound projects.
 - Each tile has a declared data shape: `scalar`, `timeseries`, `category_series`, `tabular`, `kpi_grid`. The visualization library in the frontend (`§09`) matches shape to chart.
@@ -249,7 +249,7 @@ Query performance:
 ## Retention & downsampling
 
 - **Raw readings:** retained per MetricDefinition `retention_policy` (default 2 years at full resolution).
-- **Continuous aggregates:** per-day, per-week, per-month roll-ups kept at longer retention (7 years day, 10 years month) — enough for ISO/SOX historical lookback.
+- **Continuous aggregates:** per-day, per-week, per-month roll-ups kept at longer retention (7 years day, 10 years month), enough for ISO/SOX historical lookback.
 - **Dropped data:** archived to object storage (MinIO) as parquet before being removed from pm-TSDB. Admin-triggered re-ingestion is possible.
 - **Legal hold:** a project under legal hold has retention frozen; no deletion or downsampling occurs until the hold is released.
 
@@ -265,6 +265,6 @@ When a workflow approves a baseline (budget or schedule), pm-core:
 
 - Confirm the specific chart of accounts shape expected from ERPi (sized once the first ERP backend is known).
 - Decide whether safety / HSE metrics are also captured in pm-TSDB or linked by reference into the HSE system (open: do we duplicate for availability, or always live-fetch?). First instinct: duplicate with daily cadence to pm-TSDB for dashboard performance; live-fetch for drill-down.
-- Decide the earned-value adoption bar — EVM is powerful but not every $25K project will have BCWS/BCWP inputs. First instinct: optional per-project, gated by a project-settings toggle; derived metrics skip when inputs absent.
-- Confirm whether we need user-authored custom charts beyond the built-in tiles. First instinct: yes but in Phase 2 — year one ships curated tiles.
+- Decide the earned-value adoption bar: EVM is powerful but not every $25K project will have BCWS/BCWP inputs. First instinct: optional per-project, gated by a project-settings toggle; derived metrics skip when inputs absent.
+- Confirm whether we need user-authored custom charts beyond the built-in tiles. First instinct: yes but in Phase 2; year one ships curated tiles.
 - Confirm acceptable retention bounds against ISO standards once the specific standards are confirmed.

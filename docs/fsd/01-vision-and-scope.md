@@ -1,33 +1,33 @@
-# 01 — Vision & Scope
+# 01: Vision & Scope
 
 ## Decisions on record
 
-- **2026-10-13** — Design for site-wide scale: 100–500 users, 200+ concurrent active projects.
-- **2026-10-13** — Capital project budget range: $25K to $250M per project.
-- **2026-10-13** — Access model: full ACL per section, per document, per field.
-- **2026-10-13** — First-class metric families: Financial, Schedule/Milestones, Scope/Risk/Issues, Safety/Quality/Compliance + Resource utilization; extended 2026-10-13/14 with TPM / Plant Operations (OEE, MTBF, startup curve, …) and priced losses (`§07`). Plus read-only connectors to relational and time-series databases, and spreadsheet import/export.
-- **2026-10-13** — MDEMG J17 + Jiminy integrated at runtime as advisory + memory layer, with pro_manage owning identity, ACL, workflows, and audit.
-- **2026-10-13** — Approvals are a core feature.
-- **2026-10-13** — Progress presentations include live dashboards, scheduled exports (PDF/PPTX), and on-demand deck generation.
-- **2026-10-13** — **All external-system connectors are modular.** No ERP, IdP, e-signature, schedule tool, document store, communication platform, or MES/WMS/QMS vendor is hard-wired into the core. Each is a pluggable module with a declared contract (gRPC interface + UATS-governed REST surface) that an administrator can configure, enable, or swap without a core release. First-class modules in year one: ERPi (ERP), IdPi (SSO), Sigi (e-signature), Schedulei (schedule tools), Doci (document stores), Commsi (notifications), Metrici (relational + time-series connectors), HSEi (MES/WMS/QMS and operations TPM platforms), CMMSi (CMMS read/write; added 2026-10-13).
-- **2026-10-14** — **Connector modules are named `<Type>i_<CODE>`** (e.g. `ERPi_NS` for NetSuite, `ERPi_SAP` for SAP, `CMMSi_MX` for MaintainX). The company's specific ERP, CMMS, MES, and IdP are not yet known; pro_manage does not depend on knowing them, because the matching modules are selected at deployment. See `§10`.
-- **2026-10-13** — Compliance regime: ISO (specific standards TBD). Baseline is ISO-aligned practices; SOX-grade audit log is a target quality bar even without an explicit SOX obligation.
-- **2026-10-13** — **Target vertical: TPM-driven process industry** (distilling, bottling, food & beverage, chemicals, similar manufacturing). The FSD is written in the vocabulary of that vertical: **CAR, FEL, EEM, Vertical Startup, Benefits Realization, MP information, AACE Estimate Class, TIC vs LCC**. pro_manage is not pretending to be a generic PM tool.
-- **2026-10-13** — The project lifecycle maps **one-to-one** onto the six EEM stages (Concept/Planning → Design → Fabrication/Build → Installation → Commissioning → Early Management Period), with explicit gates and exit criteria at each. See §03.
-- **2026-10-13** — The organizing success question for every project, from the operator's seat: *"Did the asset start up clean, and did operations and maintenance inherit something they could run?"*
-- **2026-10-14** — **Pillar scope.** pro_manage is the system for the **EEM pillar and capital-scale Focused Improvement** projects. It **integrates with, and does not replace,** the operations TPM stack (CMMS, connected-worker, OEE/loss platforms such as Cryotos, Fabrico, Redzone, L2L, Augmentir, MaintainX, Fiix). It reads losses, abnormality tags, and failure history in; it hands assets and turnover packages out. Informed by the owner's TPM software market review (Oct 2026), which found no PM application structured around TPM.
-- **2026-10-14** — **Losses are the common currency.** Business cases state their promises as recoverable losses (Six Big Losses, priced in dollars); Benefits Realization verifies recovery of *those* losses against production data; the portfolio can be ranked by recoverable loss.
-- **2026-10-14** — **Two views of TPM, both first-class.** *TPM for the asset* (EEM, MP information, verified loss recovery on the equipment being built) and *TPM of the project* (the eight pillars applied to project delivery under an EPCM model, with the project's own losses — waiting, rework, interface clashes, unready packages, safety stops, skill gaps — measured and attacked the way a plant attacks equipment losses). Informed by the owner's EPCM-pillar framework (Oct 2026). The *project as equipment* idea is a core concept of pro_manage and is developed in `§14`.
-- **2026-10-14** — **EPCM delivery is supported natively.** The owner holds contracts; the EPCM partner and contractors are participants, not viewers: they update their own work packages, answer RFIs, and submit documents under a scoped contributor role (`§04`).
-- **2026-10-14** — **Asset is a first-class entity**, mirrored from the plant CMMS. MP information, startup curve, OEE, turnover, and Benefits Realization all key off the same physical asset and asset class.
+- **2026-10-13:** Design for site-wide scale: 100–500 users, 200+ concurrent active projects.
+- **2026-10-13:** Capital project budget range: $25K to $250M per project.
+- **2026-10-13:** Access model: full ACL per section, per document, per field.
+- **2026-10-13:** First-class metric families: Financial, Schedule/Milestones, Scope/Risk/Issues, Safety/Quality/Compliance + Resource utilization; extended 2026-10-13/14 with TPM / Plant Operations (OEE, MTBF, startup curve, …) and priced losses (`§07`). Plus read-only connectors to relational and time-series databases, and spreadsheet import/export.
+- **2026-10-13:** MDEMG J17 + Jiminy integrated at runtime as advisory + memory layer, with pro_manage owning identity, ACL, workflows, and audit.
+- **2026-10-13:** Approvals are a core feature.
+- **2026-10-13:** Progress presentations include live dashboards, scheduled exports (PDF/PPTX), and on-demand deck generation.
+- **2026-10-13:** **All external-system connectors are modular.** No ERP, IdP, e-signature, schedule tool, document store, communication platform, or MES/WMS/QMS vendor is hard-wired into the core. Each is a pluggable module with a declared contract (gRPC interface + UATS-governed REST surface) that an administrator can configure, enable, or swap without a core release. First-class modules in year one: ERPi (ERP), IdPi (SSO), Sigi (e-signature), Schedulei (schedule tools), Doci (document stores), Commsi (notifications), Metrici (relational + time-series connectors), HSEi (MES/WMS/QMS and operations TPM platforms), CMMSi (CMMS read/write; added 2026-10-13).
+- **2026-10-14:** **Connector modules are named `<Type>i_<CODE>`** (e.g. `ERPi_NS` for NetSuite, `ERPi_SAP` for SAP, `CMMSi_MX` for MaintainX). The company's specific ERP, CMMS, MES, and IdP are not yet known; pro_manage does not depend on knowing them, because the matching modules are selected at deployment. See `§10`.
+- **2026-10-13:** Compliance regime: ISO (specific standards TBD). Baseline is ISO-aligned practices; SOX-grade audit log is a target quality bar even without an explicit SOX obligation.
+- **2026-10-13:** **Target vertical: TPM-driven process industry** (distilling, bottling, food & beverage, chemicals, similar manufacturing). The FSD is written in the vocabulary of that vertical: **CAR, FEL, EEM, Vertical Startup, Benefits Realization, MP information, AACE Estimate Class, TIC vs LCC**. pro_manage is not pretending to be a generic PM tool.
+- **2026-10-13:** The project lifecycle maps **one-to-one** onto the six EEM stages (Concept/Planning → Design → Fabrication/Build → Installation → Commissioning → Early Management Period), with explicit gates and exit criteria at each. See §03.
+- **2026-10-13:** The organizing success question for every project, from the operator's seat: *"Did the asset start up clean, and did operations and maintenance inherit something they could run?"*
+- **2026-10-14:** **Pillar scope.** pro_manage is the system for the **EEM pillar and capital-scale Focused Improvement** projects. It **integrates with, and does not replace,** the operations TPM stack (CMMS, connected-worker, OEE/loss platforms such as Cryotos, Fabrico, Redzone, L2L, Augmentir, MaintainX, Fiix). It reads losses, abnormality tags, and failure history in; it hands assets and turnover packages out. Informed by the owner's TPM software market review (Oct 2026), which found no PM application structured around TPM.
+- **2026-10-14:** **Losses are the common currency.** Business cases state their promises as recoverable losses (Six Big Losses, priced in dollars); Benefits Realization verifies recovery of *those* losses against production data; the portfolio can be ranked by recoverable loss.
+- **2026-10-14:** **Two views of TPM, both first-class.** *TPM for the asset* (EEM, MP information, verified loss recovery on the equipment being built) and *TPM of the project* (the eight pillars applied to project delivery under an EPCM model, with the project's own losses (waiting, rework, interface clashes, unready packages, safety stops, skill gaps) measured and attacked the way a plant attacks equipment losses). Informed by the owner's EPCM-pillar framework (Oct 2026). The *project as equipment* idea is a core concept of pro_manage and is developed in `§14`.
+- **2026-10-14:** **EPCM delivery is supported natively.** The owner holds contracts; the EPCM partner and contractors are participants, not viewers: they update their own work packages, answer RFIs, and submit documents under a scoped contributor role (`§04`).
+- **2026-10-14:** **Asset is a first-class entity**, mirrored from the plant CMMS. MP information, startup curve, OEE, turnover, and Benefits Realization all key off the same physical asset and asset class.
 
 ## Mission
 
 pro_manage is the single pane of glass for the company's capital-project portfolio. From a $25,000 refurbishment to a $250,000,000 greenfield build, every project lives in pro_manage with the same shape: one owner, delegated team access, structured budgets and schedules, continuously-captured metrics, formal approval gates (CAR), and institutional memory that survives staff turnover and asset generations.
 
-The organizing lens is **TPM / EEM**. A project is not just "money → schedule → done." It is **MP information harvested from running assets → design that incorporates it → vertical startup → benefits realization**. pro_manage makes that loop legible, auditable, and inheritable. Lessons learned at closeout flow directly into the governance substrate (MDEMG) and resurface — automatically — when a similar piece of equipment enters Design on the next project.
+The organizing lens is **TPM / EEM**. A project is not just "money → schedule → done." It is **MP information harvested from running assets → design that incorporates it → vertical startup → benefits realization**. pro_manage makes that loop legible, auditable, and inheritable. Lessons learned at closeout flow directly into the governance substrate (MDEMG) and resurface automatically when a similar piece of equipment enters Design on the next project.
 
-Governance is not bolted on. Every meaningful action — approving a CAR, re-baselining a budget past an AACE threshold, running a design review against the seven "easy-to" criteria, closing out an Early Management Period — flows through pro_manage's workflow engine with advisory guidance surfaced from MDEMG at the moment of decision. Nothing important happens without a record, and nothing important happens without the relevant policy, prior decision, or lesson learned being surfaced to the person acting.
+Governance is not bolted on. Every meaningful action (approving a CAR, re-baselining a budget past an AACE threshold, running a design review against the seven "easy-to" criteria, closing out an Early Management Period) flows through pro_manage's workflow engine with advisory guidance surfaced from MDEMG at the moment of decision. Nothing important happens without a record, and nothing important happens without the relevant policy, prior decision, or lesson learned being surfaced to the person acting.
 
 The direct scorecard for every project, from a plant manager's seat: **the startup curve** (did we hit nameplate?), **the turnover package** (did Ops and Maintenance inherit something they could run?), and **benefits realization** (did the business case actually happen 6–12 months later?). pro_manage tracks all three as first-class.
 
@@ -36,7 +36,7 @@ The direct scorecard for every project, from a plant manager's seat: **the start
 Today, at this company and in companies like it, capital projects are managed across a patchwork:
 
 - **Budgets** live in Excel workbooks that diverge from accounting actuals pulled from the ERP.
-- **Schedules** live in Primavera, MS Project, or Smartsheet — rarely synchronized with the budget workbook.
+- **Schedules** live in Primavera, MS Project, or Smartsheet, rarely synchronized with the budget workbook.
 - **Approvals** happen in email threads with attached PDFs, with the audit trail distributed across inboxes.
 - **Metrics** are pulled manually from plant historians, SCADA, QMS, and MES systems for weekly reports, with the pull method and transformation re-invented each cycle.
 - **Decisions and their justifications** evaporate. Three years into a project, nobody remembers why a specific vendor was chosen or why a scope item was de-scoped.
@@ -51,14 +51,14 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 - A **data curation platform** that lets the company harvest metrics from existing systems of record without re-entering data, and present them in context next to the decisions they shaped.
 - A **metric tracking application** with first-class support for financial, schedule, scope/risk/issue, safety/quality/compliance, resource utilization, TPM / plant-operations measures (OEE, MTBF, startup curve), and priced losses.
 - An **approval and audit backbone** with formal state machines for the CAR, baseline changes, design reviews, CQV, shutdown & tie-in plans, Early Management exit, closeout, and Benefits Realization, backed by a SOX-grade audit log.
-- An **oversight-governed system** where advisory guidance from MDEMG surfaces at every decision gate — not as a replacement for pro_manage's authoritative rules, but as institutional memory and comprehension-tracked recommendation at the point of action.
+- An **oversight-governed system** where advisory guidance from MDEMG surfaces at every decision gate: not as a replacement for pro_manage's authoritative rules, but as institutional memory and comprehension-tracked recommendation at the point of action.
 
 ## What pro_manage is not
 
 - **Not an ERP.** Financial actuals come from the ERP via read-only connectors. GL postings, invoice processing, and procurement workflow stay in the ERP.
 - **Not a schedule-tool replacement.** Primavera / MS Project / Smartsheet schedules are first-class imports but pro_manage does not aspire to be a critical-path planner.
 - **Not an HR system.** Resource utilization is tracked at a project-allocation level; names, titles, and reporting lines come from the identity provider.
-- **Not a document management system.** Documents are stored, versioned, and permission-filtered within pro_manage, but SharePoint/Drive/Confluence remain the canonical home for large collaborative docs when they already live there — pro_manage links and mirrors permissions.
+- **Not a document management system.** Documents are stored, versioned, and permission-filtered within pro_manage, but SharePoint/Drive/Confluence remain the canonical home for large collaborative docs when they already live there; pro_manage links and mirrors permissions.
 - **Not an operations TPM platform.** Autonomous Maintenance (CIL/CILT) routines, abnormality tagging, Andon, shift huddles, daily management, and live OEE boards belong in CMMS / connected-worker / MES tools. pro_manage reads their losses, tags, and history and hands them turnover packages; it does not rebuild them.
 - **Not a general-purpose "projects for any purpose" tool.** The domain model is tuned to capital projects. Software sprint tracking, marketing campaigns, and operational tickets belong in tools built for them (Jira, Asana, ServiceNow).
 
@@ -74,7 +74,7 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 8. **Design review** workflow with the seven "easy-to" criteria (operate, maintain, clean, change over, inspect, keep safe, make quality product); findings and dispositions tracked.
 9. **MP Information harvest** at closeout and periodically from running assets; feeds the MDEMG governance space as institutional learning that surfaces in future Design-stage guidance.
 10. **CQV / FAT / SAT records** (Commissioning, Qualification, Validation; Factory and Site Acceptance Tests).
-11. **Turnover Package**: equipment data, spares, PM tasks, procedures, cleaning procedures, calibration certs, standard work — writable to the plant **CMMS** via CMMSi.
+11. **Turnover Package**: equipment data, spares, PM tasks, procedures, cleaning procedures, calibration certs, standard work; writable to the plant **CMMS** via CMMSi.
 12. **Early Management Period** with configurable exit criteria (startup curve, sustained OEE, quality holds).
 13. **Benefits Realization window** (default 6–12 months post-startup) with ROI calculated three times: business case, closeout, benefits realization.
 14. Safety/quality/compliance tracking: incident counts, inspection records, regulatory sign-offs. Pulled from MES/WMS/QMS via HSEi.
@@ -91,25 +91,25 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 25. Read-only connectors to relational databases (Postgres, Oracle, SQL Server) and time-series databases (Timescale, InfluxDB, OSIsoft PI, Historian) for metric harvest.
 26. Email + Teams + Slack notifications: approval prompts, overdue nudges, status digests.
 27. **Pluggable connector framework** with concrete year-one implementations:
-    - **ERPi** — admin-configurable ERP connector. SAP (ECC/S/4HANA), Oracle (EBS/Fusion), NetSuite, Dynamics, Odoo.
-    - **IdPi** — SSO connector with OIDC and SAML abstractions. Entra ID, Okta, ADFS, generic OIDC/SAML.
-    - **Sigi** — e-signature connector. DocuSign, Adobe Sign, OneSpan.
-    - **Schedulei** — schedule-tool import/export. MS Project, Primavera P6, Smartsheet.
-    - **Doci** — document-store connector with permission mirroring. SharePoint, Google Drive, Confluence.
-    - **Commsi** — notification delivery. Email (SMTP), Microsoft Teams, Slack.
-    - **Metrici** — read-only metric harvest connectors. Relational, time-series, OSIsoft PI, OPC UA, generic Historian.
-    - **HSEi** — MES/WMS/QMS connectors for safety, quality, and compliance signals.
-    - **CMMSi** — CMMS read/write for MP-information harvest and turnover-package delivery. Maximo, SAP PM, Fiix, Infor EAM, Mapcon, MaintainX, Cryotos.
+    - **ERPi:** admin-configurable ERP connector. SAP (ECC/S/4HANA), Oracle (EBS/Fusion), NetSuite, Dynamics, Odoo.
+    - **IdPi:** SSO connector with OIDC and SAML abstractions. Entra ID, Okta, ADFS, generic OIDC/SAML.
+    - **Sigi:** e-signature connector. DocuSign, Adobe Sign, OneSpan.
+    - **Schedulei:** schedule-tool import/export. MS Project, Primavera P6, Smartsheet.
+    - **Doci:** document-store connector with permission mirroring. SharePoint, Google Drive, Confluence.
+    - **Commsi:** notification delivery. Email (SMTP), Microsoft Teams, Slack.
+    - **Metrici:** read-only metric harvest connectors. Relational, time-series, OSIsoft PI, OPC UA, generic Historian.
+    - **HSEi:** MES/WMS/QMS connectors for safety, quality, and compliance signals.
+    - **CMMSi:** CMMS read/write for MP-information harvest and turnover-package delivery. Maximo, SAP PM, Fiix, Infor EAM, Mapcon, MaintainX, Cryotos.
 28. **Asset registry** (Asset / AssetClass), mirrored from the CMMS once in service; MP information, startup curve, turnover, and Benefits Realization key off the asset.
 29. **Priced losses** (Six Big Losses + site loss tree) harvested from the operations TPM stack; business cases promise loss recovery against a CAR-time baseline; Benefits Realization verifies recovery; portfolio ranked by recoverable loss.
-30. **Project health reviews** — recurring, pre-filled from live data, ending in owned actions.
-31. **Phone-first field flows** (Phase 2) — CQV/SAT walkdowns, punchlist capture, turnover inspections, hold-point inspections, and deviation tagging, with photo/QR proof and offline sync.
-32. **Work packages with readiness** (Advanced Work Packaging style) — engineering, procurement, and construction packages released only when information, materials, resources, and HSE prerequisites are in place; plan compliance tracked with variance reasons.
-33. **EPCM project-administration objects** — contracts, RFIs, submittals, and change orders with cycle-time tracking, so waiting on information and approvals is measured rather than felt.
-34. **Project losses** — a project-side loss taxonomy (waiting, rework, interface clash, unready package, safety stop, skill gap), priced where possible, feeding health reviews and focused-improvement work.
-35. **Built-in quality during construction** — inspection & test plans with hold points, non-conformance data fed back into specifications.
-36. **EPCM / contractor contributors** — external participants with edit rights scoped to the packages under their contract.
-37. **Project-team competency matrix** (Phase 3) — role competencies for owner, EPCM, and contractor staff, alongside the operator certification gate.
+30. **Project health reviews:** recurring, pre-filled from live data, ending in owned actions.
+31. **Phone-first field flows** (Phase 2): CQV/SAT walkdowns, punchlist capture, turnover inspections, hold-point inspections, and deviation tagging, with photo/QR proof and offline sync.
+32. **Work packages with readiness** (Advanced Work Packaging style): engineering, procurement, and construction packages released only when information, materials, resources, and HSE prerequisites are in place; plan compliance tracked with variance reasons.
+33. **EPCM project-administration objects:** contracts, RFIs, submittals, and change orders with cycle-time tracking, so waiting on information and approvals is measured rather than felt.
+34. **Project losses:** a project-side loss taxonomy (waiting, rework, interface clash, unready package, safety stop, skill gap), priced where possible, feeding health reviews and focused-improvement work.
+35. **Built-in quality during construction:** inspection & test plans with hold points, non-conformance data fed back into specifications.
+36. **EPCM / contractor contributors:** external participants with edit rights scoped to the packages under their contract.
+37. **Project-team competency matrix** (Phase 3): role competencies for owner, EPCM, and contractor staff, alongside the operator certification gate.
 
 ## Explicitly out of scope (first year)
 
