@@ -55,7 +55,8 @@ It is for a single company, hosted on the company's intranet in containers, tune
 
 ## Development workflow
 
-- Default development branch: `pro-dev01`. Changes flow via pull requests into `main` for owner review.
+- Default development branch: `pro-dev01`. Changes flow via pull requests into `main` for owner review and approval.
+- PRs are opened automatically by `.github/workflows/auto-pr.yml` (as `github-actions[bot]`) when `pro-dev01` is pushed, so the owner can formally approve each one. PRs are never opened by hand.
 - Direct commits to `main` are not permitted; `main` is the reviewed-and-merged state only.
 - Commits are attributed to the actual author (Roger Henley for human-authored work; `Claude Opus 4.7 <noreply@anthropic.com>` for AI-assisted drafting).
 
