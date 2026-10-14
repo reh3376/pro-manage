@@ -13,6 +13,11 @@
 - **2026-10-14:** **ProjectHealthReview** is first-class: the capital-side analogue of an operations huddle (see `§08`).
 - **2026-10-14:** **EPCM delivery objects** are first-class: `Contract`, `WorkPackage` (with readiness constraints and plan compliance), `RFI`, `Submittal`, `ChangeOrder`, `InspectionTestPlan` / `HoldPoint`, `ProjectDeviation`, and `ProjectLossEvent`. `ChangeRequest` stays the owner's internal scope/budget change; `ChangeOrder` is the contractual change under a `Contract` that may implement it.
 - **2026-10-14:** DesignReview adds three lenses beyond the seven "easy-to" criteria: **constructability, commissionability, and safety in design**.
+- **2026-10-14:** **Site is first-class.** Every project and asset belongs to one `Site`, which carries time zone, currency, units, business calendar, regulatory regime, privacy regime, and the connector instances that serve it. Portfolio stays the business-unit grouping above projects; Site is the physical place. Policy variables gain a `site` scope.
+- **2026-10-14:** **Capital authorization is staged.** `CapitalAuthorization` (the CAR) is its own entity with `kind ∈ {fel_funding, full, supplemental}`. FEL funding releases money for front-end engineering at Class 5 or 4; the full CAR authorizes execution at Class 3 on a basic design; supplementals re-authorize cost growth. Detailed engineering happens in Execute under the full CAR, which is how EPCM projects actually run. The estimate behind each CAR is an `EstimateArtifact` with its basis, class, and accuracy range.
+- **2026-10-14:** **Engineering document control is a project-controls concern, not storage.** `DocumentRevision` (issue status IFR, IFA, IFC, as-built), `Transmittal`, and a per-package master document register are first-class. Files may live in SharePoint or an EDMS via Doci; the revision status and the register are pro_manage's regardless, because work-package readiness and `waiting_information` losses depend on them.
+- **2026-10-14:** **Procurement status is tracked; procurement is not performed.** `ProcurementItem` carries expediting status and the site-need date for long-lead equipment and bulk materials; the purchase order, receipt, and payment stay in the ERP (`§10`).
+- **2026-10-14:** **Risks are quantified and contingency is tied to them.** `Risk` carries three-point cost and schedule impacts; `BudgetBaseline.contingency_basis` names how contingency was set; `ContingencyDrawdown` entries name the risk or change that consumed them. Expected-value arithmetic only in year one; Monte Carlo simulation is out of scope (`§01`).
 - **2026-10-13:** **Postgres** holds the authoritative transactional model. **pro_manage's own TimescaleDB** holds metric time series. **MDEMG's Neo4j** holds derived memory and guidance substrate, never the source of truth for pro_manage domain data. **S3-compatible object storage** (on-prem MinIO or equivalent) holds attachment binaries; `Doci` holds pointers for externally-stored documents.
 - **2026-10-13:** Every mutable entity records its `created_at`, `created_by`, `updated_at`, `updated_by`, `version` (monotonic int), and `tenant_id` (always the same for a single-company install, but reserved for defense-in-depth).
 
@@ -67,10 +72,18 @@ Group of projects visible as a unit to a Portfolio Executive. One company may ha
 - **Relationships:** 1..n Projects.
 - **Permissions:** Executives read; Platform Admin manages structure.
 
+### Site
+The physical place a project builds at and an asset lives in. One company may run several sites, possibly in more than one country; everything that differs by place hangs off the Site rather than being repeated per project.
+
+- **Key fields:** `site_id`, `code`, `name`, `portfolio_id?` (the business unit it reports into), `country`, `time_zone` (IANA), `currency` (ISO 4217), `unit_system` ∈ `{imperial, metric}`, `business_calendar_id` (working days and holidays, used by SLAs), `regulatory_regime[]` (for example `ttb`, `cfia`, `excise_ca`, `osha`, `provincial_ohs`), `privacy_regime[]` (for example `pipeda`, `state_privacy`), `loss_tree_root_id?` (the site's loss tree under `LossCategory`), `address`, `default_connector_instances` (which ERPi, CMMSi, HSEi, and Metrici instances serve this site; `§05` routing), `site_operations_lead_pool`, `site_maintenance_lead_pool`, standard audit stamps.
+- **Relationships:** 1..n Projects (a project has exactly one primary site; a multi-site effort is modelled as one project per site under a Program, see Open items), 1..n Assets.
+- **Used by:** policy-variable resolution (`site` scope, `§08`), SLA clocks (business days in the site's calendar and time zone), money display and portfolio roll-up (`§07`), approval pools (`finance_approver ∩ site or portfolio` per the DoA), HSE and regulatory stamps defaulted onto new projects, and connector routing.
+- **Permissions:** Platform Admin manages structure; site leads are assigned per site.
+
 ### Project (central aggregate)
 A single capital project with one Owner and a bounded team.
 
-- **Key fields:** `project_id`, `code` (human-readable PK, e.g. `P-INDUSTRIAL-EAST-7`), `name`, `description`, `portfolio_id`, `owner_user_id`, `lifecycle_state` (EEM-mapped), `fel_stage` (`fel1 | fel2 | fel3 | n/a`; n/a once past authorization), `project_type` (`greenfield | brownfield_expansion | reliability | efficiency | compliance | capacity_debottleneck`), `tpm_pillar_tags[]` (`eem | focused_improvement | planned_maintenance | autonomous_maintenance | quality_maintenance | …`), `hazardous_area_classification` (`class_i_div_1 | class_i_div_2 | class_ii_div_1 | class_ii_div_2 | none`), `regulatory_stamps[]` (`nfpa_30 | nfpa_70e | nfpa_652 | nfpa_61 | ttb | fda | epa | osha | msha | …`), `start_date`, `target_end_date`, `baseline_budget_total`, `baseline_duration_days`, `template_id?`, `tags[]`, standard audit stamps.
+- **Key fields:** `project_id`, `code` (human-readable PK, e.g. `P-INDUSTRIAL-EAST-7`), `name`, `description`, `portfolio_id`, `site_id`, `currency` (defaults to the site's), `owner_user_id`, `lifecycle_state` (EEM-mapped), `fel_stage` (`fel1 | fel2 | fel3 | n/a`; n/a once past authorization), `project_type` (`greenfield | brownfield_expansion | reliability | efficiency | compliance | capacity_debottleneck`), `tpm_pillar_tags[]` (`eem | focused_improvement | planned_maintenance | autonomous_maintenance | quality_maintenance | …`), `hazardous_area_classification` (`class_i_div_1 | class_i_div_2 | class_ii_div_1 | class_ii_div_2 | none`), `regulatory_stamps[]` (`nfpa_30 | nfpa_70e | nfpa_652 | nfpa_61 | ttb | fda | epa | osha | msha | …`), `start_date`, `target_end_date`, `baseline_budget_total`, `baseline_duration_days`, `template_id?`, `tags[]`, standard audit stamps.
 - **MDEMG binding:** every project maps to one `space_id = project_id` in MDEMG. The project's `code` is the human-readable form; the UUID `project_id` is what crosses the wire.
 - **Lifecycle (EEM mapping):** `Initiate` ≈ Concept/Planning · `Plan` ≈ Design · `Execute` ≈ Fabrication → Installation → Commissioning · `Monitor` ≈ Early Management Period · `Close` ≈ Normal operations handover (Benefits Realization window begins) · `Archived`. Transitions gated by `§08`.
 - **Permissions:** Owner has all; Teammates per ACL grants; Executives read within their portfolio.
@@ -93,14 +106,16 @@ A fine-grained grant on top of a ProjectMember's base role. The full-ACL model l
 The financial state of the project. Modeled with distinct **TIC** (Total Installed Cost, tracked throughout the project) and **LCC** (Lifecycle Cost, estimated during Design and validated during Benefits Realization).
 
 - **Sub-entities:**
-  - `BudgetBaseline`: one `current=true` row + historical rows. Each baseline has `baseline_id`, `baseline_total` (TIC), `aace_class` ∈ `{5, 4, 3, 2, 1}`, `fel_stage_at_capture`, `approved_at`, `approved_by`, `source` (`manual|import|workflow`), `change_request_id?`, `contingency_amount`, `contingency_basis`.
+  - `BudgetBaseline`: one `current=true` row + historical rows. Each baseline has `baseline_id`, `baseline_total` (TIC), `aace_class` ∈ `{5, 4, 3, 2, 1}`, `estimate_id` (the `EstimateArtifact` it came from), `fel_stage_at_capture`, `approved_at`, `approved_by`, `source` (`manual|import|workflow`), `change_request_id?`, `contingency_amount`, `contingency_basis` ∈ `{percent_of_tic, risk_based_expected_value, risk_based_p50, risk_based_p80, deterministic_allowance}`, `contingency_basis_note`.
+  - `EstimateArtifact`: the estimate behind a baseline or a CAR, kept so "what did we know when we asked for the money" is answerable. `estimate_id`, `project_id`, `aace_class`, `as_of`, `prepared_by` (person or EPCM organization), `reviewed_by`, `basis_of_estimate_doc_ref`, `scope_definition_pct` (the engineering completeness the class was earned on), `accuracy_range_low_pct`, `accuracy_range_high_pct`, `tic`, `contingency_amount`, `contingency_method`, `escalation_assumptions`, `exclusions`, `currency`, `exchange_rate_snapshot?`. A baseline cannot claim a class its estimate artifact does not carry.
   - `BudgetLineItem`: WBS-aligned planned amounts. `line_id`, `wbs_path`, `account_code`, `planned`, `baseline_id`.
   - `BudgetActual`: read-only, written by **ERPi** on sync. `actual_id`, `wbs_path`, `account_code`, `period`, `amount`, `source_doc_id?`, `erpi_pulled_at`.
   - `BudgetCommitment`: POs issued, from ERPi.
   - `BudgetForecast` (EAC): point-in-time Estimate At Completion. `forecast_id`, `as_of`, `wbs_path`, `eac_amount`, `method` (`manual|ratio|regression|…`).
   - `LCCEstimate`: Lifecycle Cost estimate. `lcc_id`, `as_of`, `period_years`, `tic` (snapshot), `opex_annual`, `maint_annual`, `energy_annual`, `end_of_life_cost`, `total_lcc`, `method_note`.
-  - `ContingencyDrawdown`: running record of contingency spent vs project percent-complete. Early-warning signal (burning contingency faster than progress).
-- **Derived:** `variance_pct = (actual + remaining_commit - baseline_total) / baseline_total`; `cpi = bcwp/acwp`; `spi = bcwp/bcws` (when earned-value inputs are present); `contingency_burn_ratio = contingency_used_pct / completion_pct`.
+  - `ContingencyDrawdown`: running record of contingency spent vs project percent-complete. Each entry: `drawdown_id`, `amount`, `at`, `approved_by`, `risk_id?` (the risk that materialized), `change_request_id?` or `change_order_id?` (the change that consumed it), `reason`. Early-warning signal (burning contingency faster than progress), and, because entries name their cause, a record of which risks actually bit.
+- **Derived:** `variance_pct = (actual + remaining_commit - baseline_total) / baseline_total`; `cpi = bcwp/acwp`; `spi = bcwp/bcws` (when earned-value inputs are present); `contingency_burn_ratio = contingency_used_pct / completion_pct`; `contingency_coverage = contingency_remaining / Σ(open risk likelihood × likely cost impact)` (expected value of open quantified risks vs what is left to cover them; below 1.0 is a health-review flag).
+- **Money and currency:** every money field carries its currency (the project's, defaulting to the site's). Portfolio roll-ups across currencies convert at the rate table the `policy_owner` maintains (`fx.rate.<from>.<to>`, dated), and the rate used is stored with the roll-up. CAR thresholds are compared in the currency the policy value is expressed in, converting the request amount at the rate in force at submission and recording it in the `policy_snapshot`.
 - **Permissions:** Finance Approvers always have `read` on budget sections of projects in their jurisdiction. Owner has `read` + controlled `write`. Teammate access is grant-driven. **Sensitive sub-fields** (vendor costs, bid prices, unit rates) remain deny-by-default per `§04`.
 
 ### Schedule
@@ -125,7 +140,7 @@ Work breakdown and deliverable-level tracking.
 ### Risk / Issue
 Risk register + issue log.
 
-- `Risk`: `risk_id`, `project_id`, `title`, `description`, `likelihood` (1-5), `impact` (1-5), `score` (derived), `response_strategy` (`avoid|mitigate|transfer|accept`), `owner_user_id`, `due_date`, `status` ∈ `{open, mitigating, closed}`, `last_reviewed_at`.
+- `Risk`: `risk_id`, `project_id`, `title`, `description`, `likelihood` (1-5, with a mapped probability band), `impact` (1-5), `score` (derived), `response_strategy` (`avoid|mitigate|transfer|accept`), `owner_user_id`, `due_date`, `status` ∈ `{open, mitigating, closed, materialized}`, `last_reviewed_at`, and **quantification** (required above a policy-set score, `risk.quantify_above_score`): `cost_impact_low`, `cost_impact_likely`, `cost_impact_high`, `schedule_impact_days_low/likely/high`, `quantified_by`, `quantified_at`. `expected_cost = probability × cost_impact_likely` (derived). When a risk materializes it links to the `ContingencyDrawdown` entry or change that paid for it, so the register learns which risks were real.
 - `Issue`: `issue_id`, `project_id`, `title`, `description`, `severity` ∈ `{low, med, high, critical}`, `status` ∈ `{open, in_progress, resolved}`, `assignee_user_id`, `opened_at`, `resolved_at?`.
 - **Aging rules** (per Jiminy constraint corpus): risks aged >14d without `last_reviewed_at` update, issues aged >30d without resolution; both are surfaced in guidance.
 
@@ -137,12 +152,38 @@ Project-attached artifacts.
   - **External (via Doci):** same fields + `doci_backend` (`sharepoint|drive|confluence|…`), `external_id`, `external_url`, `external_permissions_mirror` (snapshot of upstream ACL for drift detection).
 - **Permissions:** standard ACL applies. For external docs, pro_manage mirrors permissions from the external store on sync and surfaces drift.
 
+### DocumentRevision / Transmittal / DocumentRegister (engineering document control)
+What a drawing's status is, who has been issued it, and which documents a package is waiting on. This is project control, not storage: the file may live in MinIO, SharePoint, or an engineering document management system via Doci; the register and the revision status are pro_manage's either way.
+
+- `DocumentRegister` entry (the master document register, MDR): `register_id`, `project_id`, `package_id?`, `document_number` (per the project numbering scheme), `title`, `discipline`, `document_type` ∈ `{drawing, datasheet, specification, calculation, procedure, vendor_document, report, other}`, `responsible_org` (owner, EPCM, designer, or supplier), `planned_ifr_at`, `planned_ifc_at`, `current_revision_id?`, `required_for_package_release` (bool), `required_for_turnover` (bool, as-built expected).
+- `DocumentRevision`: `revision_id`, `register_id`, `document_id` (the stored or linked file), `revision_code` (A, B, … for pre-IFC; 0, 1, … for IFC and after, per the numbering scheme), `issue_status` ∈ `{ifr, ifa, ifc, as_built, superseded, void}` (issued for review, for approval, for construction), `issued_at`, `issued_by`, `supersedes_revision_id?`, `transmittal_id?`, `review_comments_ref?`, `change_driver` (`rfi_id?`, `change_order_id?`, `design_review_finding_id?`). Only one non-superseded revision per register entry. A revision cannot reach `ifc` without a closed `detailed` design review for its scope where one is required, or an audited override.
+- `Transmittal`: the formal issue of document revisions between organizations. `transmittal_id`, `project_id`, `contract_id?`, `direction` ∈ `{outgoing, incoming}`, `from_org`, `to_org`, `purpose` ∈ `{for_review, for_approval, for_construction, for_information, as_built}`, `revision_ids[]`, `sent_at`, `response_due_at?`, `acknowledged_at?`, `acknowledged_by?`. Incoming transmittals from the EPCM or suppliers are raised by contributors; `Submittal` rows link to the transmittal that carried them.
+- **What it feeds:** the work-package readiness constraint "approved-for-construction drawings current" becomes a mechanical check (every `required_for_package_release` register entry under the package has a current `ifc` revision); IFC-on-time and revision churn metrics (`§07`); `waiting_information` project losses when a package waits on a planned IFC that slipped; and the TurnoverPackage's as-built section, which is complete when every `required_for_turnover` entry has an `as_built` revision.
+- **System of record:** pro_manage in both deployment profiles. Where the company or its EPCM runs an EDMS (Aconex, ProjectWise, IFS Document Management, SharePoint libraries with revision metadata), a Doci module mirrors the register and revision status in rather than replacing it (`§10`).
+
+### ProcurementItem (procurement and expediting status)
+Long-lead equipment and bulk materials tracked against the date the site needs them. The purchase order, receipt, and payment are the ERP's; the expediting status and the link to the schedule and the package are pro_manage's.
+
+- **Key fields:** `item_id`, `project_id`, `package_id` (the procurement package), `asset_id?`, `register_entries[]` (vendor documents expected), `description`, `supplier` (ERP vendor ref), `erpi_po_ref?`, `erpi_commitment_ref?`, `long_lead` (bool), `required_on_site_at` (from the schedule or the construction package's planned start), `promised_delivery_at`, `forecast_delivery_at`, `status` ∈ `{planned, rfq, bid_evaluation, awarded, in_fabrication, fat_scheduled, fat_complete, shipped, received, inspected, issued_to_package, rejected}`, `expediting_notes[]` (dated, by whom), `fat_record_id?` (the `CommissioningRecord` of kind `fat`), `receiving_inspection_ref?`, `procurement_lead_user_id`.
+- **Derived:** `delivery_float_days = required_on_site_at − forecast_delivery_at`; negative float is a readiness risk on the dependent construction package and a leading indicator in health reviews.
+- **What it feeds:** work-package readiness ("materials and long-lead items on site"), `waiting_material` project losses when a released package waits on an item, and the TurnoverPackage spares list (items tagged as spares).
+
 ### Metric
 Two layers: definitions and readings.
 
 - `MetricDefinition`: `metric_id`, `name` (e.g., `budget_variance_pct`, `cpi`, `safety_incident_count`, `equipment_uptime_pct`), `category` ∈ `{financial, schedule, scope, safety, quality, compliance, resource, custom}`, `unit`, `aggregation` (`sum|avg|last|…`), `scope` (`project|portfolio|global`), `source` (`derived|erpi|metrici|manual`), `formula?` (for derived), `connector_mapping_id?` (for connector-sourced metrics).
 - `MetricReading`: `reading_id` (composite: `metric_id + project_id + ts`), `value`, `quality` (`good|questionable|bad`), `source_ref`. Stored in **pro_manage's own TimescaleDB**.
 - **Harvest cadence:** per-connector (Metrici), ranging from seconds (plant historian) to daily (ERP actuals).
+
+### CapitalAuthorization (CAR)
+The owner's authorization of money for a project, staged the way capital actually gets released.
+
+- **Key fields:** `car_id`, `project_id`, `kind` ∈ `{fel_funding, full, supplemental}`, `amount_requested`, `currency`, `basis` (what the amount is measured on, from `car.threshold.basis`), `estimate_id` (the `EstimateArtifact`; its `aace_class` must meet the kind's required class), `fel_stage_at_submission`, `business_case_ref` (promises and narrative), `supersedes_car_id?` (a supplemental names the CAR it adds to), `cumulative_authorized` (derived: this plus every earlier approved CAR on the project), `workflow_id` (the `ApprovalWorkflow` of kind `car`), `status` ∈ `{draft, in_flight, approved, rejected, cancelled}`, `authorized_amount`, `authorized_at`, `erp_budget_ref?` (set by `ReleaseBudget` in the ERP-led profile), `signed_artifact_ref?`.
+- **Kinds:**
+  - `fel_funding`: releases money for FEL2 and FEL3 work (studies, basic engineering, long-lead quotations) before the project is sanctioned. Required class per `car.fel_funding.required_aace_class` (default 5); amount capped at `car.fel_funding.cap_pct` of the current estimate (default 5%). Does not move the lifecycle state.
+  - `full`: the sanction. Required class per `car.full.required_aace_class` (default 3), a closed `basic` design review (`§08`), and committed business-case promises. Approval of the full CAR plus the basic design review sign-off moves the project `Plan → Execute`.
+  - `supplemental`: re-authorization when forecast cost growth exceeds `car.supplemental.reapproval_pct` or a scope change needs money. Routed on the **cumulative** authorized amount, so a project cannot creep past a threshold in small steps.
+- **Why an entity, not just a workflow:** the CAR is what Finance, the ERP budget, the business-case promises, and Benefits Realization all key off. Keeping it as a row with its estimate and cumulative amount is what makes "authorized vs estimate at the time vs final cost" reportable without reconstructing it from workflow history.
 
 ### ApprovalWorkflow
 A multi-stage approval instance (`§08` details the state machine).
@@ -178,7 +219,7 @@ A re-usable starter for a Project (or a Milestone set, Risk categories, etc.).
 ### DesignReview
 A formal review event during Design (Plan) stage against the seven "easy-to" criteria. Operator and maintenance participation is first-class.
 
-- **Key fields:** `review_id`, `project_id`, `scope` (free-text + optional reference to a design document), `stage` (`basic | detailed | pre_approval | post_change`), `scheduled_at`, `participants[]` (resolved to users; **must include at least one operator role and one maintenance role** for Design reviews of equipment-touching scope), `facilitator_user_id`, `status` ∈ `{planned, in_session, closed, cancelled}`.
+- **Key fields:** `review_id`, `project_id`, `scope` (free-text + optional reference to a design document), `stage` (`basic | detailed | pre_approval | post_change`; `basic` reviews the FEL3 basic design before the full CAR, `detailed` reviews detailed engineering in Execute before documents go IFC, `post_change` follows a change that touches equipment), `register_entries[]` (the documents reviewed), `scheduled_at`, `participants[]` (resolved to users; **must include at least one operator role and one maintenance role** for Design reviews of equipment-touching scope), `facilitator_user_id`, `status` ∈ `{planned, in_session, closed, cancelled}`.
 - **Criteria:** every DesignReview carries findings against the seven "easy-to" lenses (`easy_to_operate`, `easy_to_maintain`, `easy_to_clean`, `easy_to_change_over`, `easy_to_inspect`, `easy_to_keep_safe`, `easy_to_make_quality_product`) plus three project-delivery lenses (`constructability`, `commissionability`, `safety_in_design`). Each lens: `rating` (1–5 or `n/a`), `findings[]`, `dispositions[]`. A Construction Manager is a required participant when the constructability lens is in scope.
 - **Dispositions** carry `finding_id`, `action` (`design_change | accept | mitigate | defer`), `owner_user_id`, `due_date`, `status`, `resolution_note`, `change_request_id?` (if the disposition triggers a CR).
 - **Permissions:** owner, editors with design-review write grant, operators + maintenance participants in `read+comment` mode, platform roles per `§04`.
@@ -246,7 +287,7 @@ Production losses, in the vocabulary operations already uses.
 Admin-configurable thresholds, SLAs, cadences, and windows used by workflows and governance, with values that can be overridden per project. Defined in `§08` (Policy variables).
 
 - `PolicyVariable`: `key`, `type`, `unit`, `description`, `global_default`, `allowed_range`, `overridable_at[]`, `owner_role`.
-- `PolicyValue`: `variable_key`, `scope_kind` ∈ `{global, project_type, portfolio, project}`, `scope_id`, `value`, `effective_from`, `effective_to?`, `set_by`, `reason`, `approved_by?`, version. Resolution: project → portfolio → project type → global.
+- `PolicyValue`: `variable_key`, `scope_kind` ∈ `{global, project_type, portfolio, site, project}`, `scope_id`, `value`, `effective_from`, `effective_to?`, `set_by`, `reason`, `approved_by?`, version. Resolution: project → site → portfolio → project type → global.
 
 ### ProjectHealthReview
 A periodic structured review of an in-flight project; the capital-side counterpart to an operations huddle.
@@ -264,7 +305,7 @@ A commercial agreement the owner holds with an EPCM partner, designer, supplier,
 A unit of planned work in the Advanced Work Packaging sense: engineering (EWP), procurement, or construction/installation (CWP / IWP) packages.
 
 - **Key fields:** `package_id`, `project_id`, `kind` ∈ `{engineering, procurement, construction, installation, commissioning}`, `wbs_id`, `contract_id?`, `asset_ids[]`, `package_lead_user_id`, `planned_start`, `planned_finish`, `status` ∈ `{planned, ready, released, in_progress, complete, on_hold}`, `progress_pct`, `quantities[]` (planned vs installed, for earned value).
-- **Readiness constraints** (all must be met, or overridden with an audited reason, before `released`): approved-for-construction drawings current, no blocking RFIs open, materials and long-lead items on site, crew and equipment assigned, permits in hand, HSE prerequisites (job hazard analysis, permits to work) complete, hold points defined in the ITP. Each constraint: `kind`, `status`, `owner`, `evidence_ref`.
+- **Readiness constraints** (all must be met, or overridden with an audited reason, before `released`): approved-for-construction drawings current (mechanical: every `required_for_package_release` register entry has a current `ifc` revision), no blocking RFIs open, materials and long-lead items on site (mechanical: every `ProcurementItem` feeding the package is `received` or later), crew and equipment assigned, permits in hand, HSE prerequisites (job hazard analysis, permits to work) complete, hold points defined in the ITP. Each constraint: `kind`, `status`, `owner`, `evidence_ref`.
 - **Plan compliance:** a weekly record of packages planned to complete vs actually completed (percent plan complete), with a `variance_reason` per miss drawn from the project-loss categories, so the reasons accumulate as data.
 
 ### RFI / Submittal / ChangeOrder
@@ -290,7 +331,7 @@ A tag raised by anyone close to the work (a site supervisor, contractor lead, or
 ### ProjectLossEvent / ProjectLossCategory
 The losses of the project itself, measured the way a plant measures equipment losses.
 
-- `ProjectLossCategory`: default set: `waiting_information` (RFIs, drawings), `waiting_approval` (submittals, change orders, internal approvals), `rework` (non-conformance, design error), `interface_clash`, `unready_package` (released or started without readiness), `safety_stop`, `skill_gap_error`; extensible.
+- `ProjectLossCategory`: default set: `waiting_information` (RFIs, drawings not yet IFC), `waiting_approval` (submittals, change orders, internal approvals), `waiting_material` (released package waiting on a procurement item), `rework` (non-conformance, design error), `interface_clash`, `unready_package` (released or started without readiness), `safety_stop`, `skill_gap_error`; extensible.
 - `ProjectLossEvent` (pm-TSDB): `project_id`, `package_id?`, `category`, `ts_start`, `ts_end`, `duration_days`, `cost` (rework cost, or delay days × the project's cost-of-delay rate where configured), `source_ref` (RFI, deviation, NCR, plan-compliance miss, incident).
 - Most events are derived automatically: RFI and submittal aging, plan-compliance misses with their variance reasons, non-conformances, deviations, and HSE stops.
 
@@ -301,7 +342,7 @@ Role-based competency for the project team (owner, EPCM, and contractor staff), 
 
 ## System of record by deployment profile
 
-Which system owns project-controls records depends on what the ERP connector provides (`§10` capability tiers). The profile is set per ERP instance from its module's `Capabilities`. ERP instances are routed by portfolio or business unit (`§05`), so a company running one ERP with project controls and another without runs ERP-led for the portfolios on the first and pro_manage-led for the rest. It is never a per-project choice.
+Which system owns project-controls records depends on what the ERP connector provides (`§10` capability tiers). The profile is set per ERP instance from its module's `Capabilities`. ERP instances are routed by site or portfolio (`§05`), so a company running one ERP with project controls and another without runs ERP-led for the sites or portfolios on the first and pro_manage-led for the rest. It is never a per-project choice.
 
 | Record | **ERP-led** profile (ERP has a projects module, e.g. IFS Cloud) | **pro_manage-led** profile (financials-only ERP) |
 |---|---|---|
@@ -310,8 +351,10 @@ Which system owns project-controls records depends on what the ERP connector pro
 | Earned value (BCWS/BCWP/ACWP, CPI/SPI) | ERP computes; pro_manage reads | pro_manage computes (`§07`) |
 | Contracts / subcontracts, payment applications | ERP owns; pro_manage mirrors as `Contract` and adds contributor scoping | pro_manage owns `Contract`; values from ERP commitments |
 | Change orders | ERP owns the record and its approval; pro_manage mirrors, measures cycle time from ERP timestamps, and adds Jiminy guidance on open | pro_manage owns (`§08`) |
-| Actuals, commitments, invoices | ERP owns (both profiles) | ERP owns |
-| CAR, gate workflows, design reviews, MP information, work-package readiness, RFIs, submittals, ITPs, deviations, project losses, health reviews, Benefits Realization, audit | pro_manage owns (both profiles) | pro_manage owns |
+| Actuals, commitments, invoices, purchase orders, receipts | ERP owns (both profiles) | ERP owns |
+| Procurement expediting status and site-need dates (`ProcurementItem`) | pro_manage owns; PO and receipt references mirrored from the ERP | pro_manage owns |
+| Document register, revision status, transmittals | pro_manage owns; an EDMS or ERP document module can be mirrored in via Doci | pro_manage owns |
+| CAR (staged), estimate artifacts, gate workflows, design reviews, MP information, work-package readiness, RFIs, submittals, ITPs, deviations, project losses, health reviews, Benefits Realization, audit | pro_manage owns (both profiles) | pro_manage owns |
 | Authorized budget after CAR approval | pro_manage approves; released into the ERP via `ReleaseBudget` (`budget_release` tier) | pro_manage owns |
 
 Mirrored records are read-only in pro_manage except for pro_manage-only attributes. Conflicts resolve to the system of record, and drift between the mirror and the source is surfaced, not silently overwritten.
@@ -320,7 +363,7 @@ Mirrored records are read-only in pro_manage except for pro_manage-only attribut
 
 | Store | Lives in | Holds | Written by | Read by |
 |---|---|---|---|---|
-| **Postgres** (pro_manage) | Docker | All transactional domain (`Project`, members, ACLs, budgets, schedule, scope, risk, docs metadata, workflows, templates, assets, loss categories, business-case promises, health reviews, contracts, work packages, RFIs, submittals, change orders, ITPs, deviations, audit, outcomes) | Go backend | Go backend; Python sidecar for analytics/exports |
+| **Postgres** (pro_manage) | Docker | All transactional domain (`Site`, `Project`, members, ACLs, budgets, estimates, CARs, schedule, scope, risk, docs metadata, document register and revisions, transmittals, procurement items, workflows, templates, assets, loss categories, business-case promises, health reviews, contracts, work packages, RFIs, submittals, change orders, ITPs, deviations, audit, outcomes) | Go backend | Go backend; Python sidecar for analytics/exports |
 | **TimescaleDB** (pro_manage) | Docker | Metric readings, loss events, project loss events | Metrici / HSEi connectors, Python sidecar for derived metrics | Go backend, dashboards |
 | **Neo4j (MDEMG)** | Docker | Observations, constraints, outcomes graph, decisions, concepts | pro_manage via `/v1/conversation/observe`; MDEMG internal | pro_manage via `/v1/jiminy/*` |
 | **TimescaleDB (MDEMG)** | Docker | MDEMG metrics and effectiveness telemetry | MDEMG internal | Platform operators (Grafana) |
@@ -337,9 +380,9 @@ Mirrored records are read-only in pro_manage except for pro_manage-only attribut
 ## Lifecycle state machine (Project)
 
 ```
- ┌──────────┐ concept approved ┌──────┐ CAR approved +     ┌─────────┐ CQV complete,    ┌─────────┐
+ ┌──────────┐ concept approved ┌──────┐ full CAR approved +┌─────────┐ CQV complete,    ┌─────────┐
  │ Initiate ├─────────────────▶│ Plan ├───────────────────▶│ Execute ├─────────────────▶│ Monitor │
- └──────────┘ (FEL1 → FEL2)    └──────┘ design review       └─────────┘ first production └────┬────┘
+ └──────────┘ (FEL1 → FEL2)    └──────┘ basic design review └─────────┘ first production └────┬────┘
                               (FEL3)   sign-off (§08)                                        │ Early Management
                                                                                              │ exit (§08)
                                                                                              ▼
@@ -350,16 +393,19 @@ Mirrored records are read-only in pro_manage except for pro_manage-only attribut
 
 Transitions only move forward; there is no toggling between states. Each arrow is a gate with its own workflow in `§08`.
 
-- **Initiate:** Concept / planning (FEL1 → FEL2). Owner only at first. Business case drafted, MP information gathered, Class 5 estimate. Edits unrestricted; no audit chain required for exploratory data.
-- **Plan:** Design (FEL3). Team invited; basis of design, design reviews, Class 3 estimate, business-case promises baselined. Writes audit. Ends with CAR submission; CAR approval and design-review sign-off gate the move to Execute.
-- **Execute:** Fabrication, installation, and commissioning against the authorized baselines. Writes audit *and* enforce the approval gates in `§08` (change orders, package release, hold points, CQV). This is where most project time is spent.
+- **Initiate:** Concept / planning (FEL1 → FEL2). Owner only at first. Business case drafted, MP information gathered, Class 5 estimate. A `fel_funding` CAR may be raised here to pay for FEL2 and FEL3 work. Edits unrestricted; no audit chain required for exploratory data.
+- **Plan:** Front-end engineering (FEL3). Team invited; basis of design, basic design (FEED) and its `basic` design review, Class 3 estimate as an `EstimateArtifact`, business-case promises baselined, long-lead items identified. Writes audit. Ends with the `full` CAR; its approval and the basic design-review sign-off gate the move to Execute.
+- **Execute:** Detailed engineering, procurement, fabrication, installation, and commissioning against the authorized baselines. Detailed design reviews gate documents going IFC; readiness gates package release; expediting tracks long-lead items to the site-need date. Writes audit *and* enforce the approval gates in `§08` (IFC issue, change orders, package release, hold points, CQV, supplemental CARs). This is where most project time is spent.
 - **Monitor:** Early Management Period. The asset is producing, with extra monitoring; the project still owns it. Punchlist and turnover work continue. Exit only through the Early Management exit workflow (startup curve, punchlist, turnover package, certification).
 - **Close:** Turnover delivered to operations and maintenance; Benefits Realization window open. Writes blocked except for allowed corrections (with elevated approval); reads unrestricted.
 - **Archived:** Read-only, after the Benefits Realization review closes (or the window is waived with an audited override). Visible only to those with historical access rights or to compliance roles. Deletion only via an explicit admin workflow with full audit.
 
 ## Open items for Section 03
 
-- Confirm whether a **Program** layer (parent of multiple related Projects) is needed in year one, or if the Portfolio layer is enough.
+- Confirm whether a **Program** layer (parent of multiple related Projects) is needed in year one, or if the Portfolio layer is enough. A multi-site effort (the same scope delivered at two sites) is the strongest case for it, since a project has one site.
+- Confirm the company's document numbering scheme and revision-code convention (letters before IFC, numbers after is the common one) so the register and `revision_code` validation match what the EPCM already issues.
+- Confirm whether the EPCM runs an EDMS (Aconex, ProjectWise, or similar) that should be mirrored through Doci rather than having contributors raise transmittals in pro_manage directly.
+- Confirm the probability bands behind the 1 to 5 likelihood scale for risk quantification, and whether Finance wants contingency expressed as expected value or a P-value (the year-one arithmetic supports expected value; P50/P80 need a simulation that is out of scope).
 - Define the exact set of `MetricDefinition.category` values and their nested sub-categories (how granular do we go? Per-ISO-metric, per-industry-metric?).
 - Decide whether `BudgetActual` and `MetricReading` share a storage layer (one TSDB) or stay separated. First instinct: separate, because actuals have strict financial-period semantics; metric readings are continuous.
 - Decide on the schema contract between pro_manage and `ERPi` for actuals (common chart of accounts? WBS mapping table? Both?). Depends on which ERP comes first (pending owner confirmation).

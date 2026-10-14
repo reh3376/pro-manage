@@ -103,7 +103,20 @@ Terms, acronyms, and project-specific names.
 | **BCWS / BCWP / ACWP** | Budgeted Cost of Work Scheduled / Performed; Actual Cost of Work Performed. Earned-value inputs. |
 | **EAC** | Estimate at Completion. Forecast of total project cost. |
 | **EVM** | Earned Value Management. Framework tying scope, cost, and schedule through BCWP. |
-| **Contingency drawdown** | Rate at which contingency is being used relative to percent-complete. Burning faster than progress is an early warning. |
+| **Contingency drawdown** | Rate at which contingency is being used relative to percent-complete. Burning faster than progress is an early warning. In pro_manage each drawdown names the risk or change that consumed it. |
+| **Contingency coverage** | Contingency remaining ÷ expected value (probability × likely cost) of open quantified risks. Below 1.0 the project is under-covered. |
+| **Three-point estimate (risk)** | Low, likely, and high cost and schedule impacts on a risk; required above a policy-set score. Year one uses expected value; P50/P80 need a simulation that is out of scope. |
+| **Site** | The physical place a project builds at and an asset lives in: time zone, currency, units, calendar, regulatory and privacy regimes, loss tree, and connector routing. Policy variables have a `site` scope. |
+| **CAR kinds (FEL funding / full / supplemental)** | Staged capital authorization: money for front-end work before sanction (Class 5 or 4), the sanction itself at FEL3 (Class 3, basic design reviewed), and re-authorization of cost growth routed on the cumulative amount. |
+| **Estimate artifact** | The estimate behind a baseline or CAR: AACE class, basis of estimate, scope definition, accuracy range, contingency method. A baseline cannot claim a class its estimate does not carry. |
+| **Basic design / FEED** | Front-end engineering design produced in FEL3: enough definition for a Class 3 estimate and the full CAR. Detailed engineering follows in Execute. |
+| **IFR / IFA / IFC / as-built** | Document issue statuses: issued for review, for approval, for construction, and as built. Only an IFC revision counts toward package readiness; as-builts complete the turnover package. |
+| **Transmittal** | The formal issue of document revisions between organizations (owner, EPCM, suppliers, contractors), with purpose, due date, and acknowledgement. |
+| **Master document register (MDR)** | The list of documents a project or package will produce, with planned and actual issue dates and the current revision of each. |
+| **EDMS** | Engineering document management system (Aconex, ProjectWise, and similar). Can be mirrored through Doci; pro_manage keeps the register and revision status either way. |
+| **Long-lead item** | Equipment or material whose delivery time drives the schedule; tracked as a `ProcurementItem` with delivery float against the site-need date. |
+| **Expediting** | Following a purchased item from award through fabrication, FAT, shipping, and receipt so it arrives when the site needs it. pro_manage tracks it; the ERP holds the PO. |
+| **Delivery float** | Site-need date minus forecast delivery date. Negative float is a readiness risk on the dependent package. |
 | **Benefits Realization** | Confirming (typically 6–12 months post-startup) that the savings or capacity promised in the business case actually materialized. The third ROI calculation. |
 | **EPC / EPCM** | Engineer-Procure-Construct (lump-sum delivery by a single contractor) / Engineering, Procurement, Construction Management (owner retains PM; contractor manages execution). Contracting models. |
 | **WBS** | Work Breakdown Structure. Hierarchical decomposition of project scope. |
@@ -117,7 +130,7 @@ Terms, acronyms, and project-specific names.
 | **ITP / hold point / witness point** | Inspection & Test Plan; a hold point stops work until an inspector releases it, a witness point only requires notice. |
 | **Project as equipment / Project TPM** | pro_manage's core concept: treating the capital project itself as a piece of equipment and applying TPM to it; its losses are named, priced, and eliminated like equipment losses. See `§14`. |
 | **Work-front availability / productivity / first-time-right** | The project analogues of OEE's availability, performance, and quality (`§14`). |
-| **Project loss** | A loss of the project itself: waiting on information or approval, rework, interface clash, unready package, safety stop, skill-gap error. |
+| **Project loss** | A loss of the project itself: waiting on information, approval, or material; rework; interface clash; unready package; safety stop; skill-gap error. |
 | **Project deviation** | A tag raised by someone close to the work when something is off on the project (the project-side analogue of an abnormality tag). |
 | **Constructability / commissionability** | Design-review lenses: how readily the design can be built safely and efficiently, and commissioned and started up. |
 | **Contributor** | External EPCM / contractor / supplier staff with edit access scoped to their contract's packages. |

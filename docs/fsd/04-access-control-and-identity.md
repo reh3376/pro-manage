@@ -100,8 +100,10 @@ Approval stages in `§08` name a **workflow role**, not a person. pm-core resolv
 | `portfolio_executive` | Platform role, by portfolio | Benefits Realization closure |
 | `facilitator` | Any user other than the Owner, named per review | Design review, project health review |
 | `construction_manager` | Named per project (owner-side or EPCM staff) | Design review (constructability), work package release, shutdown & tie-in plan |
-| `discipline_engineer` | Named per project and discipline | RFI response, submittal review |
+| `discipline_engineer` | Named per project and discipline | RFI response, submittal review, IFC readiness |
 | `inspector` | Named per ITP (owner QA, EPCM QA, or third party) | Hold point release |
+| `document_controller` | Named per project (owner-side or EPCM staff) | Transmittals and IFC issue; maintains the document register |
+| `procurement_lead` | Named per project (owner-side or EPCM staff) | Expediting review; receiving status on procurement items |
 
 Site representatives and the commissioning engineer get `read + comment` on the project sections their stages touch (scope, schedule, documents, design reviews, CQV, turnover) for the life of their assignment. Budget sections stay deny-by-default for them.
 

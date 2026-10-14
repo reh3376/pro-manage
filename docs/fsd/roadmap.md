@@ -54,7 +54,9 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 ## Phase 1: MVP vertical slice (weeks 7–16)
 
 ### Deliverables
+- **Sites:** Site registry (time zone, currency, units, calendar, regulatory and privacy regimes, connector routing); every project and asset bound to a site; policy variables resolve through the `site` scope.
 - **Projects:** full CRUD; template system shipped with 2 templates; lifecycle transitions `Initiate → Plan → Execute`.
+- **Staged CAR:** `CapitalAuthorization` with `fel_funding`, `full`, and `supplemental` kinds, each backed by an `EstimateArtifact`; supplementals routed on cumulative amount; `basic` design review as the full-CAR pre-condition.
 - **Assets & business case:** Asset / AssetClass registry (planned assets owned in pro_manage; in-service mirrored later via CMMSi); LossCategory seeded with the Six Big Losses; `BusinessCasePromise` with CAR-time baseline and measurement basis required for CAR submission.
 - **`ERPi_IFS` and the ERP-led profile:** mirror IFS project structure, budgets/forecasts/EAC, earned value, subcontracts, and change orders; CAR approval releases the budget in IFS. Before building: confirm licensed IFS modules, set up the IAM client and service account, and identify the Projects projections in the API Explorer. Build order: read-only pulls, then operational write-back, then budget release; polling until IT approves an inbound path for IFS event push.
 - **Project health review:** recurring review with pre-filled agenda and owned actions.
@@ -87,8 +89,10 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 
 ### Deliverables
 - **Scope / WBS / Deliverables:** full management; change-request workflow live.
-- **Risk / Issue management:** risk register with aging rules + Jiminy guidance; issue log.
+- **Risk / Issue management:** risk register with aging rules + Jiminy guidance; issue log; three-point quantification above the policy score, contingency basis on baselines, drawdowns naming their cause, contingency coverage on the health-review agenda.
 - **Documents:** local-mode doc management (upload/version/permission); first `Doci` backend (SharePoint or Drive); permission mirroring + drift detection.
+- **Engineering document control:** master document register per package, `DocumentRevision` issue statuses, transmittals, the IFC-issue workflow gated by detailed design review, and the mechanical "drawings current" readiness check. EDMS mirroring via Doci only if the EPCM runs one (open item in `§10`).
+- **Procurement and expediting:** `ProcurementItem` with delivery float against site-need dates; `ERPi` `FetchPurchaseOrders` / `FetchReceipts` mirrored onto items; expediting cadence; `waiting_material` losses.
 - **Metrics via Metrici:** relational connectors (Postgres, SQL Server), Timescale/Influx, and the first historian backend; derived-metric formulas via pm-sidecar; dashboards against real harvested data.
 - **HSEi:** first MES/WMS/QMS backend wired for one site; incidents + inspections flowing.
 - **Spreadsheet import/export:** xlsx budget baseline + risk register + milestones; UATS specs for each template.

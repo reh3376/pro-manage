@@ -106,8 +106,16 @@ Error budgets drive release-rate decisions: if the user surface burns > 50% of i
 - Admin actions (config edits, user provisioning, override events) emit conspicuous audit rows + alerts.
 - Audit chain nightly verification; mismatches alert P1.
 
+### Multi-site operation
+- **Time:** every timestamp is stored in UTC and displayed in the viewer's or the site's time zone as the screen declares; SLA clocks and "business day" arithmetic run on the project's site calendar (working days, holidays); scheduled exports fire in the recipient's time zone.
+- **Money:** every money value carries its currency; the project's currency defaults to the site's. Cross-currency roll-ups use the dated `fx.rate.*` policy table and record the rate used; thresholds compare in `{car.threshold.currency}` at the rate in force on submission (`§03`, `§08`).
+- **Units:** site `unit_system` drives display and workbook templates; metric definitions declare their unit and conversions are explicit, never implied.
+- **Regulatory stamps and sign-offs** default from the site's `regulatory_regime[]` onto new projects (for example a Canadian site adds `cfia` and `excise_ca` where a US site adds `ttb`); the approval chains that name site roles resolve against that site's pools.
+- **One deployment, many sites:** the application is hosted once on the company's network; users at every site reach it over the company WAN. Cross-border access to a single on-premises system is a legal question (below), not an architectural one.
+
 ### Privacy
 - PII minimized. User identifiers in logs are hashed where feasible.
+- **Per-site privacy regimes.** A site's `privacy_regime[]` (for example PIPEDA for a Canadian site, state privacy law elsewhere) determines what personal data the site's users and contributors may be asked for, the retention of their session and audit identifiers, and the notice shown at sign-in. Contractor and supplier contributors' personal data is limited to what federation or guest provisioning requires. Where a regime restricts cross-border processing, Legal confirms before that site goes live; the open item below carries it.
 - External document content is not stored in MDEMG (we send readable summaries, not bodies).
 - Those summaries are processed by a model running on the MDEMG host. No prompt, observation, or guidance is sent to a third-party AI service, in any environment.
 - Document contents are stored in MinIO under a tenant-scoped keyspace; signed URLs are short-lived and audience-bound.
@@ -158,12 +166,15 @@ Error budgets drive release-rate decisions: if the user surface burns > 50% of i
 - **ISO 55000 (asset mgmt)** (if applicable): metric capture + lifecycle state model + closeout gates align.
 - **ISO 27001 (infosec)** (if adopted): access control (`§04`), audit (`§08`), ops hardening (this section), and incident response procedures together address major control families.
 - **SOX-equivalent**: AuditEvent integrity (chained hash) + approval chain preservation + separation of duties (owner cannot be their own approver on Tier A workflows).
+- **Privacy law per site** (PIPEDA, applicable US state privacy law, and any other regime a site declares): PII minimization, per-site notice and retention, and Legal's confirmation of cross-border processing before a foreign site goes live.
 
 Formal certification is out of scope for the FSD. This is implementation alignment, not a certification plan.
 
 ## Open items for Section 11
 
 - Confirm which specific ISO standards the deployment must align with (owner's intel pending).
+- Confirm with Legal, per site outside the home country, whether hosting that site's project and contributor data on the home-country deployment needs a data-transfer agreement or local notice (PIPEDA for a Canadian site is the first case), and which privacy regime values to seed on the Site.
+- Confirm the company's reporting currency for `{car.threshold.currency}` and who maintains the `fx.rate.*` table (first instinct: Finance controls, monthly, matching the ERP's rates).
 - Decide retention for Jiminy guidance snapshots that are *not* tied to a governed-action audit record (currently proposed 180 days in `§06`).
 - Confirm company's existing log aggregator (Loki, Splunk, Elastic) and metric platform (Prometheus, Datadog); we may reuse existing company tooling rather than ship from scratch.
 - Decide on-call rotation shape (which personas carry pager, business-hours only vs 24/7). Early-adoption bias: business-hours on-call with alerted ticketing after hours; full 24/7 after year one if adoption drives it.

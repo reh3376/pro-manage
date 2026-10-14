@@ -187,7 +187,7 @@ Other connector types follow the same shape: `HealthCheck`, `Capabilities`, and 
 Platform Admin UI exposes:
 - Register a new connector instance (pick type, pick backend, name it, point to its endpoint, link to a vault config).
 - Enable / disable / probe-health per instance.
-- Route rules (e.g., "all projects in portfolio X use the `ERPi_SAP` primary instance; fail over to the `ERPi_SAP` DR instance").
+- Route rules by site or portfolio (e.g., "all projects at site S use the `CMMSi_MX` instance for that plant"; "all projects in portfolio X use the `ERPi_SAP` primary instance; fail over to the `ERPi_SAP` DR instance"). A `Site`'s `default_connector_instances` (`§03`) is the first routing rule consulted.
 - View recent calls, errors, latencies per instance.
 
 ## Deployment topology (on-prem VMs with containers)
