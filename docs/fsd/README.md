@@ -128,7 +128,7 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 - **pm-sidecar (Python):** PDF/PPTX render, xlsx import/export, sandboxed derived-metric formulas (CPI/SPI/EAC, custom KPIs).
 - **pm-workers (Go):** scheduled jobs (metric harvest, exports, nudges, SLA tick), outbox drain to MDEMG and Commsi, long-running imports.
 - **pm-frontend (Next.js, TypeScript):** authenticated SSR+CSR UI; separate hardened `pm-frontend-public` for tokenized dashboard shares.
-- **Modular connector framework:** one gRPC contract per connector type (**ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi**), admin-registered, UDTS-governed. Admins swap backends without a core release.
+- **Modular connector framework:** one gRPC contract per connector type (**ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi**), admin-registered, UDTS-governed. Admins swap backends without a core release. Modules are built on the **Connector SDK** (§15): shared runtime, auth and integration helpers, conformance tests, and a manifest the admin UI reads, so adding a vendor needs no core release.
 - **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metrics), Redis (sessions/cache), MinIO (S3-compatible object storage), all containerized. **MDEMG** stack runs adjacent on an isolated loopback network.
 - **Deployment:** on-prem VMs with containers, docker-compose topology designed for later Kubernetes migration without reshaping services.
 - **Test governance:** **UxTS** adoption from MVP: UATS (API contracts), UDTS (gRPC contracts), UNTS (hash integrity on specs + fixtures) in CI from day one; UBTS, USTS, UOTS, UPMTS as the system matures.
@@ -171,13 +171,14 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 | 12 | [test-governance-uxts.md](./12-test-governance-uxts.md) | UATS + UDTS + UNTS from MVP; UBTS, USTS, UOTS, UPMTS roadmap |
 | 13 | [glossary.md](./13-glossary.md) | Terms and acronyms (TPM, EEM, CAR, AACE, LCC, TIC, OEE, MTBF, …) |
 | 14 | [project-as-equipment.md](./14-project-as-equipment.md) | **Core concept.** The project as equipment: OEE and Six Big Losses mapped to project delivery, the eight pillars applied, version-1 implementation, open questions, prior art |
+| 15 | [connector-sdk.md](./15-connector-sdk.md) | Connector SDK: module runtime, integration helpers (OAuth, SAML/OIDC, OData, idempotency, ETags, polling, inbound events), mapping layer, conformance kit, scaffolding CLI, module manifest, versioning |
 | n/a | [roadmap.md](./roadmap.md) | Phased delivery, milestones, dependencies, risks |
 
 ### Quick paths
 
 - **Capital Engineering leader:** §14, §01, §08, §03, §07, §09
 - **Plant operations / maintenance stakeholder:** §14, §01 (success criteria), §07 (TPM/Plant-Ops family), §08 (Early Management exit, Turnover), §06 (MP-information flow)
-- **Platform engineer:** §05, §06, §11, §12
+- **Platform engineer:** §05, §15, §06, §11, §12
 - **Finance / Compliance:** §04, §07 (TIC/LCC, Benefits Realization), §08 (CAR + chained-hash audit), §11
 - **AI / governance stakeholder:** §06, §12
 
@@ -187,7 +188,7 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 
 | Phase | Weeks | Theme | Headline |
 |---|---|---|---|
-| 0 | 1–6 | Foundation | Dev env + CI + auth + MDEMG adapter + first governed round-trip on a toy project |
+| 0 | 1–6 | Foundation | Connector SDK + Dev env + CI + auth + MDEMG adapter + first governed round-trip on a toy project |
 | 1 | 7–16 | MVP vertical slice | One real project through Initiate → Execute with CAR (loss-baselined business case) + asset registry + Jiminy guidance + Sigi + one ERPi backend + SSO |
 | 2 | 17–28 | Breadth | Risk/scope/documents, Metrici connectors, HSEi (incl. loss events, abnormality tags), CMMSi, spreadsheet I/O, dashboards, mobile field flows, external shares |
 | 3 | 29–40 | Depth | More backends, resource allocation, closeout + Benefits Realization window, legal hold, UPMTS |
