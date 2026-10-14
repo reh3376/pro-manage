@@ -2,15 +2,49 @@
 
 Status: **Draft v0, under active construction** · Last updated: 2026-10-14
 
-Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team delivery (sizing in "Team shape" below). Dates will firm up once team shape and ERP intel are confirmed.
+Companion to the FSD at `docs/fsd/`. The roadmap is cut around a **thin spine** (below) that is the same under either delivery scenario; the phase timings in weeks assume the small-team scenario, and the owner-plus-AI scenario runs the same order without dates. Dates firm up once the scenario, the pilot projects, and the ERP intel are confirmed.
 
 ## Guiding principles
 
+- **Spine before layers.** The spine (the smallest set of features that lets one real project get its full CAR approved in pro_manage with guidance, audit, and e-signature, against a budget mirrored from the ERP) is finished before any layer starts. Layers are pulled by a real need (a wave, a persona, a gate that a pilot project hits), never scheduled because the FSD describes them. Unfinished layers roll to the next phase; the spine never does.
 - **Ship the backbone early.** Auth, ACL, audit, workflow engine, MDEMG wiring. Everything else layers on top.
 - **One vertical slice first.** A single project through its full lifecycle, end-to-end, before breadth.
-- **Modular from day one.** The connector framework ships in Phase 0 even if only one backend is wired initially.
+- **Contract from day one, SDK after two real modules.** The connector contract (gRPC per type, `HealthCheck` and `Capabilities`, registry, UDTS conformance specs) ships in Phase 0. The Connector SDK (`§15`) is **extracted** from the first two production modules (`IdPi_OIDC`, then `ERPi_IFS`) once both exist, so its helpers are proven by use rather than guessed. The third module is the first one built on it.
 - **Automate the discipline early.** UATS + UDTS + UNTS specs land with the first code they govern, not retroactively. The UxTS scaffold (vendored runners, schemas, framework matrix, hash gate, inventory pre-commit hook) is a Phase 0 deliverable in its own right, because it is the forcing function every later phase relies on (`§12`).
 - **MDEMG churn is absorbed by the adapter.** All MDEMG calls go through `pkg/mdemgadapter` from the first commit.
+
+## The thin spine
+
+The FSD describes a large system. The spine is the part that must exist before pro_manage is useful to anyone, stated so that it can be finished by a very small team and judged by one test: **a real project's full CAR, approved in pro_manage, with a Jiminy card the approver saw, an audit row that proves it, a DocuSign envelope, and a budget mirrored from IFS.**
+
+| Spine element | What "done" means | FSD |
+|---|---|---|
+| Identity and membership | SSO through `IdPi_OIDC`; break-glass admin; `ProjectMember` with the four base roles; section-level ACL (document- and field-level are layers) | `§04` |
+| Site and Project | `Site` with time zone, currency, calendar; `Project` with lifecycle `Initiate → Plan → Execute`, FEL stage, type, onboarding level | `§03` |
+| Policy variables | `PolicyVariable` / `PolicyValue` with the five scopes, resolution, snapshot on workflow start, the policy editor, the starter CAR thresholds loaded from the DoA | `§08` |
+| The CAR | `CapitalAuthorization` (`full` first; `fel_funding` and `supplemental` follow in the same phase if cheap), `EstimateArtifact`, `BusinessCasePromise` required at submission, the CAR chain with eligibility pools, SLA tick and nudges, Sigi (DocuSign) envelope and signed artifact | `§03`, `§08` |
+| Audit | `AuditEvent` in the same transaction as every mutation, chained hash, nightly verification, approval-chain retrieval | `§08` |
+| MDEMG | `pkg/mdemgadapter`; guide on open (warmed), classify on Tier A submit with pre-classification, feedback and observe through the outbox; governance space seeded from the capital policy; local LLM on `pm-mdemg-01` | `§06` |
+| ERP mirror | `ERPi_IFS` read-only pulls (structure, budgets, forecasts, EAC, actuals, commitments) and `ReleaseBudget` on CAR approval; polling only | `§10` |
+| Notifications | `Commsi_SMTP` for approvals and nudges (Teams or Slack is a layer) | `§10` |
+| One screen per persona in the chain | Project page, CAR form, approval screen with guidance rail, workflow inbox, audit retrieval | `§09` |
+| Test governance | UATS, UDTS, UNTS from the first endpoint; USTS on the auth boundary before the pilot; no `continue-on-error` | `§12` |
+
+Everything else in the FSD is a **layer** (catalogue below), pulled in by a wave, a persona, or a gate a pilot project actually reaches.
+
+## Delivery scenarios
+
+The roadmap is honest about who is building it. Two scenarios, same order, different clocks:
+
+| | **A: owner plus AI collaborator** (the repo today) | **B: small team** (5 to 7, "Team shape" below) |
+|---|---|---|
+| Clock | Stages, not weeks; the spine is the first milestone, layers follow one at a time | Phases 0 to 4 over 52 weeks as tabled |
+| Spine | Whole spine before any layer; expect it to take the bulk of the first six months of part-time effort | Phases 0 and 1 |
+| Layers | One at a time, pulled by the pilot project's next gate; connectors beyond `IdPi_OIDC`, `ERPi_IFS`, `Sigi_DS`, and `Commsi_SMTP` only when a wave needs them | Per phase as tabled, in catalogue priority |
+| Deferred to year two or later | Mobile offline sync, Kubernetes readiness, Pattern B plugin, resource allocation, Schedulei, second Doci and HSEi backends, UVTS candidate, portfolio-level approvals | As tabled |
+| Risk | Single point of failure (the owner); mitigated by the FSD, the UxTS gates, and `pkg/mdemgadapter` making the codebase legible to a future team | Hiring and ramp; mitigated by the spine being small enough to finish while the team forms |
+
+The success criteria per phase apply to both; in scenario A they are read as "at the end of this stage" rather than "by week N".
 
 ## Phases at a glance
 
@@ -37,8 +71,8 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - First governance space seeded (`space=org.pm_dev.governance`); 2–3 toy constraints authored.
 - `pm.core.v1.ProjectService` + `ApprovalWorkflow` plumbing, enough to run a toy CAR approval end-to-end.
 - Prometheus/Grafana/Loki/Jaeger stack reachable; standard dashboards for RED metrics.
-- Connector framework: registry table, admin UI stub, standard `HealthCheck`/`Capabilities` RPCs implemented.
-- **Connector SDK (`§15`), Go runtime:** base module server, tier declaration, vault-backed config, OAuth 2.0 and SAML/OIDC helpers, resilient HTTP and OData clients, idempotency, ETag concurrency, polling scheduler, inbound event receiver, mapping layer, conformance kit with mock pm-core, scaffolding CLI, and module manifest. First modules built on it: `IdPi_SAML`, `IdPi_OIDC`, then `ERPi_IFS` in Phase 1. Python runtime deferred until a Python-only vendor requires it.
+- Connector framework: registry table, admin UI stub, standard `HealthCheck`/`Capabilities` RPCs implemented; the per-type gRPC contracts and their UDTS conformance specs (`§15` conformance kit, the part of the SDK that is the contract itself).
+- `IdPi_OIDC` built as a plain Go module against the contract (no SDK yet); its auth, config, and retry code is written to be lifted later. `IdPi_SAML` only if the company's IdP needs it (owner intel).
 - First UATS, UDTS, UNTS specs for the thin surfaces that exist, including UATS specs against the pinned MDEMG for the field shapes `§06` relies on, and the recorded ULTS prompt hashes of the MDEMG tasks pro_manage consumes.
 
 ### Success criteria
@@ -65,7 +99,8 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **Schedule:** manual milestone entry + dependencies; completion rule enforcement; (Schedulei imports deferred to Phase 2).
 - **Approvals:** CAR + Baseline change workflows live, with all thresholds and SLAs as policy variables (global, project-type, portfolio, and per-project overrides) and a policy editor; multi-stage routing via eligibility pools; delegation (basic); SLA tick + nudges via Commsi; admin override path; signed-hash audit chain.
 - **Sigi:** DocuSign integration live for CAR ≥ configurable threshold; signed-artifact capture to MinIO.
-- **IdPi:** `IdPi_OIDC` and `IdPi_SAML` production-ready on the SDK; which one is primary depends on the company's IdP (pending).
+- **IdPi:** `IdPi_OIDC` production-ready (`IdPi_SAML` if the company's IdP needs it; pending owner intel).
+- **Connector SDK extraction (`§15`):** once `IdPi_OIDC` and `ERPi_IFS` both work in production, the shared parts (module server, vault-backed config, OAuth and OIDC helpers, resilient HTTP and OData clients, idempotency, ETags, polling scheduler, mapping layer, manifest, scaffolding CLI) are lifted into the SDK and both modules are re-based on it with no behaviour change (their UDTS specs prove it). `Sigi_DS` and `Commsi_SMTP` are the first modules built on the SDK, in this phase or the next. Python runtime deferred until a Python-only vendor requires it.
 - **Commsi:** SMTP + Teams (or Slack, per company culture) notifications for approvals + overdue nudges.
 - **Dashboards:** Project Overview dashboard template; 6–8 built-in tiles bound to the headline metrics; live SSE updates working.
 - **MDEMG:** governance space seeded with ~20 real constraints authored by Governance Author (compliance team); project spaces created per project.
@@ -170,6 +205,36 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - Framework matrix complete: every planned framework at its stated CI disposition, matrix "last verified" within 30 days, UAMS promoted from spec-only if the upstream runner shipped.
 - Explore ML-driven forecasting as a sidecar module (opt-in, scoped to specific metrics).
 
+## Layer catalogue
+
+Everything outside the spine, with what pulls it in and the earliest phase it is scheduled under scenario B. Under scenario A the "pulled by" column is the only schedule.
+
+| Layer | Pulled by | Earliest phase | FSD |
+|---|---|---|---|
+| Document- and field-level ACL | A pilot project with budget lines that teammates must not see | 1 | `§04` |
+| Baseline change chain; contingency drawdown; variance views | First re-baseline on a pilot project | 1 | `§03`, `§08` |
+| Staged CAR (`fel_funding`, `supplemental`) | First FEL request or overrun on a pilot project | 1 | `§03` |
+| Project health review | First monthly review of a pilot project | 1 | `§08` |
+| Asset / AssetClass, Loss / LossCategory, loss-priced promises | First CAR whose business case is a loss recovery | 1 | `§03`, `§07` |
+| Dashboards (Project overview), SSE updates | Pilot owners asking for status without a deck | 1 | `§09` |
+| Design review ("easy-to" plus delivery lenses), MP-information capture | First pilot project entering Plan | 1 to 2 | `§03`, `§08`, `§06` |
+| Scope / WBS, risk register with quantification, issues, change requests | First pilot project in Execute | 2 | `§03` |
+| Documents (local + first Doci), document control (register, revisions, transmittals, IFC issue) | First package waiting on drawings | 2 | `§03`, `§08` |
+| EPCM delivery objects (contracts, work packages, RFIs, submittals, change orders, ITPs, deviations), contributor role, project losses, Project reliability dashboard | First EPCM-delivered pilot project; the §14 retrospective done first | 2 | `§03`, `§14` |
+| Procurement items and expediting | First long-lead item on a pilot project | 2 | `§03` |
+| Metrici connectors, derived metrics, TPM / plant-ops family | First asset in Early Management | 2 | `§07`, `§10` |
+| HSEi (one backend): losses, abnormality tags, certifications; CMMSi (one backend): assets, failure history, turnover delivery | First turnover; first MP harvest from running assets | 2 | `§10` |
+| Spreadsheet import / export; bulk-import tool; onboarding wave 1 | Wave 1 | 2 | `§07`, `§16` |
+| Chart builder; scheduled exports; on-demand decks; external shares | Steering meetings on pilot projects | 2 | `§09` |
+| Mobile field flows (online first; offline sync later) | Commissioning on a pilot project | 2 (offline: year two) | `§09` |
+| Commsi Teams or Slack; Schedulei; second Doci, HSEi, CMMSi backends | Demand from a wave | 2 to 3 | `§10` |
+| CQV records, Early Management exit, turnover package, Benefits Realization, closeout, capitalization handoff | First pilot project reaching Monitor | 2 to 3 | `§03`, `§08` |
+| Capital plan cycle (opportunities, plan, funnel) | The coming fiscal year's planning round | 3 | `§03`, `§08` |
+| Resource allocation; team competency; delegation richness; legal hold | Portfolio-level demand | 3 | `§03`, `§08` |
+| UPMTS; UBTS and UOBS full runs; UVTS candidate | Enough derived metrics and SLO data to govern | 2 to 3 | `§12` |
+| Load test, DR drill, security review, manifest pins, Kubernetes readiness | Before site-wide rollout | 4 | `§11` |
+| Pattern B MDEMG plugin; ML forecasting | Year two | GA+ | `§06` |
+
 ## Dependencies and critical path
 
 ```
@@ -209,10 +274,14 @@ Vault provisioned              ──▶ Phase 0 complete
 | Compliance regime adds unexpected constraints (ISO specifics TBD) | Medium | Low–Medium | Design is ISO-aligned by default; adjust retention/approval detail as standards firm up |
 | Platform admin UX becomes a bottleneck for connector-heavy ops | Medium | Low | Invest in admin UX in Phase 1 instead of deferring |
 | Key-person dependency on individual connector authors | Medium | Low | Each connector type documented; backends paired-reviewed |
+| Scenario A: the owner is the single point of failure and the plan is larger than one person | High | High | The thin spine is the only committed scope; layers are pulled, not scheduled; the FSD, UxTS gates, and adapter boundaries keep the codebase legible for a future team; re-assess the scenario at the end of the spine |
+| SDK extracted too early (guessed helpers) or too late (third module copies code) | Medium | Medium | Extract exactly after `IdPi_OIDC` and `ERPi_IFS` are both in production; UDTS specs prove the re-base changed nothing |
 
 ## Team shape (indicative)
 
-A **5–7 person core team** for Phase 0–2:
+**Scenario A (owner plus AI collaborator):** the owner as architect, product owner, and developer, with Claude Code as the drafting and implementation collaborator under the PR workflow in the README; a Governance Author and a Policy Owner from the company part-time once the pilot starts; the change lead role held by the owner until a wave needs more. No dates; the spine, then layers by pull.
+
+**Scenario B:** a **5–7 person core team** for Phase 0–2:
 
 - 1 × Tech Lead / Architect
 - 2 × Go backend engineers
@@ -237,7 +306,7 @@ Each phase produces concrete, named artifacts that enable the next phase:
 
 ## Open items for the roadmap
 
-- Confirm the start date and team shape.
+- Choose the delivery scenario (A: owner plus AI, B: small team) and, for B, the start date and team shape. The spine is the same either way; the choice sets the clock.
 - Confirm the pilot-team identity and the 3 pilot projects (should be real, in-flight work).
 - Confirm the MDEMG version pin and model pin for the project, and the `pm-mdemg-01` host shape.
 - Confirm which Phase 2 connector backends are highest-value for the owner's company (shapes effort allocation).

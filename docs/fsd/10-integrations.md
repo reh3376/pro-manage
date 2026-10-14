@@ -51,6 +51,7 @@ Connect pro_manage to the company ERP. Every ERP module provides **financials** 
 - *project_controls tier:* `FetchProjectStructure` (projects, sub-projects, activities, milestones), `FetchBudgetVersions`, `FetchForecastVersions`, `FetchEac`, `FetchEarnedValue` (BCWS/BCWP/ACWP, CPI/SPI), `FetchSubcontracts`, `FetchChangeOrders`, `FetchPaymentApplications`, `SubscribeProjectEvents` (where the ERP can emit events: new change order, forecast version published, budget variance threshold crossed)
 - *operational_writeback tier:* `CreateTask`, `AddNote`, `SetReadinessFlag` against a project or activity reference
 - *budget_release tier:* `ReleaseBudget(car_id, project_ref, amount, approval_ref)`; idempotent on `car_id`
+- *project_controls tier, capitalization:* `FetchCapitalizationStatus(project_ref) → CapitalizationStatus` (asset-under-construction balance, settled amount, fixed-asset ids, settlement date) so closeout can confirm the capitalization handoff happened in the ERP; the settlement itself is performed by Finance in the ERP, never by pro_manage
 
 ### Year-one backends
 **First target: `ERPi_IFS` (IFS Cloud)**, the ERP in use at the first target deployment. IFS Cloud combines ERP, enterprise asset management (EAM), and field service on one data model and has a capital-projects module (WBS, parallel forecasting, EAC workbench, earned value, subcontracts with payment applications and retentions, change control, project-to-asset handover). `ERPi_IFS` is expected to declare all four tiers, making that deployment **ERP-led**. Still to confirm: which IFS modules are licensed (Projects, EAM, HCM, shop floor / MES), and the projection names for the Projects module in that environment (see below).
@@ -345,6 +346,7 @@ Pull signals from MES, WMS, QMS, HSE, and operations TPM / connected-worker syst
 - `FetchNonconformances(FetchRequest) → stream Nonconformance`
 - `FetchSignoffs(FetchRequest) → stream Signoff`
 - `FetchLossEvents(FetchRequest) → stream LossEvent`: OEE / Six Big Losses events per asset, with category and (where the platform prices them) dollar value.
+- `FetchPermits(FetchRequest) → stream PermitToWork`: permit-to-work and isolation (LOTO) permit status per area or asset from the site's permit system, where one exists; feeds the "permits in hand" and HSE-prerequisite readiness constraints on work packages and the shutdown & tie-in plan (`§03`, `§08`). Where no system exists, permits are recorded on the package by the construction manager.
 - `FetchAbnormalityTags(FetchRequest) → stream AbnormalityTag`: operator-raised tags from autonomous-maintenance (CIL/CILT) routines; feeds MP-information pattern detection (`§06`).
 - `FetchSkillCertifications(FetchRequest) → stream Certification`: operator/technician certification status per asset or standard-work item; feeds the Early Management exit gate (`§08`).
 

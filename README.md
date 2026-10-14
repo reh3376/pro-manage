@@ -75,7 +75,7 @@ It is for a single company, hosted on the company's intranet in containers, tune
 
 This repository is a **living FSD and roadmap**, not yet an implementation. The design is being iterated under direct dialogue between the owner and an AI collaborator (Claude Code), with decisions captured in each FSD section's **Decisions on record** block and open items under **Open items for Section N**.
 
-Implementation begins once the FSD is ratified and the Phase 0 team shape is set. See [`docs/fsd/roadmap.md`](./docs/fsd/roadmap.md).
+Implementation begins once the FSD is ratified and the delivery scenario is chosen. The roadmap is cut around a thin spine (one real project's full CAR approved in the system, with guidance, audit, e-signature, and an ERP-mirrored budget) that is built first under either scenario; everything else is a layer pulled in by real need. See [`docs/fsd/roadmap.md`](./docs/fsd/roadmap.md).
 
 ---
 

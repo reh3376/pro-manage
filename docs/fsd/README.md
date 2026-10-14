@@ -192,14 +192,14 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 
 | Phase | Weeks | Theme | Headline |
 |---|---|---|---|
-| 0 | 1–6 | Foundation | Connector SDK + Dev env + CI + auth + MDEMG adapter + first governed round-trip on a toy project |
+| 0 | 1–6 | Foundation | Dev env + CI + UxTS scaffold + auth (`IdPi_OIDC`) + connector contract + MDEMG adapter + first governed round-trip on a toy project |
 | 1 | 7–16 | MVP vertical slice | One real project through Initiate → Execute with CAR (loss-baselined business case) + asset registry + Jiminy guidance + Sigi + one ERPi backend + SSO |
 | 2 | 17–28 | Breadth | Risk/scope/documents, document control, procurement status, Metrici connectors, HSEi (incl. loss events, abnormality tags), CMMSi, spreadsheet I/O, dashboards, mobile field flows, external shares, onboarding wave 1 with the bulk-import tool |
 | 3 | 29–40 | Depth | More backends, capital plan cycle, resource allocation, closeout + Benefits Realization window, legal hold, UPMTS, onboarding wave 2 |
 | 4 | 41–52 | Harden & scale | Load testing, DR drill, security review, K8s-readiness, site-wide rollout prep |
 | GA | year-two | Rollout | Site-wide, Pattern-B MDEMG plugin, additional backends per demand |
 
-See [roadmap.md](./roadmap.md) for milestones, dependencies, team shape, and risk register.
+The roadmap is cut around a **thin spine** (one real project's full CAR approved in pro_manage with guidance, audit, e-signature, and an ERP-mirrored budget) that is finished before any layer starts, and it states two delivery scenarios (owner plus AI collaborator, or a small team) that run the same order on different clocks. See [roadmap.md](./roadmap.md) for the spine, the layer catalogue, milestones, dependencies, team shape, and risk register.
 
 ---
 

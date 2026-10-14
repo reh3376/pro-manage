@@ -385,6 +385,8 @@ Which system owns project-controls records depends on what the ERP connector pro
 
 Mirrored records are read-only in pro_manage except for pro_manage-only attributes. Conflicts resolve to the system of record, and drift between the mirror and the source is surfaced, not silently overwritten.
 
+**Mirror drift rules (ERP-led profile).** Mirrored rows are keyed on the ERP's stable identifiers (`§10` identifier map), never on codes or names, so a renamed activity stays the same row. When the ERP restructures a project (an activity moved under another sub-project, split, merged, or deleted), the sync applies these rules: moved rows keep their pro_manage attributes and their links (readiness, losses, packages) and get a `restructured_at` stamp; a split row keeps its attributes on the surviving id and flags the new ids for the owner to re-link; a merged or deleted row's pro_manage attributes and links are not dropped but parked on an `orphaned_mirror` record that the owner resolves (re-link or archive) from a drift queue, and anything parked is excluded from roll-ups until resolved. Every drift event is an `AuditEvent` and a `blocker` observation to the project space, and a drift queue older than `{mirror.drift.max_age_days}` (policy variable, default 14) appears on the health-review agenda. No sync ever deletes a pro_manage-owned attribute.
+
 ## Multi-store map
 
 | Store | Lives in | Holds | Written by | Read by |

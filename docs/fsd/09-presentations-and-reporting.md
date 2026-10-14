@@ -147,6 +147,15 @@ Each is Git-tracked with a demo render under `templates/exports/examples/`.
 - The generated PPTX stores the stamp in each slide footer and in the file metadata.
 - Future retrievals of the same deck produce a *new* file reflecting *then-current* data; the original is preserved in MinIO.
 
+## Search
+
+A system with 200 projects, their packages, RFIs, documents, and decisions needs one search box.
+
+- **Scope:** projects, opportunities, assets, CARs, work packages, RFIs, submittals, change orders, documents and register entries (by number, title, and extracted text where the file is local), risks, MP information, health-review actions, policy variables, and people (by role in a project). Results are role-filtered at query time through the same grants as everything else, including field-level restrictions on what the snippet may show.
+- **Behaviour:** typed-ahead with entity-type facets, project and site filters, and recent items; exact matches on codes and numbers (`P-INDUSTRIAL-EAST-7`, `RFI-0142`, a document number) rank first; free text uses Postgres full-text search in year one (a dedicated search index is a layer if scale demands it).
+- **Deep links:** every result opens the governed screen, not a generic record page, so "CR-2457" lands on the approval with its guidance rail.
+- **Audit:** searches over restricted sections are logged like any read of them (`§04`).
+
 ## Reporting beyond dashboards
 
 - **Metric exports**: raw metric data as CSV / Parquet, scoped by project + time + metric set. Role-filtered.
