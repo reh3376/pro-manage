@@ -18,6 +18,8 @@
 Each family ships with a built-in set of standard metrics (admin-extensible via `MetricDefinition`). Baseline list:
 
 ### Financial
+*In the ERP-led profile, EAC and earned-value measures (CPI, SPI, BCWS/BCWP/ACWP) are read from the ERP rather than derived in pm-sidecar, so pro_manage and the ERP never show different numbers for the same project.*
+
 - `budget.baseline_total` (per baseline revision)
 - `budget.committed` (POs issued, from ERPi commitments)
 - `budget.actual` (invoiced + paid, from ERPi actuals)

@@ -27,7 +27,18 @@ Codes are assigned for the candidate backends below. The specific modules a depl
 ## ERPi: ERP Integration
 
 ### Purpose
-Pull financial actuals, commitments, invoices, chart of accounts, and vendors from the company ERP. Read-only. Writes stay in the ERP.
+Connect pro_manage to the company ERP. Every ERP module provides **financials** (actuals, commitments, invoices, chart of accounts, vendors). ERPs with a capital-projects module also provide **project controls** (project structure, budgets and forecasts, EAC, earned value, subcontracts, change orders), and when they do, the ERP is the system of record for those records and pro_manage mirrors them (see "Capability tiers" below and `§03` deployment profiles).
+
+**Write-back is deliberately narrow:** operational records (tasks, work requests, notes, readiness flags, deviations) and **one controlled financial write**, releasing the authorized budget when a CAR is approved. pro_manage never edits forecasts, actuals, or other financial records in the ERP; those change only through the ERP's own controlled processes, so the audit trail stays in one place.
+
+### Capability tiers
+
+| Tier | Declared via `Capabilities` | pro_manage behavior |
+|---|---|---|
+| `financials` | Always | Pull actuals, commitments, invoices, CoA, vendors. pro_manage owns WBS, budgets, forecasts, EVM, contracts, change orders (profile **pro_manage-led**). |
+| `project_controls` | ERP has a capital-projects module (e.g. IFS Cloud) | Additionally mirror project structure, budget and forecast versions, EAC, EVM measures, subcontracts, change orders, payment applications. The ERP owns them (profile **ERP-led**). |
+| `operational_writeback` | ERP accepts tasks / work requests / notes against project objects | pro_manage may push deviations, readiness flags, and improvement actions as ERP tasks or notes. |
+| `budget_release` | ERP supports creating or releasing a project budget via API | On CAR approval, pro_manage releases the authorized budget in the ERP (one audited write per approval). |
 
 ### gRPC interface (summary; see `pm.connector.v1.erpi.proto`)
 - `HealthCheck`, `Capabilities`
@@ -36,9 +47,14 @@ Pull financial actuals, commitments, invoices, chart of accounts, and vendors fr
 - `FetchInvoices(FetchInvoicesRequest) → stream Invoice`
 - `FetchChartOfAccounts(FetchCoARequest) → stream Account`
 - `FetchVendors(FetchVendorsRequest) → stream Vendor`
+- *project_controls tier:* `FetchProjectStructure` (projects, sub-projects, activities, milestones), `FetchBudgetVersions`, `FetchForecastVersions`, `FetchEac`, `FetchEarnedValue` (BCWS/BCWP/ACWP, CPI/SPI), `FetchSubcontracts`, `FetchChangeOrders`, `FetchPaymentApplications`, `SubscribeProjectEvents` (where the ERP can emit events: new change order, forecast version published, budget variance threshold crossed)
+- *operational_writeback tier:* `CreateTask`, `AddNote`, `SetReadinessFlag` against a project or activity reference
+- *budget_release tier:* `ReleaseBudget(car_id, project_ref, amount, approval_ref)`; idempotent on `car_id`
 
 ### Year-one backends
-To be prioritized once the owner confirms the first production ERP (pending). Candidate backends:
+**First target: `ERPi_IFS` (IFS Cloud)**, the ERP in use at the first target deployment. IFS Cloud combines ERP, enterprise asset management (EAM), and field service on one data model and has a capital-projects module (WBS, parallel forecasting, EAC workbench, earned value, subcontracts with payment applications and retentions, change control, project-to-asset handover). `ERPi_IFS` is expected to declare all four tiers, making that deployment **ERP-led**. To confirm: which IFS modules are licensed (Projects, EAM, HCM), the API surface (IFS Cloud is understood to expose REST/OData "projection" APIs and event actions; verify), and authentication.
+
+Other candidate backends:
 - `ERPi_SAP` (SAP ECC via OData/BAPI; S/4HANA via CDS views)
 - `ERPi_ORA` (EBS tables or Fusion REST APIs)
 - `ERPi_NS` (SuiteTalk REST)
@@ -62,8 +78,22 @@ Further ERP modules follow the same pattern (e.g. `ERPi_INFOR`, `ERPi_EPICOR`, `
 - Backfill via `FetchActualsRequest.from_ts` works for all backends; ranges > 90 days are chunked.
 - UNTS hashes the field-mapping YAML; any schema drift upstream is caught in CI.
 
+### IFS Cloud identifier mapping (`ERPi_IFS`)
+
+| IFS Cloud object | pro_manage entity |
+|---|---|
+| Project | `Project` (`code` ↔ IFS project id) |
+| Sub-project / activity | `WBSNode`; `WorkPackage.wbs_id` points at the activity |
+| Milestone | `Milestone` |
+| Budget / forecast version, EAC | `BudgetBaseline`, `BudgetForecast` (mirrored) |
+| Subcontract | `Contract` |
+| Change order | `ChangeOrder` (mirrored) |
+| Purchase order / commitment | `BudgetCommitment` |
+| Equipment object (EAM) | `Asset.cmms_ref` |
+| Work order / work request (EAM) | target of operational write-back; MP-information source |
+
 ### Open items
-- Confirm first production backend (pending owner confirmation).
+- Confirm the IFS Cloud modules licensed at the first target deployment and the API and authentication approach for `ERPi_IFS`.
 - Confirm whether multiple ERP instances will run concurrently (e.g., SAP for industrial division, NetSuite for services). Design supports this.
 
 ---
@@ -355,6 +385,7 @@ Candidates (prioritize based on company's installed CMMS):
 - `CMMSi_MAPCON` (Mapcon: smaller shops)
 - `CMMSi_UPKEEP` (UpKeep: SMB)
 - `CMMSi_MX` (MaintainX: mobile-first, common where operators raise requests directly)
+- `CMMSi_IFS` (IFS Cloud EAM). If the plant's maintenance system is IFS EAM, turnover goes through IFS's **native project-to-asset handover** (equipment objects, spare parts, maintenance plans created from the project) rather than a separate equipment write; `CMMSi_IFS` then reads failure history and work orders for MP information and confirms that handover completed. If the plant runs a different CMMS, the standard CMMSi write path applies. Which case applies at the first target deployment is not yet known; both are supported.
 - `CMMSi_CRY` (Cryotos: TPM-pillar-structured CMMS; also a candidate HSEi source for abnormality tags and OEE)
 
 ### Config knobs (per instance)

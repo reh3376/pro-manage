@@ -88,6 +88,8 @@ A fine-grained grant on top of a ProjectMember's base role. The full-ACL model l
 - **Default:** Absence of grant means the base role determines access; an explicit `deny` can mask a base-role-granted access (e.g., Editor across the project, but Deny on `field:budget.salary`).
 
 ### Budget
+*In the ERP-led profile, baselines, forecasts, EAC, and commitments are mirrored from the ERP (see System of record by deployment profile).*
+
 The financial state of the project. Modeled with distinct **TIC** (Total Installed Cost, tracked throughout the project) and **LCC** (Lifecycle Cost, estimated during Design and validated during Benefits Realization).
 
 - **Sub-entities:**
@@ -111,6 +113,8 @@ Time dimension of the project.
 - **Mechanical rule:** cannot mark `complete` with open dependencies (UC-05). Enforced in-process, pre-MDEMG.
 
 ### WBS & Deliverables (Scope)
+*In the ERP-led profile, the WBS (projects, sub-projects, activities) is mirrored from the ERP; deliverables, acceptance, and change requests remain pro_manage records.*
+
 Work breakdown and deliverable-level tracking.
 
 - **Sub-entities:**
@@ -288,6 +292,23 @@ Role-based competency for the project team (owner, EPCM, and contractor staff), 
 - `CompetencyRequirement` (per workflow role or package kind) and `TeamCompetency` (`user_id`, `competency`, `level`, `evidence`, `expires_at?`). Gaps on a package's assigned team surface as a readiness warning, not a block.
 - **Workflow (`§08`):** BenefitsRealization carries its own closeout workflow. The project does not move to `Archived` until BenefitsRealization is closed (except when the window itself is explicitly waived with admin override + audited reason).
 - **MDEMG binding:** at closeout of BenefitsRealization, pro_manage writes a `decision` observation to the governance space summarizing what was realized vs promised, with `scope` tags that let similar future projects surface it during their own business-case drafting.
+
+## System of record by deployment profile
+
+Which system owns project-controls records depends on what the ERP connector provides (`§10` capability tiers). The profile is set per deployment from the active `ERPi` module's `Capabilities`; it is not a per-project choice.
+
+| Record | **ERP-led** profile (ERP has a projects module, e.g. IFS Cloud) | **pro_manage-led** profile (financials-only ERP) |
+|---|---|---|
+| Project structure (projects, sub-projects, activities, milestones) | ERP owns; pro_manage mirrors and adds pro_manage-only attributes (lifecycle state, FEL stage, TPM tags, readiness) | pro_manage owns |
+| Budget baselines, forecast versions, EAC | ERP owns; pro_manage mirrors. AACE class and CAR linkage are pro_manage attributes on the mirrored baseline | pro_manage owns |
+| Earned value (BCWS/BCWP/ACWP, CPI/SPI) | ERP computes; pro_manage reads | pro_manage computes (`§07`) |
+| Contracts / subcontracts, payment applications | ERP owns; pro_manage mirrors as `Contract` and adds contributor scoping | pro_manage owns `Contract`; values from ERP commitments |
+| Change orders | ERP owns the record and its approval; pro_manage mirrors, measures cycle time from ERP timestamps, and adds Jiminy guidance on open | pro_manage owns (`§08`) |
+| Actuals, commitments, invoices | ERP owns (both profiles) | ERP owns |
+| CAR, gate workflows, design reviews, MP information, work-package readiness, RFIs, submittals, ITPs, deviations, project losses, health reviews, Benefits Realization, audit | pro_manage owns (both profiles) | pro_manage owns |
+| Authorized budget after CAR approval | pro_manage approves; released into the ERP via `ReleaseBudget` (`budget_release` tier) | pro_manage owns |
+
+Mirrored records are read-only in pro_manage except for pro_manage-only attributes. Conflicts resolve to the system of record, and drift between the mirror and the source is surfaced, not silently overwritten.
 
 ## Multi-store map
 

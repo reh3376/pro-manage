@@ -32,6 +32,8 @@ Terms, acronyms, and project-specific names.
 | Term | Meaning |
 |---|---|
 | **ERPi** | ERP integration connector. Supports SAP, Oracle, NetSuite, Dynamics, Odoo, etc. |
+| **Deployment profile** | Whether the ERP owns project-controls records (**ERP-led**, e.g. IFS Cloud) or pro_manage does (**pro_manage-led**). Set from the ERPi module's capability tiers. |
+| **IFS Cloud** | ERP + EAM + field service platform with a capital-projects module; first target ERP (`ERPi_IFS`). |
 | **IdPi** | Identity provider (SSO) connector. OIDC + SAML abstractions. |
 | **Sigi** | E-signature connector. DocuSign at launch; Adobe Sign, OneSpan, etc. in reach. |
 | **Schedulei** | Schedule-tool connector. MS Project, Primavera P6, Smartsheet. |

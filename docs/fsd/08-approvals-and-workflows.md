@@ -73,6 +73,8 @@ Pre-conditions for CAR submission: `project.fel_stage == fel3`, current `BudgetB
 
 Thresholds and roles are stored in the `WorkflowPolicy` table and are editable by `platform_admin` with a logged change.
 
+**On final approval (ERP-led profile):** pm-core calls `ERPi.ReleaseBudget` to create or release the authorized budget in the ERP, keyed on the CAR id so retries are safe. The ERP's budget reference is stored on the CAR and in the AuditEvent. If the release fails, the CAR stays `approved` with a visible "budget release pending" flag and an operational alert; nobody re-approves.
+
 ### Example: Design review sign-off
 
 Required before transitioning Project from `Plan` to `Execute`.
@@ -155,6 +157,8 @@ Revise-resubmit cycles are counted per submittal; repeat offenders by supplier o
 | 3 (if cost ≥ contract threshold or contingency would go negative) | `finance_approver` | 72h |
 
 Approved change orders update the `Contract` value and, where they implement an internal `ChangeRequest`, close it.
+
+**ERP-led profile:** the change order is created and approved in the ERP, not here. pro_manage mirrors it, shows Jiminy guidance when it is opened in pro_manage, links it to the internal `ChangeRequest`, and measures its cycle time from the ERP's timestamps (feeding the `waiting_approval` project loss). The chain above applies only in the pro_manage-led profile.
 
 ### Example: Work package release
 
