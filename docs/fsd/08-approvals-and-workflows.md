@@ -3,6 +3,7 @@
 ## Decisions on record
 
 - **2026-10-13:** Approvals are a core feature. pro_manage owns the workflow engine; MDEMG provides advisory + classify at the gates (`§06`).
+- **2026-10-14:** **All thresholds are admin-configurable policy variables, never hard-coded,** with values that can differ per project. Most specific scope wins (project → portfolio → project type → global); values are locked into each workflow when it starts; project overrides are set only by `platform_admin` or `policy_owner`, never by anyone in that project's approval chain.
 - **2026-10-13:** The primary approval instance in a TPM shop is the **CAR (Capital Authorization Request)**. "CapEx" is retained as the generic framing.
 - **2026-10-13:** Workflow kinds in year one: **CAR, Baseline change, Design review sign-off, CQV sign-off, Milestone sign-off, Change request, Shutdown & tie-in plan, Early Management exit, Closeout, Benefits Realization review**, plus a configurable **Custom** kind for policies pro_manage doesn't ship with.
 - **2026-10-14:** CAR submission requires every business-case promise to carry a CAR-time baseline and measurement basis. Early Management exit requires operator and maintenance certification on the new asset. A recurring **Project health review** (not a gate) is added.
@@ -11,6 +12,58 @@
 - **2026-10-13:** Formal e-signature via `Sigi` (DocuSign at launch). Workflow kinds for which Sigi is mandatory are configurable per policy; the rest rely on the authenticated AuditEvent as the sign-off of record.
 - **2026-10-13:** AuditEvents are append-only with chained signed hashes (tamper evidence). Retention aligned with the longest applicable regime (`§11`); baseline is 7 years for financial-impacting events.
 - **2026-10-13:** Routing resolves approvers from **eligibility pools** by **amount thresholds + delegation chain**. Pools are populated by platform roles (`finance_approver_eligible`, etc.) + per-project overrides.
+
+## Policy variables (configurable thresholds)
+
+No threshold, amount, percentage, SLA, cadence, or window in any workflow is hard-coded. Each is a named **policy variable** that administrators set and can override per project. The numbers in the example tables below are placeholder defaults, written as `{variable}` references.
+
+### How a variable is defined
+
+- `PolicyVariable`: `key` (e.g. `car.threshold.vp_finance`), `type` ∈ `{money, percent, duration, integer, boolean, enum}`, `unit` / currency, `description`, `global_default`, `allowed_range` (min and max, enforced at every scope), `overridable_at[]` (which scopes may override it), `owner_role`.
+- `PolicyValue`: `variable_key`, `scope_kind` ∈ `{global, project_type, portfolio, project}`, `scope_id`, `value`, `effective_from`, `effective_to?`, `set_by`, `reason`, `approved_by?`, version.
+
+### How the effective value is resolved
+
+Most specific scope wins: **project → portfolio (business unit) → project type → global default**. Every screen that uses a variable can show its effective value and where it came from (for example "$7.5M, project override set by J. Smith on 2026-11-02, reason: JV partner agreement").
+
+### When values are locked
+
+A workflow captures the effective values of every variable it uses when it **starts** (for a CAR, at submission) and records them in `ApprovalWorkflow.policy_snapshot`. Changing a variable later does not change an approval that is already in flight. An administrator can deliberately re-base an in-flight workflow onto current values; that is a logged action with a reason, and any stage whose routing changes is re-opened.
+
+### Who can change them
+
+- `platform_admin` and the `policy_owner` platform role (typically Finance controls) set global, project-type, and portfolio values.
+- Project-level overrides are set by the same roles only, never by the project's owner or by anyone in that project's approval chain (separation of duties).
+- A project override needs a reason and an effective date, and may carry an expiry. Whether a second approver is required is itself a variable (`policy.override.second_approval_required`, default true for money and percent variables).
+- Every change is versioned and written to the AuditEvent log. Overrides that would remove an approval stage entirely, or that sit at the edge of `allowed_range`, are flagged for review.
+
+### Where variables are used
+
+Approval-chain conditions (a stage is included when `amount >= {car.threshold.vp_finance}`), stage SLAs, MDEMG fail-closed tiers (`§06`), health-review cadence, Early Management exit criteria, the Benefits Realization window, change-order thresholds, and readiness overrides. Jiminy constraints are written against the variable rather than a number ("A CAR at or above the VP Finance threshold requires VP Finance co-sign"), and pm-core passes the project's effective values into the guidance context, so one constraint works for every project.
+
+### Starter variables (placeholder defaults until the company's approval-limits matrix is loaded)
+
+| Variable | Type | Placeholder default | Used by |
+|---|---|---|---|
+| `car.threshold.finance_approver` | money | $0 (always) | CAR stage 2 |
+| `car.threshold.vp_finance` | money | $5M | CAR stage 3; MDEMG Tier A |
+| `car.threshold.cfo` | money | $25M | CAR stage 4 |
+| `car.threshold.ceo` | money | $100M | CAR stage 5 |
+| `car.threshold.basis` | enum: `tic`, `tic_plus_contingency`, `total_project_cost` | `tic` | What the CAR amount is compared on |
+| `car.supplemental.reapproval_pct` | percent | 10% | Cost growth on an approved CAR that forces re-approval |
+| `car.esign.required_above` | money | $1M | DocuSign required vs internal attestation |
+| `baseline.variance.reforecast_pct` | percent | 10% | Jiminy warning; monthly re-forecast task |
+| `baseline.variance.finance_pct` | percent | 5% | Baseline change stage 2 |
+| `baseline.variance.vp_finance_pct` | percent | 10% | Baseline change stage 3; MDEMG Tier A |
+| `change_order.threshold` | money | per contract | Change order stage 3; MDEMG Tier A |
+| `health_review.cadence` | duration | monthly | Health review |
+| `health_review.high_value_threshold` | money | $25M | Biweekly cadence above this |
+| `early_mgmt.exit.nameplate_pct` | percent | 95% | Startup curve exit criterion |
+| `early_mgmt.exit.sustain_days` | integer | 14 | Startup curve exit criterion |
+| `benefits.window_days` | integer | 365 | Benefits Realization window |
+| `sla.<workflow>.<stage>` | duration | per example tables | Stage SLAs and nudges |
+
+Administrators can add variables; workflow and constraint definitions reference them by key.
 
 ## Workflow state machine
 
@@ -67,11 +120,11 @@ Pre-conditions for CAR submission: `project.fel_stage == fel3`, current `BudgetB
 |---|---|---|---|
 | 1 | `project_owner` | the project's Owner | 24h |
 | 2 | `finance_approver` | `finance_approver_eligible` ∩ `project.business_unit = X` | 48h |
-| 3 (if amount ≥ $5M) | `vp_finance` | configured VPs | 72h |
-| 4 (if amount ≥ $25M) | `cfo` | configured CFO + 1 delegate | 72h |
-| 5 (if amount ≥ $100M) | `ceo` | configured CEO + 1 delegate | 7 days |
+| 3 (if amount ≥ `{car.threshold.vp_finance}`) | `vp_finance` | configured VPs | `{sla.car.vp_finance}` (72h) |
+| 4 (if amount ≥ `{car.threshold.cfo}`) | `cfo` | configured CFO + 1 delegate | `{sla.car.cfo}` (72h) |
+| 5 (if amount ≥ `{car.threshold.ceo}`) | `ceo` | configured CEO + 1 delegate | `{sla.car.ceo}` (7 days) |
 
-Thresholds and roles are stored in the `WorkflowPolicy` table and are editable by `platform_admin` with a logged change.
+Thresholds and SLAs are policy variables (see Policy variables above); the amount is compared on the basis set by `{car.threshold.basis}`. Stage definitions and roles are stored with the workflow kind and are editable by `platform_admin` with a logged change.
 
 **On final approval (ERP-led profile):** pm-core calls `ERPi.ReleaseBudget` to create or release the authorized budget in the ERP, keyed on the CAR id so retries are safe. The ERP's budget reference is stored on the CAR and in the AuditEvent. If the release fails, the CAR stays `approved` with a visible "budget release pending" flag and an operational alert; nobody re-approves.
 
@@ -113,7 +166,7 @@ Project cannot move from `Monitor` to `Close` without this.
 
 | Order | Role required | SLA | Exit criteria |
 |---|---|---|---|
-| 1 | `project_owner` requests exit | n/a | Startup curve sustained at ≥X% nameplate for ≥Y days; CQV punchlist closed; TurnoverPackage.status == `approved`; **operators and maintenance technicians assigned to the asset certified** on its standard work, CIL routines, and changeovers (status read from the plant skills matrix / connected-worker platform via HSEi where available, else recorded in pro_manage) |
+| 1 | `project_owner` requests exit | n/a | Startup curve sustained at ≥ `{early_mgmt.exit.nameplate_pct}` of nameplate for ≥ `{early_mgmt.exit.sustain_days}` days; CQV punchlist closed; TurnoverPackage.status == `approved`; **operators and maintenance technicians assigned to the asset certified** on its standard work, CIL routines, and changeovers (status read from the plant skills matrix / connected-worker platform via HSEi where available, else recorded in pro_manage) |
 | 2 | `site_operations_lead` co-sign | 48h | n/a |
 | 3 | `site_maintenance_lead` co-sign | 48h | n/a |
 | 4 | `compliance_officer` co-sign for regulated contexts | 72h | n/a |
@@ -179,7 +232,7 @@ Work on the package cannot progress past the hold point until released. A failed
 
 The capital-side counterpart to an operations huddle: short, regular, ends with owned actions rather than a grade. Records a `ProjectHealthReview` (`§03`).
 
-- **Cadence:** monthly by default during `Plan` and `Execute`; biweekly for projects ≥ $25M or flagged `red`; on demand by a Portfolio Executive.
+- **Cadence:** monthly by default during `Plan` and `Execute`; biweekly for projects at or above `{health_review.high_value_threshold}` or flagged `red` (cadence set by `{health_review.cadence}`); on demand by a Portfolio Executive.
 - **Facilitator:** someone other than the project owner (peer PM, portfolio lead, or CI lead).
 - **Agenda (pre-filled from live data):** scope stability, estimate maturity vs stage (AACE class vs FEL/lifecycle stage), critical-path float, top risks and owners, change-order trend, contingency burn vs % complete, Operations/Maintenance readiness for turnover, the project-loss Pareto (from which the review selects one **dominant loss** to attack this cycle, with an owner and a countermeasure), RFI / submittal aging, plan compliance with variance reasons, and one open prompt: *"What are you worried about that isn't on the register?"*
 - **Output:** actions with owners and dates (tracked like issues), an overall green/amber/red, and an optional `/jiminy/feedback`-style observation to the project space so recurring concerns become visible guidance.
@@ -189,9 +242,9 @@ The capital-side counterpart to an operations huddle: short, regular, ends with 
 
 | Order | Role required | Pool | SLA | Jiminy coupling |
 |---|---|---|---|---|
-| 1 | `project_owner` | project Owner | 24h | `/jiminy/guide` on open ⇒ warn if variance > 10% |
-| 2 (if variance > 5%) | `finance_approver` | per BU | 48h | n/a |
-| 3 (if variance > 10%) | `vp_finance` | configured | 72h | `/jiminy/classify` is Tier A (fail-closed) |
+| 1 | `project_owner` | project Owner | 24h | `/jiminy/guide` on open ⇒ warn if variance > `{baseline.variance.reforecast_pct}` |
+| 2 (if variance > `{baseline.variance.finance_pct}`) | `finance_approver` | per BU | 48h | n/a |
+| 3 (if variance > `{baseline.variance.vp_finance_pct}`) | `vp_finance` | configured | 72h | `/jiminy/classify` is Tier A (fail-closed) |
 
 ### Example: Closeout
 
@@ -275,7 +328,7 @@ Every stage record carries `guidance_id`, `classification_verdict`, and a snapsh
 - **Classify false positive (deny when policy actually allows):** admin override + `blocked_false_positive` feedback; Governance Author reviews the constraint; may re-scope or retire via tombstone.
 - **Classify false negative (allow when policy would have denied):** detected post-hoc by audit review; Governance Author authors a new constraint; `missed_violation` feedback captured retrospectively.
 - **Delegate approves outside their authority:** pm-core enforces `role_required` at stage completion time, not at assignment time. A delegate who isn't eligible for the required role can't complete the stage.
-- **Workflow policy change mid-flight:** in-flight workflows run under their **captured policy snapshot** (recorded at workflow creation). Policy changes affect new workflows only. Visible on the workflow for transparency.
+- **Policy variable change mid-flight:** in-flight workflows run under their **policy snapshot** (effective variable values captured when the workflow started). Changes affect new workflows only, unless an administrator deliberately re-bases the workflow (logged, with reason; affected stages re-open). The snapshot is visible on the workflow.
 
 ## UX patterns
 
@@ -288,7 +341,8 @@ Every stage record carries `guidance_id`, `classification_verdict`, and a snapsh
 
 Platform Admin UI exposes:
 
-- `WorkflowPolicy` editor: amount thresholds, SLA durations, stage definitions, Sigi requirement toggles. Changes are versioned and logged.
+- **Policy variable editor:** define variables, set global / project-type / portfolio values, and set per-project overrides (with reason, effective date, optional expiry, and second approval where required). Shows each project's effective values and their sources. Changes are versioned and logged.
+- Workflow kind editor: stage definitions, roles, and Sigi requirement, with conditions written against policy variables.
 - Eligibility pool management: add/remove users from `finance_approver_eligible`, `vp_finance`, etc. Also links to IdPi claim mappings so admins can see "this role is populated by the AD group `pro_manage.finance_approvers`."
 - Delegation chain editor: users can edit their own; admins can edit anyone's with audit.
 - Workflow kind registry: enable `custom` kinds with declared schemas; admins can wire them to Sigi/MDEMG/tier policy.
@@ -304,7 +358,7 @@ Platform Admin UI exposes:
   - Which approvals require formal e-signature (DocuSign) vs internal attestation.
   - Required CAR content and attachments (business case template, AACE class, IRR/NPV/payback hurdle rates, risk register).
   - Delegation rules when an approver is out (who can sign on their behalf, and up to what limit).
-  These populate the `WorkflowPolicy` table directly; no design change is expected.
+  These become the global and portfolio values of the policy variables; projects that need different limits get project-level overrides. No design change is expected.
 - Confirm whether `Change request` is a workflow kind of its own, or always a nested sub-step of a Budget or Scope change. First instinct: standalone, with references into Budget and Scope.
 - Decide whether "re-submit after reject" creates a brand-new workflow id or extends the existing one. First instinct: new id, with explicit linkage, so the audit record for each attempt is clean.
 - Confirm which workflow kinds are mandatory-Sigi vs. optional-Sigi.

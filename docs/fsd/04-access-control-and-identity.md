@@ -77,6 +77,7 @@ Platform roles are global, assigned via IdPi claims-mapping, and grant abilities
 | Role | Grants |
 |---|---|
 | `platform_admin` | Operate the platform. Configure modules. Manage users. **Does not** have blanket read on project content. |
+| `policy_owner` | Sets policy variables (approval thresholds, SLAs, cadences; `§08`) at global, project-type, portfolio, and project scope. Typically held by Finance controls. Cannot set a project override on any project where they sit in the approval chain. No project-content access beyond the policy view. |
 | `governance_author` | Author Jiminy constraints via the Governance admin UI. Scope: `space=org.<id>.governance`. No project-content access. |
 | `compliance_officer` | Read access to safety/quality/compliance sections of projects under their jurisdiction (configured per-officer). May be composed with `governance_author`. |
 | `portfolio_executive` | Read across all projects in configured portfolios. May be configured as `finance_approver_eligible` for CAR chains. |

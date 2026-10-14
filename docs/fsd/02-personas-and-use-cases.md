@@ -7,7 +7,7 @@
 
 ## Personas
 
-The thirteen canonical roles below cover every pro_manage interaction in year one. Role is distinct from permission: a user may hold several roles across different projects and the portfolio.
+The fourteen canonical roles below cover every pro_manage interaction in year one. Role is distinct from permission: a user may hold several roles across different projects and the portfolio.
 
 ### Primary roles (people who do work in pro_manage daily)
 
@@ -70,6 +70,9 @@ Operates pro_manage. Configures connector modules (ERPi, IdPi, Sigi, Schedulei, 
 - Does not have blanket read access to project content. Admin privileges target *configuration*, not *data*. A Platform Admin can see that Project P-7 exists and who its Owner is, but cannot read its budget unless explicitly granted. (See `§04` for the admin audit discipline that enforces this.)
 - Local break-glass admin account exists for recovery scenarios when SSO is down; use is logged and reviewed.
 
+#### Policy Owner
+Sets the policy variables that drive workflows (`§08`): CAR approval thresholds, variance thresholds, SLAs, review cadences, and windows, at global, project-type, portfolio, and per-project scope. Typically someone in Finance controls who maintains the company's approval-limits matrix. Can override values for a specific project (with a reason, and a second approver where required) but never on a project where they sit in the approval chain.
+
 #### Governance Author
 Authors Jiminy constraints via a dedicated admin UI that fronts MDEMG's `/v1/jiminy/rules` endpoint. May be the same person as Compliance Officer or a separate role.
 
@@ -113,7 +116,7 @@ Each use case lists its primary actor, the trigger, the main success scenario in
 
 ### UC-03: Change budget baseline with variance over threshold
 - **Actor:** Project Owner · **Trigger:** Owner proposes a +12% baseline change.
-- **Flow:** Form render triggers `/jiminy/guide` → "Variance >10% requires monthly re-forecast cycle"; owner acknowledges; `/jiminy/evaluate` returns a warning (not a block); on submit, re-forecast task is auto-scheduled; outcome recorded.
+- **Flow:** Form render triggers `/jiminy/guide` → "Variance above the project's re-forecast threshold requires a monthly re-forecast cycle" (threshold from policy variable `baseline.variance.reforecast_pct`); owner acknowledges; `/jiminy/evaluate` returns a warning (not a block); on submit, re-forecast task is auto-scheduled; outcome recorded.
 - **Accept when:** Re-forecast task appears on the owner's queue; audit record references the `guidance_id`.
 
 ### UC-04: Submit weekly status with aged risks
@@ -167,7 +170,7 @@ Each use case lists its primary actor, the trigger, the main success scenario in
 - **Accept when:** Constraint appears in guidance within 60s of creation; constraint can be tombstoned by the author (via `/v1/jiminy/rules/{code}/tombstone`); every author action is logged.
 
 ### UC-14: Governed action attempted while MDEMG is unreachable
-- **Actor:** Project Owner · **Trigger:** User submits a Tier A governed action (e.g., >$5M CAR approval) during a MDEMG outage.
+- **Actor:** Project Owner · **Trigger:** User submits a Tier A governed action (e.g., a CAR above the project's VP Finance threshold) during a MDEMG outage.
 - **Flow:** `/jiminy/classify` times out or errors; pro_manage's edge applies the Tier A fail-closed policy; user sees "Governance system unavailable. This action requires policy classification. Options: retry, or request a Platform Admin override." Admin override is a separate logged action.
 - **Accept when:** Tier A action is refused in a reachable UI; Tier B actions degrade with a visible warning but proceed; Tier C actions proceed silently; retry attempts succeed once MDEMG returns.
 

@@ -34,7 +34,7 @@ It is for a single company, hosted on the company's intranet in containers, tune
 | Architecture (Go core + Python sidecar + Next.js + modular connectors) | [`docs/fsd/05-architecture.md`](./docs/fsd/05-architecture.md) |
 | MDEMG integration (incl. flagship MP-information flow) | [`docs/fsd/06-mdemg-integration.md`](./docs/fsd/06-mdemg-integration.md) |
 | Metrics (incl. TPM / Plant Ops, priced losses with verified recovery, and project losses) | [`docs/fsd/07-metrics-and-data-curation.md`](./docs/fsd/07-metrics-and-data-curation.md) |
-| Approvals (CAR, baseline change, design review, CQV, shutdown & tie-in, Early Mgmt exit, closeout, Benefits Realization, health review, RFI / submittal / change order, package release, hold points) | [`docs/fsd/08-approvals-and-workflows.md`](./docs/fsd/08-approvals-and-workflows.md) |
+| Approvals (configurable per-project thresholds, CAR, baseline change, design review, CQV, shutdown & tie-in, Early Mgmt exit, closeout, Benefits Realization, health review, RFI / submittal / change order, package release, hold points) | [`docs/fsd/08-approvals-and-workflows.md`](./docs/fsd/08-approvals-and-workflows.md) |
 | Presentations (live dashboards incl. Project reliability, scheduled exports, on-demand decks, mobile field flows) | [`docs/fsd/09-presentations-and-reporting.md`](./docs/fsd/09-presentations-and-reporting.md) |
 | Integrations catalog (ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi) | [`docs/fsd/10-integrations.md`](./docs/fsd/10-integrations.md) |
 | Operations & non-functional requirements | [`docs/fsd/11-ops-and-nfr.md`](./docs/fsd/11-ops-and-nfr.md) |

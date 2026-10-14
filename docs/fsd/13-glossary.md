@@ -25,6 +25,7 @@ Terms, acronyms, and project-specific names.
 | **BusinessCasePromise** | One measurable CAR commitment with its CAR-time baseline, measurement basis, and dollar value. |
 | **ProjectHealthReview** | Recorded recurring review of an in-flight project with owned actions. |
 | **Workflow role** | A role named on an approval stage (e.g. `site_operations_lead`, `commissioning_engineer`), resolved to a pool when the stage opens. See `§04`. |
+| **Policy variable** | A named, admin-configurable threshold or setting (e.g. `car.threshold.vp_finance`) with a global default and optional project-type, portfolio, and per-project overrides; captured into each workflow when it starts. See `§08`. |
 | **GuidanceOutcome** | pro_manage-side record of MDEMG guidance presented + user response. Written alongside AuditEvent. |
 
 ## Connector modules

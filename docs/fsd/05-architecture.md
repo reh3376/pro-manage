@@ -77,7 +77,7 @@
 
 | Service | Language | Role | Scale shape |
 |---|---|---|---|
-| **pm-core** | Go | Transactional heart. Serves REST+WS to the frontend; gRPC to sidecar/workers/connectors. Edge auth, RBAC, service handlers, projection, workflow engine, outbox author. | Horizontal (stateless; stickiness only for WS). Multiple replicas behind an in-cluster load balancer. |
+| **pm-core** | Go | Transactional heart. Serves REST+WS to the frontend; gRPC to sidecar/workers/connectors. Edge auth, RBAC, service handlers, projection, workflow engine (resolves policy variables per project, `§08`), outbox author. | Horizontal (stateless; stickiness only for WS). Multiple replicas behind an in-cluster load balancer. |
 | **pm-sidecar** | Python 3.12 | Scripting-heavy ops: PDF/PPTX render for exports, xlsx import/export, custom derived-metric formulas, ad-hoc data transforms, image/thumbnail handling for documents. gRPC server; stateless. | Horizontal. |
 | **pm-workers** | Go | Scheduled jobs (metric harvest triggers, scheduled exports, periodic ACL review notices, SLA tick, auto-close of inert sessions), outbox drain to MDEMG and `Commsi`, long-running imports. | Horizontal with per-job leasing (one worker claims a tick). |
 | **pm-frontend** | TS/React (Next.js) | Authenticated UI. SSR for first paint, CSR for interaction. Reads live data via SSE/WS. Includes phone-first field views (CQV/SAT walkdowns, punchlists, turnover inspections) with photo/QR capture and offline sync, Phase 2 (`§09`). | Horizontal (stateless). |
