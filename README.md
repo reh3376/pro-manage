@@ -41,7 +41,7 @@ It is for a single company, hosted on the company's intranet in containers, tune
 | Integrations catalog (ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi) | [`docs/fsd/10-integrations.md`](./docs/fsd/10-integrations.md) |
 | Connector SDK (build new `<Type>i_<CODE>` modules) | [`docs/fsd/15-connector-sdk.md`](./docs/fsd/15-connector-sdk.md) |
 | Operations & non-functional requirements | [`docs/fsd/11-ops-and-nfr.md`](./docs/fsd/11-ops-and-nfr.md) |
-| Test governance (UxTS: UATS, UDTS, UNTS, …) | [`docs/fsd/12-test-governance-uxts.md`](./docs/fsd/12-test-governance-uxts.md) |
+| Test governance (UxTS: hashed contract specs per surface, framework matrix, adjudication registries) | [`docs/fsd/12-test-governance-uxts.md`](./docs/fsd/12-test-governance-uxts.md) |
 | **The project as equipment: Project TPM (core concept)** | [`docs/fsd/14-project-as-equipment.md`](./docs/fsd/14-project-as-equipment.md) |
 | Glossary (TPM, EEM, CAR, AACE, LCC/TIC, OEE/MTBF/…) | [`docs/fsd/13-glossary.md`](./docs/fsd/13-glossary.md) |
 | Phased roadmap, milestones, risk register | [`docs/fsd/roadmap.md`](./docs/fsd/roadmap.md) |
@@ -54,10 +54,10 @@ It is for a single company, hosted on the company's intranet in containers, tune
 - **Frontend:** Next.js (TypeScript / React), SSR + CSR; a hardened `pm-frontend-public` variant for tokenized dashboard shares.
 - **APIs:** gRPC between internal services; REST + SSE / WebSockets to the frontend.
 - **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metric readings and loss events), Redis (sessions / cache), MinIO (S3-compatible object storage). All containerized.
-- **Governance substrate:** [MDEMG](https://github.com/reh3376/mdemg) running adjacent on an isolated internal network, used for advisory guidance and institutional memory (MP information flow). pro_manage owns identity, authorization, workflows, and the authoritative audit log.
+- **Governance substrate:** [MDEMG](https://github.com/reh3376/mdemg) running adjacent on an isolated internal network, used for advisory guidance and institutional memory (MP information flow). Its language model runs locally on the MDEMG host, so no project data is sent to a third-party AI service. pro_manage owns identity, authorization, workflows, and the authoritative audit log.
 - **Connectors:** nine pluggable modules (**ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi**), each a container with a stable gRPC contract. Admins swap backends without a core release. New modules are built with the Connector SDK (shared auth, retry, polling, and event plumbing plus a conformance test kit).
 - **Deployment:** on-prem VMs with containers via docker-compose, designed so a later move to Kubernetes is a lift-and-shift rather than a redesign.
-- **Test governance:** UxTS from MVP: UATS (API contracts), UDTS (gRPC contracts), and UNTS (hash integrity on specs + fixtures), in CI from day one.
+- **Test governance:** UxTS, MDEMG's family of hashed, schema-governed contract specs, adopted as a design principle rather than a test detail: every contract the FSD names (REST shapes, connector gRPC contracts, MDEMG field shapes, policy variables, metric formulas, dashboards and alerts, auth boundaries) gets a spec, a hash, and a CI disposition. UATS, UDTS, and UNTS from Phase 0; UOTS and USTS before the pilot; UBTS, UOBS, UAMS, and a pro_manage-minted UPMTS later. No test step is allowed to soft-fail by accident.
 
 ---
 
@@ -85,3 +85,7 @@ Implementation begins once the FSD is ratified and the Phase 0 team shape is set
 **AI collaborator:** Claude (Anthropic) via Claude Code, under the owner's direction, 2026-10-13 onward.
 
 **Related project:** [MDEMG](https://github.com/reh3376/mdemg): Multi-Dimensional Emergent Memory Graph, the governance substrate pro_manage integrates with.
+
+## License
+
+[MIT](./LICENSE), the same license as MDEMG.

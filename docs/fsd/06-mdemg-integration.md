@@ -12,6 +12,10 @@
 - **2026-10-13:** Session identity: `session_id = <user_id>:<project_id>` so escalation accumulates per (user, project), not per HTTP request.
 - **2026-10-13:** MDEMG binds **loopback-only** on its host VM. pm-core reaches it over an internal, authenticated channel (overlay network). Port 9999 is never user-reachable.
 - **2026-10-13:** pro_manage pins against **JSON field shapes** in responses, not against specific `constraint_code` strings (RSIC can retire codes without notice).
+- **2026-10-14:** **The language model behind Jiminy runs on the MDEMG host; no prompt, observation, or guidance leaves the intranet.** MDEMG's shipped production runtime is a local `llama.cpp` `llama-server` on loopback (`127.0.0.1:8102`) serving MDEMG's own fine-tuned model (`mdemg-llm-v1`: Qwen3-14B plus an MDEMG-trained LoRA adapter, GGUF Q5_K_M, about 10.5 GB). pro_manage deployments configure no hosted-LLM provider in any environment. See "Language model and data boundary" below.
+- **2026-10-14:** **Model and runtime are pinned together with the MDEMG version.** `mdemg-llm-v1` at Q5_K_M is the MVP pin; weights are verified by SHA against MDEMG's quant manifest. Moving to a newer MDEMG model (for example `mdemg-llm-v2`, a 27B base that needs 24 to 48 GB of memory) is a planned upgrade with a load test, not a config drift.
+- **2026-10-14:** **Classify budgets reflect a local LLM, not a cached lookup.** MDEMG's measured p50 for one LLM call on its reference hardware is about 3 s. The two classify calls (governance and project spaces) run **in parallel**, the per-call timeout is a policy variable (`mdemg.classify.timeout_ms`, default 10 000), and pm-core pre-classifies a settled form so the verdict is usually ready before the user clicks submit.
+- **2026-10-14:** **The fail-closed tier of each action kind is a policy variable** (`mdemg.tier.<action_kind>`, values `A | B | C`), resolved like every other policy variable in `§08`. The tier table below holds the global defaults. Lowering a tier is a logged policy change, not a code change.
 
 ## Space model
 
@@ -32,7 +36,7 @@
 
 **Call-time routing:**
 - `/jiminy/guide` is called **twice** for governed actions: once against `project_id` space and once against `org.<orgId>.governance`. Results are merged, deduplicated by `constraint_code`, re-ranked, and projected through role-filter. pm-core caches the merged result briefly (per request).
-- `/jiminy/classify` for critical actions is called **against both spaces** sequentially (governance first, since it holds the hard rules; project second, since it may have local overrides). First `deny` wins.
+- `/jiminy/classify` for critical actions is called **against both spaces in parallel** (governance holds the hard rules; project may hold local overrides). Both verdicts are required; any `deny` wins. Parallel rather than sequential because each call is a local LLM call measured in seconds, not milliseconds (see "Language model and data boundary").
 - `/v1/conversation/observe` writes **project events to the project space** and **institutional learnings to the governance space** (MP information, recurring project-loss and quality patterns, Benefits Realization reports; see the OBSERVE table). Governance *constraints* are never derived automatically from observations: a Governance Author promotes a learning into a constraint deliberately.
 - `/jiminy/feedback` is written to the space the originating guidance came from. In practice, outcomes are logged against both spaces when both contributed items.
 
@@ -59,7 +63,7 @@
   Then an identical call with `space_id = "org.<orgId>.governance"`.
 - **Response consumption:** pm-core takes the structured `guidance[]` array. Each item: `{type, priority, content, confidence, escalation_level, constraint_code, tier, annotations, source_nodes}`. pm-core projects through the role filter (`§04`) and renders in the UI as guidance cards.
 - **Pre-warm:** `POST /v1/jiminy/warm` fires fire-and-forget on page open to pre-compute. The actual `guide` call then uses `/v1/jiminy/latest` to read the warmed result in <100ms.
-- **Latency budget:** p99 ≤ 1.5s for the two guide calls combined. Guide failure is non-blocking: if MDEMG is unreachable, the page renders without guidance cards and an operational alert fires.
+- **Latency budget:** p99 ≤ 1.5s for the two `latest` reads combined. The warm computation behind them (retrieval, constraint classification, and the `jiminy.synthesize` narrative, which MDEMG runs fire-and-forget and measures at tens of seconds) is not on the page-open path: if the warmed result is not ready yet, the page renders without cards and the cards arrive over SSE when it is. Guide failure is non-blocking: if MDEMG is unreachable, the page renders without guidance cards and an operational alert fires.
 
 ### CLASSIFY: strict gate on submit
 
@@ -70,8 +74,9 @@
   - **Tier C: bypass.** Read-only and low-governance writes (comments, personal filters). No classify call.
 - **Payload shape identical to `/guide` but adds `tool_name` (the action kind) and `agent_output` is the proposed mutation payload.**
 - **Response:** `{verdict, denial_reason, violated_codes[], confidence, escalation_level}`.
-- **Latency budget:** p99 ≤ 1.5s per call. 5s is the MDEMG server-side cap and is also a Tier-A refusal threshold.
-- **Tier mapping (initial, Governance Author tunable):** Thresholds in the table are policy variables (`§08`), resolved per project, so the same tier rule applies the right limit to each project.
+- **Latency budget:** each classify call is one local LLM call (`jiminy.evaluate_llm`), so the budget is seconds, not milliseconds. Per-call timeout is the policy variable `mdemg.classify.timeout_ms` (default 10 000); the two space calls run in parallel, so the submit-path budget is one timeout, not two. A timeout behaves as "unreachable" for the action's tier.
+- **Pre-classification:** when a governed form has been idle for a short settle time (default 2 s) and is valid, pm-core classifies the current payload in the background and caches the verdict by `sha256(action_kind, payload, policy_snapshot)`. On submit, a cache hit for the identical payload is used directly; a miss runs the classify inline with a visible "checking governance" state. In practice most Tier A submits see a cached verdict. The cache lives in Redis, is scoped to the user and project, and expires after 10 minutes.
+- **Tier mapping (global defaults, set by the policy owner as `mdemg.tier.<action_kind>`):** Thresholds in the table are policy variables (`§08`), resolved per project, so the same tier rule applies the right limit to each project. The tier itself is also a policy variable, so a pilot can start an action kind at Tier B and raise it to A once the constraint library and the false-positive rate justify it.
   | Action kind | Tier | Why |
   |---|---|---|
   | `approval.car` (≥ `{car.threshold.vp_finance}`) | A | Dollars + policy stakes |
@@ -208,10 +213,35 @@ If `annotations` is not round-tripped reliably by MDEMG (open question with the 
 
 **pro_manage never calls `/v1/jiminy/protocol/learn` or `/v1/jiminy/extension`:** those are RSIC/evolution surfaces that stay inside MDEMG.
 
+## Language model and data boundary
+
+Everything Jiminy does with language (classifying an action against a constraint, synthesizing guidance, reformulating constraints into imperatives, minting constraint codes, re-ranking retrieval) is an LLM call. Where that model runs decides whether pro_manage's data stays on the intranet. The decision is that it does.
+
+**What MDEMG ships.** MDEMG's production LLM path is local by design: its hot path is enforcement and "cannot have a network dependency". The runtime is `llama.cpp` `llama-server` bound to `127.0.0.1:8102`, serving `mdemg-llm-v1` (Qwen3-14B base with a LoRA adapter trained on MDEMG's own constraint, action, and outcome data; distributed as GGUF in Q4_K_M, Q5_K_M, and Q8_0 tiers, with Q5_K_M as the production canonical). MDEMG refuses to start when that endpoint is unreachable (`MDEMG_ALLOW_NO_LLM` escape hatch), probes it every 5 s with an `up`, `degraded`, `down` watchdog, and fast-fails calls while it is down. All MDEMG call sites are single-shot structured output; there is no tool calling and no multi-turn. A hosted provider (`EMERGENCE_PROVIDER=openai`) exists in MDEMG only as an optional path for a few classifiers.
+
+**What pro_manage requires of every environment.**
+- `LLM_ENDPOINT` on the MDEMG host points at the loopback `llama-server`. No hosted-LLM provider key is issued to MDEMG in any pro_manage environment, including local dev and CI, and the controlled egress proxy (`§11`) has no allow-list entry for an LLM vendor, so a misconfiguration fails rather than leaks.
+- `MDEMG_ALLOW_NO_LLM` stays unset in staging and production. An MDEMG that starts without its model would answer classify calls with fallbacks pro_manage has not validated.
+- The model is pinned next to the MDEMG version in the deployment manifest (`mdemg-llm-v1`, Q5_K_M, SHA from MDEMG's quant manifest). `mdemg model verify` runs in the deployment health check.
+- Weights are fetched once per host through the egress proxy (`mdemg model pull`, Ollama Library as the distribution channel) or, for an air-gapped site, from a file or object-store mirror with a local manifest (`--manifest`). Pulling weights is outbound download of a public artifact, not data egress.
+
+**What leaves pm-core for MDEMG** is unchanged by this decision and is already minimized: readable summaries and structured tags, never document bodies (see "Non-goals and limits"). The point of the local model is that even those summaries, which name projects, amounts, equipment, and people's roles, never leave the company network.
+
+**Hardware.** MDEMG's packaged runtime targets Apple Silicon (a launchd-supervised `llama-server`; Linux and CUDA packaging are deferred on MDEMG's side, though `llama.cpp` itself runs there). pro_manage's hosts are Linux VMs. Two acceptable shapes for `pm-mdemg-01`, in order of preference until IT weighs in:
+1. **A dedicated Apple Silicon host** (Mac mini or Mac Studio class) on the server network running MDEMG as packaged. Memory: 32 GB minimum for `mdemg-llm-v1` Q5_K_M with the rest of the MDEMG stack (MDEMG's floor for the model alone is 14 GB, 24 GB recommended); 64 GB if `mdemg-llm-v2` is on the horizon. This is the path with the least divergence from MDEMG's tested configuration.
+2. **A Linux VM with a GPU pass-through** (24 GB VRAM class) running `llama-server` built with CUDA under a systemd unit that pro_manage supplies, with the same flags MDEMG uses (`--ctx-size 32768 --parallel 4 --cont-batching --jinja`). This is the shape most IT groups will prefer to host; it is also the one MDEMG has not benchmarked, so it carries a load test in Phase 0.
+
+CPU-only inference of a 14B model is rejected for anything on the submit path: it turns a 3 s classify into tens of seconds and a 50 s synthesize into minutes.
+
+**Sizing the call budget.** MDEMG's own measurements on its reference hardware: p50 about 3 s per LLM call after the `llama-server` cutover; `jiminy.synthesize` about 50 s (fire-and-forget on MDEMG's warm path); retrieval re-rank p95 about 11 s. Four parallel slots share an 8K-token context each, so a prompt that grows with state starves its own output. pm-core therefore keeps `context` and `agent_output` payloads bounded (summaries capped at a configured token budget) and never sends full form bodies.
+
+**Why not a hosted model.** Latency and quality were not the deciding factors; the data boundary was. A hosted provider would require a data-processing agreement, a per-field review of every summary pm-core sends, and an exception to the "no outbound traffic except approved connector egress" rule in `§11`, in exchange for a model that has not been fine-tuned on Jiminy's classification task. If the company ever approves a hosted model for other reasons, re-opening this decision is a §06 change plus a §11 egress entry, not an architecture change: MDEMG already speaks the OpenAI-compatible protocol to its local server.
+
 ## Resilience and the trust boundary
 
 - **MDEMG unreachable:** Tier A actions refuse (fail-closed), Tier B proceeds with a warning in the AuditEvent (`guidance_outcome.user_response = "mdemg_unavailable"`), Tier C unaffected. An operational alert fires via Commsi.
-- **MDEMG slow:** per-call timeouts (`guide=1.5s`, `classify=1.5s`); timeouts behave as "unreachable" for the tier.
+- **MDEMG's model down:** MDEMG's watchdog marks the endpoint `down` and classify calls fast-fail; to pm-core this is "unreachable" and the tier rules above apply. The LLM host is therefore part of the Tier A availability chain and is monitored as such (`§11`).
+- **MDEMG slow:** per-call timeouts (`guide` read `1.5s`; `classify` per `mdemg.classify.timeout_ms`, default `10s`); timeouts behave as "unreachable" for the tier. A pre-classified verdict (see CLASSIFY) is honoured even if MDEMG has become slow between settle and submit, provided the payload and policy snapshot are unchanged.
 - **MDEMG corrupt or wrong (worst case):** pm-core still has the authoritative audit log, the deterministic rules (approval thresholds enforced in-process regardless of what Jiminy says), and the GuidanceOutcome snapshot. A full MDEMG rebuild from backups does not corrupt pro_manage state.
 - **MDEMG beta churn:** pm-core isolates all MDEMG calls in `pkg/mdemgadapter`. Field renames land in one place. UATS specs covering the integration surface detect behavior drift in CI.
 
@@ -219,7 +249,7 @@ If `annotations` is not round-tripped reliably by MDEMG (open question with the 
 
 - `AUTH_API_KEYS` (or `AUTH_JWT_SECRET`): pro_manage → MDEMG auth. Rotated via overlap (`AUTH_API_KEYS` comma-list) quarterly or on incident.
 - `J17_TICKET_SECRET`: set explicitly (do not rely on auto-generation; MDEMG warns on auto). Rotation triggers all session resumption to fall back to full re-guidance. That is acceptable, so we rotate semiannually.
-- MDEMG's own secrets (`NEO4J_PASS`, `OPENAI_API_KEY`, etc.) are MDEMG's concern; the Platform Admin owns them in the vault.
+- MDEMG's own secrets (`NEO4J_PASS` and the like) are MDEMG's concern; the Platform Admin owns them in the vault. **No hosted-LLM provider key exists in any pro_manage environment**: the model is local (see "Language model and data boundary"), and a deployment check fails if `OPENAI_API_KEY` or an `EMERGENCE_PROVIDER` other than the local endpoint is present on the MDEMG host.
 
 ## Audit coupling
 
@@ -232,6 +262,7 @@ If `annotations` is not round-tripped reliably by MDEMG (open question with the 
 - MDEMG does not enforce ACL (pm-core does; see `§04`).
 - MDEMG does not drive workflow state (pm-core does; see `§08`).
 - MDEMG does not store sensitive bodies (we send summaries, not document contents).
+- MDEMG does not send anything to a hosted LLM. Its model runs on the MDEMG host; nothing pm-core sends it leaves the intranet.
 - MDEMG does not expose authenticated per-user identity (the shared key is pro_manage's; MDEMG only sees "pro_manage calling").
 - MDEMG does not provide SOX/ISO audit; pro_manage's AuditEvent chain is the authoritative record.
 - No MCP tools from pro_manage in MVP (Pattern B defers this).
@@ -242,5 +273,8 @@ If `annotations` is not round-tripped reliably by MDEMG (open question with the 
 - Confirm with MDEMG maintainer: does `annotations.roles` round-trip through MDEMG's retrieval reliably? If not, implement the pm-core side-table fallback from day one.
 - Define the operational alert policy on classify-fail-closed events: paging? Email to on-call? Threshold on frequency?
 - Decide the retention of GuidanceOutcome snapshots: they can be large. First instinct: 7-year retention on actions tied to approved governed workflows, 180-day retention on everyday snapshots.
-- Confirm MDEMG version pin for MVP (`v0.11.0-beta.1` or latest-stable at FSD time of ratification).
+- Confirm MDEMG version pin for MVP (`v0.11.0-beta.1` or latest-stable at FSD time of ratification), together with the model pin (`mdemg-llm-v1` Q5_K_M) and its manifest SHA.
 - Decide whether session resumption / checkpointing is in MVP or Phase 2 (first instinct: Phase 2).
+- Decide the `pm-mdemg-01` host shape with IT: Apple Silicon host as MDEMG packages it, or a Linux VM with GPU pass-through that pro_manage packages. Phase 0 cannot finish without a measured classify p50/p95 on the chosen host.
+- Confirm with the MDEMG maintainer whether `/v1/jiminy/classify` has a non-LLM fast path (vector match against escalated constraints) that could answer the common "no applicable constraint" case in milliseconds, and whether MDEMG enforces a server-side cap on classify time that would sit below `mdemg.classify.timeout_ms`.
+- Decide the token budget for `context` and `agent_output` summaries pm-core sends (MDEMG's slots are 8K tokens shared between prompt and output; first instinct: cap pm-core payloads at 2 000 tokens).

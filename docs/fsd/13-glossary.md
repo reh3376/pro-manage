@@ -59,6 +59,9 @@ Terms, acronyms, and project-specific names.
 | **Space** | MDEMG's tenant / partition tag. In pro_manage, `space=project_id` for day-to-day; `space=org.<id>.governance` for policy library. |
 | **Session** | MDEMG session identity. In pro_manage, `session_id = <user_id>:<project_id>`. |
 | **Trust (EMA)** | Jiminy's per-(session, constraint) trust score. We use EMA mode (default). |
+| **mdemg-llm-v1** | MDEMG's own language model: Qwen3-14B with a LoRA adapter trained on MDEMG's constraint, action, and outcome data, distributed as GGUF (Q5_K_M is the production tier). Served locally by `llama-server` on the MDEMG host; pro_manage never configures a hosted provider. |
+| **llama-server** | The `llama.cpp` inference server MDEMG uses in production (OpenAI-compatible HTTP on loopback port 8102, bounded context per slot). |
+| **Pre-classification** | pm-core classifying a settled governed form in the background and caching the verdict by payload hash, so a Tier A submit usually does not wait on a live LLM call. |
 | **Escalation ladder** | Jiminy's per-(session, constraint) state machine: `surfaced → warned → escalated → blocked`. For humans in pro_manage: `warn=1, escalate=2, block=3`. |
 | **Fail-closed / fail-open tier** | pro_manage's edge policy for how to behave when MDEMG classify errors. Tier A = refuse; Tier B = proceed with warning; Tier C = bypass. |
 | **CMS** | Conversation Memory Store inside MDEMG. The write path at `/v1/conversation/observe`. |
@@ -68,14 +71,20 @@ Terms, acronyms, and project-specific names.
 
 | Term | Meaning |
 |---|---|
-| **UxTS** | Universal-x Test Specification. Methodology for declarative test governance (schema + specs + runner + CI gate). |
-| **UATS** | Universal API Test Specification. Governs REST endpoints. MVP. |
-| **UDTS** | Universal (gRPC Data) Test Specification. Governs gRPC contracts. MVP. |
-| **UNTS** | Universal Hash Test Specification. Hash integrity on spec + fixture files. MVP. |
-| **UBTS** | Universal Benchmark Test Specification. Phase 2. |
-| **USTS** | Universal Security Test Specification. Phase 2. |
-| **UOTS** | Universal Operations Test Specification (manifests, charts). Phase 2+. |
-| **UPMTS** | Universal Project-Metric Test Specification. pro_manage custom framework for derived-metric contracts. Phase 2. |
+| **UxTS** | Universal-x Test Specification. A family of versioned JSON spec frameworks (schema + specs + runner + CI gate), one per correctness surface, hashed so a contract change is an explicit commit. The forcing function against silent drift. |
+| **UATS** | Universal API Test Specification. HTTP endpoint acceptance contracts. Phase 0. |
+| **UDTS** | Universal DevSpace Test Specification. gRPC contracts, one spec per RPC with `proto_sha256`. Phase 0; packaged as the Connector SDK conformance suite. |
+| **UNTS** | Universal Hash Test Specification. Hash integrity registry across every framework's specs and fixtures, with revert workflow. Phase 0. |
+| **UOTS** | Universal Observability Test Specification. Artifact-level: dashboard JSON, alert rule YAML, metric registry, backup manifests. Phase 1. |
+| **USTS** | Universal Security Test Specification. Auth boundaries, data exposure, injection, rate limiting. Phase 1. |
+| **UOBS** | Universal Observability Specification. Live runtime behaviour: health, dependencies, tracing headers, metric presence. Phase 2. |
+| **UBTS** | Universal Benchmark Test Specification. SLO budgets as fixed `p99_ms` baselines. Phase 2. |
+| **UAMS** | Universal Auth Method Specification. Auth method contracts for IdPi and connector auth. Spec-only until an upstream runner exists. |
+| **UVTS** | Universal Validation Test Specification. Semantic retrieval quality against a graded corpus. Candidate for guidance relevance in Phase 3. |
+| **ULTS** | Universal LLM Task Specification. MDEMG's prompt-hash contracts; pro_manage records the hashes of the tasks it consumes in its MDEMG version pin. |
+| **UPMTS** | Universal Project-Metric Test Specification. pro_manage-minted framework for derived-metric formula contracts. Phase 3. |
+| **Schema-runner parity** | UxTS rule: every field a framework's schema defines is either enforced by its runner or fails hard as unimplemented. Never silently ignored. |
+| **DORMANT-CENSUS registry** | MDEMG's sibling pattern to UxTS: a JSON inventory where every shipped declaration (route, table, metric, policy variable) must have an adjudicated consumer, verified merge-blocking in CI. |
 
 ## Capital project terms
 

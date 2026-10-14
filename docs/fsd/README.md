@@ -129,9 +129,9 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 - **pm-workers (Go):** scheduled jobs (metric harvest, exports, nudges, SLA tick), outbox drain to MDEMG and Commsi, long-running imports.
 - **pm-frontend (Next.js, TypeScript):** authenticated SSR+CSR UI; separate hardened `pm-frontend-public` for tokenized dashboard shares.
 - **Modular connector framework:** one gRPC contract per connector type (**ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi**), admin-registered, UDTS-governed. Admins swap backends without a core release. Modules are built on the **Connector SDK** (§15): shared runtime, auth and integration helpers, conformance tests, and a manifest the admin UI reads, so adding a vendor needs no core release.
-- **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metrics), Redis (sessions/cache), MinIO (S3-compatible object storage), all containerized. **MDEMG** stack runs adjacent on an isolated loopback network.
+- **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metrics), Redis (sessions/cache), MinIO (S3-compatible object storage), all containerized. **MDEMG** stack runs adjacent on an isolated loopback network, with its language model served locally on the same host (no project data goes to a third-party AI service; §06).
 - **Deployment:** on-prem VMs with containers, docker-compose topology designed for later Kubernetes migration without reshaping services.
-- **Test governance:** **UxTS** adoption from MVP: UATS (API contracts), UDTS (gRPC contracts), UNTS (hash integrity on specs + fixtures) in CI from day one; UBTS, USTS, UOTS, UPMTS as the system matures.
+- **Test governance:** **UxTS**, MDEMG's family of hashed, schema-governed contract specs. UATS (REST), UDTS (gRPC), UNTS (hash registry) from Phase 0; UOTS (dashboards, alerts, metric registry) and USTS (auth boundaries, exposure, injection) before the pilot; UBTS, UOBS, UAMS in Phase 2; a pro_manage-minted UPMTS for derived-metric formulas in Phase 3. Companion adjudication registries make every policy variable, connector capability, metric, route, and loss category prove it has a consumer (§12).
 
 ---
 
@@ -145,6 +145,8 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 - **Integrate with the operations TPM stack; don't rebuild it.** Autonomous maintenance, abnormality tagging, OEE boards, and daily management already live in CMMS and connected-worker tools. pro_manage is the EEM-pillar system: it reads their losses, tags, and failure history in and hands assets and turnover packages back out.
 - **Modularity for the external world.** Every ERP, IdP, CMMS, MES, QMS, scheduler, document store, and signer is a pluggable module. Zero vendor lock-in in the design.
 - **Isolate the beta.** MDEMG is beta software. The adapter layer absorbs churn so the core is stable even when MDEMG moves.
+- **Contracts are frozen, hashed, and gated.** Every contract the FSD names gets a UxTS spec with a hash; changing it is an explicit commit that CI sees. Silent drift is the failure mode this design refuses to tolerate, and no test step is allowed to soft-fail by accident (§12).
+- **No inference leaves the building.** The only AI in the loop runs on a host on the company network. That is a design rule, not a deployment option.
 - **Boring where it should be boring.** Go, Postgres, Timescale, Redis, MinIO, docker-compose. Nothing novel in the plumbing.
 
 ---
@@ -168,7 +170,7 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 | 09 | [presentations-and-reporting.md](./09-presentations-and-reporting.md) | Live dashboards (incl. Loss & opportunity, Startup & Early Management, Project reliability), scheduled exports, on-demand decks, external sharing, phone-first field flows |
 | 10 | [integrations.md](./10-integrations.md) | ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi |
 | 11 | [ops-and-nfr.md](./11-ops-and-nfr.md) | SLOs, availability, backup/DR, observability, security, retention |
-| 12 | [test-governance-uxts.md](./12-test-governance-uxts.md) | UATS + UDTS + UNTS from MVP; UBTS, USTS, UOTS, UPMTS roadmap |
+| 12 | [test-governance-uxts.md](./12-test-governance-uxts.md) | UxTS as forcing function: spec anatomy, hash gate, pro_manage framework matrix (UATS, UDTS, UNTS, UOTS, USTS, UOBS, UBTS, UAMS, UPMTS, UVTS candidate), adjudication registries |
 | 13 | [glossary.md](./13-glossary.md) | Terms and acronyms (TPM, EEM, CAR, AACE, LCC, TIC, OEE, MTBF, …) |
 | 14 | [project-as-equipment.md](./14-project-as-equipment.md) | **Core concept.** The project as equipment: OEE and Six Big Losses mapped to project delivery, the eight pillars applied, version-1 implementation, open questions, prior art |
 | 15 | [connector-sdk.md](./15-connector-sdk.md) | Connector SDK: module runtime, integration helpers (OAuth, SAML/OIDC, OData, idempotency, ETags, polling, inbound events), mapping layer, conformance kit, scaffolding CLI, module manifest, versioning |

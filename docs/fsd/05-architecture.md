@@ -95,7 +95,7 @@
 | **TimescaleDB (ours)** | n/a | Metric readings and loss events. | Primary with a streaming standby; tiered retention. |
 | **Redis** | n/a | Session store, rate-limit counters, warmed-guidance snapshot cache. | Sentinel pair. |
 | **MinIO** | n/a | Object storage for documents, exports, archived signed envelopes. | 4-node erasure-coded, or SAN-backed if the company has standard storage. |
-| **MDEMG stack** | Go + Python | Advisory layer. Operates alongside pm-core on an internal Docker network, reachable only from pm-core. | Follows MDEMG's own deployment guide. |
+| **MDEMG stack** | Go + Python | Advisory layer. Operates alongside pm-core on an internal Docker network, reachable only from pm-core. Includes its local language model (`llama-server` serving `mdemg-llm-v1` on the host's loopback); nothing it processes leaves the intranet (`§06`). | Follows MDEMG's own deployment guide; the LLM is bound to one host. |
 
 ### gRPC surface (internal)
 
@@ -195,12 +195,16 @@ Platform Admin UI exposes:
 Baseline topology for a site-wide (100–500 users, 200+ projects) deployment:
 
 ```
-VM: pm-app-01            VM: pm-app-02           VM: pm-mdemg-01
+VM: pm-app-01            VM: pm-app-02           Host: pm-mdemg-01 (*)
   pm-core x N              pm-core x N             mdemg
   pm-sidecar x M           pm-sidecar x M          mdemg-neo4j
   pm-workers x K           pm-workers x K          mdemg-tsdb
   pm-frontend x 2          pm-frontend x 2         mdemg-grafana
                                                    mdemg-neural
+                                                   llama-server (:8102, loopback; local LLM)
+
+(*) Apple Silicon host as MDEMG packages it, or a Linux VM with GPU
+    pass-through; the model never runs off this host. See §06.
 
 VM: pm-data-01           VM: pm-data-02 (standby)
   postgres-primary         postgres-standby (streaming replica)
@@ -222,7 +226,7 @@ VM: pm-observe
 ```
 
 - Internal docker network per VM for intra-VM traffic; a dedicated overlay or VLAN per host-pair for cross-VM traffic (encrypted at the network layer).
-- MDEMG binds loopback-only inside its VM. pm-core reaches it via an internal, authenticated gRPC/HTTP tunnel (an SSH-forwarded socket or a dedicated routable address within the overlay).
+- MDEMG binds loopback-only inside its host. pm-core reaches it via an internal, authenticated gRPC/HTTP tunnel (an SSH-forwarded socket or a dedicated routable address within the overlay). MDEMG's language model is served on the same host's loopback and is reachable from nothing but MDEMG.
 - No service except the reverse proxy is reachable from the user network. Everything else is private.
 - Inbound calls from cloud-hosted systems (IFS Cloud event push, DocuSign webhooks) also terminate at the reverse proxy, are off until IT approves an inbound path, and are restricted and authenticated per `§11`; until then the affected connectors poll.
 
@@ -250,7 +254,9 @@ Later migration to Kubernetes is a lift-and-shift, not a redesign.
 ```
 browser ──► pm-core.Edge (REST POST)
 pm-core.Edge ──► pm-core.Service.Workflow (gRPC in-process)
-pm-core.Service.Workflow ──► MDEMG /v1/jiminy/classify (REST)   [strict budget 1.5s]
+pm-core.Service.Workflow ──► MDEMG /v1/jiminy/classify (REST) x2 in parallel
+                              [cached pre-classified verdict if payload unchanged;
+                               else budget = mdemg.classify.timeout_ms]
 pm-core.Service.Workflow ──► Sigi.CreateEnvelope (gRPC)
 Sigi backend ─webhook──► pm-core.Edge (/sigi/webhook)           [later: user signs]
 pm-core.Service.Workflow ──► MDEMG /v1/jiminy/feedback (REST async via outbox)
@@ -296,7 +302,7 @@ pm-core ──► browser (presigned URL)
 ## Development and environments
 
 - **local dev:** docker-compose on a developer workstation runs the full stack minus some connectors. Developer-mode seeds a sample company with ~5 projects. MDEMG runs in a lightweight dev profile.
-- **CI:** every PR runs the UATS/UDTS contract test suites, Go unit tests, Python unit tests, Next.js type check + build, and a smoke-test compose spin-up with synthetic data.
+- **CI:** every PR runs the merge-blocking UxTS set (UATS, UDTS, UNTS from Phase 0; UOTS and USTS from Phase 1), the adjudication-registry verifiers, Go unit tests, Python unit tests, Next.js type check + build, and a smoke-test compose spin-up with synthetic data and the pinned MDEMG. No test step carries `continue-on-error` (`§12`).
 - **staging:** full topology at reduced scale; mirrors production integrations with sandbox credentials for IdPi, Sigi, ERPi, etc.
 - **production:** the deployment topology above.
 
