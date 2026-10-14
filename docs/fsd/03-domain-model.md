@@ -147,7 +147,7 @@ Two layers: definitions and readings.
 ### ApprovalWorkflow
 A multi-stage approval instance (`§08` details the state machine).
 
-- `ApprovalWorkflow`: `workflow_id`, `project_id`, `kind` ∈ `{car, baseline_change, design_review_signoff, cqv_signoff, milestone_signoff, change_request, change_order, rfi_response, submittal_review, work_package_release, hold_point_release, shutdown_tiein_plan, early_mgmt_exit, closeout, benefits_realization_review, custom}`, `subject_ref` (what's being approved: a budget baseline id, a change request id, …), `initiated_by`, `initiated_at`, `current_stage`, `status` ∈ `{in_flight, approved, rejected, cancelled, expired}`, `signed_artifact_ref?` (Sigi reference when applicable).
+- `ApprovalWorkflow`: `workflow_id`, `project_id`, `kind` ∈ `{car, baseline_change, design_review_signoff, cqv_signoff, milestone_signoff, change_request, change_order, rfi_response, submittal_review, work_package_release, hold_point_release, shutdown_tiein_plan, early_mgmt_exit, closeout, benefits_realization_review, custom}`, `subject_ref` (what's being approved: a budget baseline id, a change request id, …), `initiated_by`, `initiated_at`, `current_stage`, `status` ∈ `{in_flight, approved, rejected, cancelled, expired}`, `signed_artifact_ref?` (Sigi reference when applicable), `policy_snapshot` (effective policy-variable values captured when the workflow started; see `§08`).
 - `ApprovalStage`: `stage_id`, `workflow_id`, `order`, `role_required` (e.g., `vp_finance`), `assignees[]`, `sla_duration`, `completed_at?`, `completed_by?`, `decision` ∈ `{approve, reject, delegate}`, `comment?`, `guidance_id?` (MDEMG reference captured when the approver viewed guidance), `signed_envelope_ref?` (Sigi envelope ID).
 
 ### AuditEvent (immutable)
@@ -216,7 +216,7 @@ The structured handover artifact assembled before Early Management exit. The pac
 ### BenefitsRealization
 Tracks whether the business case promise actually materialized post-startup. The third ROI calculation of a project.
 
-- **Key fields:** `br_id`, `project_id`, `window_opened_at` (defaults to project `Close` date), `window_duration_days` (default 180–365, policy-configurable), `window_closes_at`, `status` ∈ `{open, in_progress, closed_realized, closed_partial, closed_not_realized}`, `business_case_promises[]` (see BusinessCasePromise), `measurements[]` (periodic snapshots pulled from Metrici/HSEi during the window), `final_variance_report` (narrative + numeric: promised vs delivered, variance explanation), `signed_envelope_ref?` (if final review is formally signed via Sigi).
+- **Key fields:** `br_id`, `project_id`, `window_opened_at` (defaults to project `Close` date), `window_duration_days` (from the `benefits.window_days` policy variable, overridable per project), `window_closes_at`, `status` ∈ `{open, in_progress, closed_realized, closed_partial, closed_not_realized}`, `business_case_promises[]` (see BusinessCasePromise), `measurements[]` (periodic snapshots pulled from Metrici/HSEi during the window), `final_variance_report` (narrative + numeric: promised vs delivered, variance explanation), `signed_envelope_ref?` (if final review is formally signed via Sigi).
 - **Verified recovery:** measurement is against the *specific* losses the business case promised to recover, on the *specific* assets, compared with a pre-project baseline captured at CAR time, not against generic KPIs. A promise of "recover $1.2M/yr of changeover loss on Line 3" is closed by measuring changeover loss on Line 3's assets during the window.
 
 ### BusinessCasePromise
@@ -239,6 +239,12 @@ Production losses, in the vocabulary operations already uses.
 - `LossCategory`: `loss_category_id`, `name`, `six_big_losses_bucket` ∈ `{breakdowns, setup_changeover, minor_stops, reduced_speed, startup_rejects, production_rejects, none}`, `oee_component` ∈ `{availability, performance, quality}`, `parent_id?` (site loss tree), `default_cost_basis` (how to price an hour or unit of this loss).
 - `LossEvent` (time-series, pm-TSDB): `asset_id`, `loss_category_id`, `ts_start`, `ts_end`, `quantity` (minutes / units), `priced_value` (dollars), `source` (`metrici | hsei | cmmsi | manual`), `source_ref`. Harvested from MES / OEE platforms; pro_manage does not originate loss events.
 - **Uses:** business-case baselines, Benefits Realization verification, portfolio ranking by recoverable loss (`§09`), and MP-information harvest (repeated losses on an asset class).
+
+### PolicyVariable / PolicyValue
+Admin-configurable thresholds, SLAs, cadences, and windows used by workflows and governance, with values that can be overridden per project. Defined in `§08` (Policy variables).
+
+- `PolicyVariable`: `key`, `type`, `unit`, `description`, `global_default`, `allowed_range`, `overridable_at[]`, `owner_role`.
+- `PolicyValue`: `variable_key`, `scope_kind` ∈ `{global, project_type, portfolio, project}`, `scope_id`, `value`, `effective_from`, `effective_to?`, `set_by`, `reason`, `approved_by?`, version. Resolution: project → portfolio → project type → global.
 
 ### ProjectHealthReview
 A periodic structured review of an in-flight project; the capital-side counterpart to an operations huddle.

@@ -71,13 +71,13 @@
 - **Payload shape identical to `/guide` but adds `tool_name` (the action kind) and `agent_output` is the proposed mutation payload.**
 - **Response:** `{verdict, denial_reason, violated_codes[], confidence, escalation_level}`.
 - **Latency budget:** p99 ≤ 1.5s per call. 5s is the MDEMG server-side cap and is also a Tier-A refusal threshold.
-- **Tier mapping (initial, Governance Author tunable):**
+- **Tier mapping (initial, Governance Author tunable):** Thresholds in the table are policy variables (`§08`), resolved per project, so the same tier rule applies the right limit to each project.
   | Action kind | Tier | Why |
   |---|---|---|
-  | `approval.car` (≥ $5M) | A | Dollars + policy stakes |
-  | `approval.car` (< $5M) | B | Lower stakes; warning OK |
-  | `approval.baseline_change` (variance ≥ 10%) | A | Material financial |
-  | `approval.baseline_change` (variance < 10%) | B | n/a |
+  | `approval.car` (≥ `{car.threshold.vp_finance}`) | A | Dollars + policy stakes |
+  | `approval.car` (< `{car.threshold.vp_finance}`) | B | Lower stakes; warning OK |
+  | `approval.baseline_change` (variance ≥ `{baseline.variance.vp_finance_pct}`) | A | Material financial |
+  | `approval.baseline_change` (variance < `{baseline.variance.vp_finance_pct}`) | B | n/a |
   | `approval.milestone_signoff` | B | Mechanical rules already enforced |
   | `approval.design_review_signoff` | B | Findings dispositioned in-process; guidance advisory |
   | `approval.cqv_signoff` | B | Test evidence is the control |

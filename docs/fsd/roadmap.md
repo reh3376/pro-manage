@@ -59,7 +59,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **Membership & ACL:** ProjectMember, ACLGrant; the four enforcement layers of `§04` (edge, service, projection, DB row-security on sensitive tables).
 - **Budget:** manual baseline entry, baseline-change workflow, manual actuals (ERPi integration begins in parallel), variance computed.
 - **Schedule:** manual milestone entry + dependencies; completion rule enforcement; (Schedulei imports deferred to Phase 2).
-- **Approvals:** CAR + Baseline change workflows live; multi-stage routing via eligibility pools; delegation (basic); SLA tick + nudges via Commsi; admin override path; signed-hash audit chain.
+- **Approvals:** CAR + Baseline change workflows live, with all thresholds and SLAs as policy variables (global, project-type, portfolio, and per-project overrides) and a policy editor; multi-stage routing via eligibility pools; delegation (basic); SLA tick + nudges via Commsi; admin override path; signed-hash audit chain.
 - **Sigi:** DocuSign integration live for CAR ≥ configurable threshold; signed-artifact capture to MinIO.
 - **IdPi:** Entra ID *or* Okta backend production-ready (whichever is the owner's primary); SAML backend scaffolded (not necessarily live).
 - **Commsi:** SMTP + Teams (or Slack, per company culture) notifications for approvals + overdue nudges.

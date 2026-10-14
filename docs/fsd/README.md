@@ -115,6 +115,7 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 - SOX/ISO-grade audit log with chained signed hashes
 - Jiminy guidance at every governed action
 - Recurring project health reviews ending in owned actions
+- Every threshold, SLA, cadence, and window is an admin-configurable policy variable, with per-project overrides (no hard-coded limits)
 - Phone-first field flows for walkdowns, punchlists, and turnover inspections (Phase 2)
 
 ---
@@ -155,13 +156,13 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 | § | File | What's in it |
 |---|---|---|
 | 01 | [vision-and-scope.md](./01-vision-and-scope.md) | Mission, problem statement, in/out of scope, success criteria (incl. startup curve, benefits realization, MP flow) |
-| 02 | [personas-and-use-cases.md](./02-personas-and-use-cases.md) | 13 personas (incl. site operations & maintenance reps, commissioning engineer, construction manager, EPCM / contractor contributors), 21 use cases, 4 end-to-end journeys |
+| 02 | [personas-and-use-cases.md](./02-personas-and-use-cases.md) | 14 personas (incl. policy owner, site operations & maintenance reps, commissioning engineer, construction manager, EPCM / contractor contributors), 21 use cases, 4 end-to-end journeys |
 | 03 | [domain-model.md](./03-domain-model.md) | Project, members, ACLs, budget (TIC/LCC), schedule, scope, risks, documents, metrics, approvals, EEM entities (DesignReview, MPInformation, CommissioningRecord, TurnoverPackage, BenefitsRealization), Asset/AssetClass, Loss/LossCategory, BusinessCasePromise, ProjectHealthReview; EPCM objects (Contract, WorkPackage, RFI, Submittal, ChangeOrder, ITP/HoldPoint, ProjectDeviation, ProjectLoss) |
 | 04 | [access-control-and-identity.md](./04-access-control-and-identity.md) | SSO (OIDC + SAML), platform / project / workflow roles, contract-scoped EPCM contributors, full ACL per section/doc/field, 4-layer enforcement |
 | 05 | [architecture.md](./05-architecture.md) | Service inventory, gRPC/REST surfaces, modular connector framework, deployment topology |
 | 06 | [mdemg-integration.md](./06-mdemg-integration.md) | J17/Jiminy call surfaces, hybrid space model, fail-closed tiering, MP-information flow (incl. abnormality-tag and loss patterns from the operations TPM stack) |
 | 07 | [metrics-and-data-curation.md](./07-metrics-and-data-curation.md) | Financial, Schedule, Scope/Risk, Safety/Quality/Compliance, TPM/Plant-Ops, priced-loss, and project-loss families; verified recovery; package readiness and plan compliance; connectors; spreadsheets |
-| 08 | [approvals-and-workflows.md](./08-approvals-and-workflows.md) | CAR workflow, baseline change, design review, CQV, shutdown & tie-in, Early Management exit, closeout, Benefits Realization, project health review, RFI / submittal / change order, work package release, hold points, Sigi, admin override, audit chain |
+| 08 | [approvals-and-workflows.md](./08-approvals-and-workflows.md) | Policy variables (configurable thresholds, per-project overrides), CAR workflow, baseline change, design review, CQV, shutdown & tie-in, Early Management exit, closeout, Benefits Realization, project health review, RFI / submittal / change order, work package release, hold points, Sigi, admin override, audit chain |
 | 09 | [presentations-and-reporting.md](./09-presentations-and-reporting.md) | Live dashboards (incl. Loss & opportunity, Startup & Early Management, Project reliability), scheduled exports, on-demand decks, external sharing, phone-first field flows |
 | 10 | [integrations.md](./10-integrations.md) | ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi |
 | 11 | [ops-and-nfr.md](./11-ops-and-nfr.md) | SLOs, availability, backup/DR, observability, security, retention |
