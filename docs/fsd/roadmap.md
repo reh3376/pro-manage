@@ -107,6 +107,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **Project losses:** project-loss events derived from the above; **Project reliability** dashboard; health reviews select a dominant loss.
 - **Design-review lenses:** constructability, commissionability, safety in design; Construction Manager stage.
 - **Scheduled exports:** PDF + PPTX generation via pm-sidecar; weekly steering export working for pilot projects.
+- **Chart builder:** `ChartDefinition` with the grammar's types (incl. Pareto, S-curve, waterfall, timeline), grouping and filters; charts pin to dashboards and deck slots; PNG / SVG / PDF / CSV export with provenance footer; frontend and pm-sidecar render from the same definition, with the render-fidelity reference set in CI (`§09`). Calculated fields and annotations follow in Phase 3.
 - **On-demand deck generation:** "Build steering deck" button functional against 2–3 templates.
 - **External stakeholder sharing:** tokenized dashboard links; attestation flow; `pm-frontend-public` live.
 - **Schedulei:** first schedule-tool backend (likely MS Project XML or P6 XER).

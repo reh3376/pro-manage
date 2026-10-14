@@ -228,6 +228,13 @@ Who or what is loaded on which project, over time.
 - `Allocation`: `allocation_id`, `resource_id`, `project_id`, `start`, `end`, `percent` (0.0–1.0 for people; usage factor for equipment).
 - **Overallocation detection:** sum of `percent` across concurrent allocations > 1.0 raises a flag; surfaced in guidance and dashboards.
 
+### ChartDefinition
+A chart someone built, kept as data so it can be re-run, shared, pinned, and rendered identically on a page or a slide (`§09`).
+
+- **Key fields:** `chart_id`, `owner_user_id`, `title`, `description?`, `visibility` ∈ `{private, project, portfolio, company}`, `scope` (`project_id?`, `portfolio_id?`, `site_id?`, `asset_class_id?`, `fiscal_year?`, date range), `data_source` ∈ `{metric_set, loss_ranking, project_loss_ranking, funnel, budget_series, schedule_series, entity_list, workbook_table}` with its binding (metric ids, categories, entity filters, or the imported table ref), `chart_type` (from the `§09` grammar: `kpi | line | bar | pareto | s_curve | waterfall | timeline | heatmap | gauge | scatter | map`), `grouping[]`, `filters[]`, `options` (axis labels, target lines, annotations in Phase 3), `version` (edits create versions; dashboards and decks pin one), standard audit stamps.
+- **Rendering:** the frontend and pm-sidecar render the same definition through the same chart grammar; exports (PNG, SVG, PDF, CSV, Parquet) carry a provenance footer (as-of, scope, filters, chart id). Role filtering is applied at render time through the viewer's grants, including on export.
+- **Used by:** dashboard tiles (`tile.chart_id`), deck and export templates ("insert saved chart" slots), health reviews, approval forms, CAR business cases, change requests, RFI answers (as attachments by `chart_id` plus pinned version), external shares.
+
 ### Template
 A re-usable starter for a Project (or a Milestone set, Risk categories, etc.).
 

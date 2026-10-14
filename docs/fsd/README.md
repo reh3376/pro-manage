@@ -125,7 +125,7 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 ## Architecture at a glance
 
 - **pm-core (Go):** transactional backbone. REST + SSE/WebSocket for the frontend; gRPC to sidecar, workers, and connectors. Edge auth, ACL enforcement at four layers (edge, service, projection, DB row-security), workflow engine, outbox dispatcher.
-- **pm-sidecar (Python):** PDF/PPTX render, xlsx import/export, sandboxed derived-metric formulas (CPI/SPI/EAC, custom KPIs).
+- **pm-sidecar (Python):** PDF/PPTX render, chart rendering for exports (same definitions and grammar as the frontend), xlsx import/export, sandboxed derived-metric formulas (CPI/SPI/EAC, custom KPIs).
 - **pm-workers (Go):** scheduled jobs (metric harvest, exports, nudges, SLA tick), outbox drain to MDEMG and Commsi, long-running imports.
 - **pm-frontend (Next.js, TypeScript):** authenticated SSR+CSR UI; separate hardened `pm-frontend-public` for tokenized dashboard shares.
 - **Modular connector framework:** one gRPC contract per connector type (**ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi**), admin-registered, UDTS-governed. Admins swap backends without a core release. Modules are built on the **Connector SDK** (§15): shared runtime, auth and integration helpers, conformance tests, and a manifest the admin UI reads, so adding a vendor needs no core release.
@@ -167,7 +167,7 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 | 06 | [mdemg-integration.md](./06-mdemg-integration.md) | J17/Jiminy call surfaces, hybrid space model, fail-closed tiering, MP-information flow (incl. abnormality-tag and loss patterns from the operations TPM stack) |
 | 07 | [metrics-and-data-curation.md](./07-metrics-and-data-curation.md) | Financial, Schedule, Scope/Risk, Safety/Quality/Compliance, TPM/Plant-Ops, priced-loss, and project-loss families; verified recovery; package readiness and plan compliance; connectors; spreadsheets |
 | 08 | [approvals-and-workflows.md](./08-approvals-and-workflows.md) | Policy variables (configurable thresholds, site and per-project overrides), staged CAR workflow (FEL funding, full, supplemental), baseline change, IFC issue, expediting cadence, design review, CQV, shutdown & tie-in, Early Management exit, closeout, Benefits Realization, project health review, RFI / submittal / change order, work package release, hold points, Sigi, admin override, audit chain |
-| 09 | [presentations-and-reporting.md](./09-presentations-and-reporting.md) | Live dashboards (incl. Loss & opportunity, Startup & Early Management, Project reliability), scheduled exports, on-demand decks, external sharing, phone-first field flows |
+| 09 | [presentations-and-reporting.md](./09-presentations-and-reporting.md) | Live dashboards (incl. Loss & opportunity, Capital plan & funnel, Startup & Early Management, Project reliability), chart grammar (Pareto, S-curve, waterfall, timeline), user-built charts and graphs with image and data export, scheduled exports, on-demand decks, external sharing, phone-first field flows |
 | 10 | [integrations.md](./10-integrations.md) | ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi |
 | 11 | [ops-and-nfr.md](./11-ops-and-nfr.md) | SLOs, availability, backup/DR, observability, security, retention |
 | 12 | [test-governance-uxts.md](./12-test-governance-uxts.md) | UxTS as forcing function: spec anatomy, hash gate, pro_manage framework matrix (UATS, UDTS, UNTS, UOTS, USTS, UOBS, UBTS, UAMS, UPMTS, UVTS candidate), adjudication registries |
