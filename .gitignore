@@ -10,6 +10,9 @@
 *.swo
 *~
 
+# Owner's private notes and research (kept local; repo is public)
+docs/personal/
+
 # Local env + secrets
 .env
 .env.*
