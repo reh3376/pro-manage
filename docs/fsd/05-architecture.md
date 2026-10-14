@@ -302,7 +302,7 @@ pm-core ──► browser (presigned URL)
 ## Development and environments
 
 - **local dev:** docker-compose on a developer workstation runs the full stack minus some connectors. Developer-mode seeds a sample company with ~5 projects. MDEMG runs in a lightweight dev profile.
-- **CI:** every PR runs the UATS/UDTS contract test suites, Go unit tests, Python unit tests, Next.js type check + build, and a smoke-test compose spin-up with synthetic data.
+- **CI:** every PR runs the merge-blocking UxTS set (UATS, UDTS, UNTS from Phase 0; UOTS and USTS from Phase 1), the adjudication-registry verifiers, Go unit tests, Python unit tests, Next.js type check + build, and a smoke-test compose spin-up with synthetic data and the pinned MDEMG. No test step carries `continue-on-error` (`§12`).
 - **staging:** full topology at reduced scale; mirrors production integrations with sandbox credentials for IdPi, Sigi, ERPi, etc.
 - **production:** the deployment topology above.
 

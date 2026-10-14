@@ -9,7 +9,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **Ship the backbone early.** Auth, ACL, audit, workflow engine, MDEMG wiring. Everything else layers on top.
 - **One vertical slice first.** A single project through its full lifecycle, end-to-end, before breadth.
 - **Modular from day one.** The connector framework ships in Phase 0 even if only one backend is wired initially.
-- **Automate the discipline early.** UATS + UDTS + UNTS specs land with the first code they govern, not retroactively.
+- **Automate the discipline early.** UATS + UDTS + UNTS specs land with the first code they govern, not retroactively. The UxTS scaffold (vendored runners, schemas, framework matrix, hash gate, inventory pre-commit hook) is a Phase 0 deliverable in its own right, because it is the forcing function every later phase relies on (`§12`).
 - **MDEMG churn is absorbed by the adapter.** All MDEMG calls go through `pkg/mdemgadapter` from the first commit.
 
 ## Phases at a glance
@@ -19,15 +19,16 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 | 0 | 1–6 | Foundation | Dev environment + CI + auth + MDEMG wiring reachable; first governed `/approvals` round-trip works end-to-end on a toy project |
 | 1 | 7–16 | MVP vertical slice | One project through Initiate → Execute, with real budget/schedule/approvals, Sigi, one ERPi backend, SSO, Jiminy guidance surfaced |
 | 2 | 17–28 | Breadth | Risk/issue/scope, documents+Doci, metrics via Metrici, HSEi (first vendor), spreadsheet I/O, scheduled exports, on-demand decks, external shares |
-| 3 | 29–40 | Depth | More connector backends, portfolio dashboards, resource allocation, closeout + legal hold, UPMTS, delegation richness |
-| 4 | 41–52 | Harden & scale | Perf tuning, load testing at 1.5× peak, DR drill, UOTS, security review, Kubernetes-readiness verification |
+| 3 | 29–40 | Depth | More connector backends, portfolio dashboards, resource allocation, closeout + legal hold, UPMTS, UVTS guidance-relevance candidate, delegation richness |
+| 4 | 41–52 | Harden & scale | Perf tuning, load testing at 1.5× peak, DR drill, manifest pin tests, security review, Kubernetes-readiness verification |
 | GA | year-two | Rollout | Site-wide rollout to all projects + Pattern B plugin + additional connector backends per demand |
 
 ## Phase 0: Foundation (weeks 1–6)
 
 ### Deliverables
 - Monorepo with Go, Python, TS/Next.js layouts; `/docs/fsd/` already in place.
-- CI pipeline running UATS + UDTS + UNTS + Go/Python/TS unit tests on every PR.
+- CI pipeline running UATS + UDTS + UNTS + Go/Python/TS unit tests on every PR, with no `continue-on-error` on any test step.
+- **UxTS scaffold:** vendored runner primitives and reference runners pinned to an MDEMG tag; `schema/`, `specs/`, `runners/` directories per framework; `docs/tests/UXTS_FRAMEWORK_MATRIX.md` with a CI disposition per framework; `add-hashes` / `verify-hashes` wired; UNTS registry; the five adjudication registries with their verifiers and the inventory pre-commit hook (`§12`).
 - `docker-compose.dev.yml` spins up Postgres, pm-TSDB, Redis, MinIO, MDEMG dev profile, pm-core, pm-sidecar, pm-workers, pm-frontend.
 - Vault wired for secrets; initial secrets provisioned.
 - `IdPi` module shell + one backend (OIDC generic) authenticating locally against Keycloak-dev; local break-glass admin flow working.
@@ -38,7 +39,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - Prometheus/Grafana/Loki/Jaeger stack reachable; standard dashboards for RED metrics.
 - Connector framework: registry table, admin UI stub, standard `HealthCheck`/`Capabilities` RPCs implemented.
 - **Connector SDK (`§15`), Go runtime:** base module server, tier declaration, vault-backed config, OAuth 2.0 and SAML/OIDC helpers, resilient HTTP and OData clients, idempotency, ETag concurrency, polling scheduler, inbound event receiver, mapping layer, conformance kit with mock pm-core, scaffolding CLI, and module manifest. First modules built on it: `IdPi_SAML`, `IdPi_OIDC`, then `ERPi_IFS` in Phase 1. Python runtime deferred until a Python-only vendor requires it.
-- First UATS, UDTS, UNTS specs for the thin surfaces that exist.
+- First UATS, UDTS, UNTS specs for the thin surfaces that exist, including UATS specs against the pinned MDEMG for the field shapes `§06` relies on, and the recorded ULTS prompt hashes of the MDEMG tasks pro_manage consumes.
 
 ### Success criteria
 - A new developer can `make dev` and have the full stack running inside 30 minutes.
@@ -67,6 +68,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **Dashboards:** Project Overview dashboard template; 6–8 built-in tiles bound to the headline metrics; live SSE updates working.
 - **MDEMG:** governance space seeded with ~20 real constraints authored by Governance Author (compliance team); project spaces created per project.
 - **Audit:** nightly chain verification job; retrieval UI for approval chains.
+- **UOTS + USTS merge-blocking before the pilot:** every dashboard, alert rule, and metric registry entry spec-pinned; every protected endpoint proven to reject unauthenticated and wrong-role callers, contributor scoping and share-token exposure covered. The five adjudication registries populated (policy variables, connector capabilities, metrics, routes, loss categories) with the pre-commit gate on.
 - **Frontend:** authenticated UI for Project Owner + Teammate (Editor/Viewer) flows; polished enough for 3–5 pilot users.
 
 ### Success criteria
@@ -104,7 +106,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **External stakeholder sharing:** tokenized dashboard links; attestation flow; `pm-frontend-public` live.
 - **Schedulei:** first schedule-tool backend (likely MS Project XML or P6 XER).
 - **Portfolio dashboards:** Executive Portfolio template live.
-- **UBTS + USTS:** Phase 2 UxTS adoption; CI gates in place.
+- **UBTS + UOBS:** soft-fail on PR, full nightly against staging; `§11` SLOs as fixed `p99_ms` baselines. **UAMS** specs for IdPi and connector auth methods (spec-only until the upstream runner exists). USTS and UOTS are already merge-blocking from Phase 1.
 - **Observability:** business-health dashboards live; alert rotation documented.
 
 ### Success criteria
@@ -122,7 +124,8 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **Resource allocation:** Resource + Allocation entities; overallocation detection; dashboards.
 - **Closeout workflow:** full lifecycle to `Close` + `Archived`.
 - **Legal hold:** admin-triggered retention freeze; dashboards reflect holds.
-- **UPMTS** (custom UxTS framework): governs derived-metric contracts.
+- **UPMTS** (pro_manage-minted UxTS framework): governs derived-metric contracts; replaces the Go pin tests used for the few derived metrics that shipped earlier.
+- **UVTS candidate:** a graded corpus of design-screen queries and the MP information each should surface, live-gated on governance-space changes (`§12`).
 - **Delegation richness:** chained delegation, OOO calendars, workflow-specific overrides.
 - **Portfolio-level approvals** (if applicable): cross-project CapEx roll-ups for executive view.
 - **Governance effectiveness dashboard:** per-constraint surfacing/followed/ignored metrics drawn from MDEMG.
@@ -138,7 +141,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 ### Deliverables
 - Load testing at 1.5× year-two projected peak; capacity-plan addendum published.
 - Full DR drill with scored outcomes.
-- **UOTS:** operations spec coverage of all compose/K8s manifests.
+- **Manifest pin tests:** Go pin tests over compose and Kubernetes manifests (resource limits, probes, non-root, no secrets in env). Not a new UxTS framework; MDEMG lists K8s/Helm as an open UOTS gap, and pin tests are the right size (`§12`).
 - Security review (internal or third-party).
 - Kubernetes-readiness verification: a parallel K8s cluster running the same images with the same manifests, serving a canary of traffic.
 - Documentation hardening: operational runbooks, admin UX docs, user onboarding materials.
@@ -156,7 +159,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - Pattern B MDEMG plugin (`pro-manage-module`) exposing project domain to MDEMG at ingestion/APE/CRUD levels; new MCP tool surface for AI assistants acting on behalf of users.
 - Mobile responsive polish on the frontend.
 - Additional connector backends per demand.
-- Phase-2 UxTS frameworks completed and in CI (UAMS, remaining).
+- Framework matrix complete: every planned framework at its stated CI disposition, matrix "last verified" within 30 days, UAMS promoted from spec-only if the upstream runner shipped.
 - Explore ML-driven forecasting as a sidecar module (opt-in, scoped to specific metrics).
 
 ## Dependencies and critical path
@@ -216,8 +219,8 @@ Grows to **7–9** for Phase 3–4 as connector breadth and ops hardening expand
 
 Each phase produces concrete, named artifacts that enable the next phase:
 
-- **Phase 0 end:** `MVP-Spec-Addendum v0.1` (narrows the FSD to Phase-1 actionable features); `demo video` of the end-to-end CAR round-trip.
-- **Phase 1 end:** `Pilot-Readiness Review` document; onboarding runbooks for pilot projects.
+- **Phase 0 end:** `MVP-Spec-Addendum v0.1` (narrows the FSD to Phase-1 actionable features); `demo video` of the end-to-end CAR round-trip; `docs/tests/UXTS_FRAMEWORK_MATRIX.md` v1 with a CI disposition per framework.
+- **Phase 1 end:** `Pilot-Readiness Review` document; onboarding runbooks for pilot projects; framework matrix showing UATS, UDTS, UNTS, UOTS, USTS merge-blocking and the adjudication registries green.
 - **Phase 2 end:** `Breadth Review` and `Governance Effectiveness Baseline`.
 - **Phase 3 end:** `DR Drill Report`, `Capacity-Plan Addendum`, `Pattern-B Readiness Assessment`.
 - **Phase 4 end:** `GA Readiness Review`, `Security Review Report`, `Rollout Plan`.

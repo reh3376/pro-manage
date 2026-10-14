@@ -129,7 +129,8 @@ Error budgets drive release-rate decisions: if the user surface burns > 50% of i
 ## Release strategy
 
 - **Branching**: trunk-based with short-lived feature branches merged via PR.
-- **CI**: UATS + UDTS + UNTS + Go/Python/TS unit tests + Next.js build + a compose spin-up smoke test on every PR.
+- **CI**: the merge-blocking UxTS set (UATS, UDTS, UNTS; UOTS and USTS from Phase 1), adjudication-registry verifiers, Go/Python/TS unit tests, Next.js build, and a compose spin-up smoke test on every PR. UBTS and UOBS run soft-fail on PR and in full nightly against staging. No `continue-on-error` on any test step (`§12`).
+- **Observability artifacts are UOTS-pinned**: every dashboard JSON, alert rule file, and metric registry entry in this section has a spec; removing a required panel or renaming a metric fails the PR.
 - **Staging**: all merged commits auto-deploy to staging. Nightly end-to-end tests against staging.
 - **Production**: tagged releases; rolling deploy with health gating; feature flags for risky changes; MDEMG wire-format changes land behind an adapter version switch.
 - **Rollback**: image tags are immutable; rollback is `docker-compose up` with the prior tag. DB migrations are forward-compatible and reversible for one release cycle.
