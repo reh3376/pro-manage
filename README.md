@@ -54,7 +54,7 @@ It is for a single company, hosted on the company's intranet in containers, tune
 - **Frontend:** Next.js (TypeScript / React), SSR + CSR; a hardened `pm-frontend-public` variant for tokenized dashboard shares.
 - **APIs:** gRPC between internal services; REST + SSE / WebSockets to the frontend.
 - **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metric readings and loss events), Redis (sessions / cache), MinIO (S3-compatible object storage). All containerized.
-- **Governance substrate:** [MDEMG](https://github.com/reh3376/mdemg) running adjacent on an isolated internal network, used for advisory guidance and institutional memory (MP information flow). pro_manage owns identity, authorization, workflows, and the authoritative audit log.
+- **Governance substrate:** [MDEMG](https://github.com/reh3376/mdemg) running adjacent on an isolated internal network, used for advisory guidance and institutional memory (MP information flow). Its language model runs locally on the MDEMG host, so no project data is sent to a third-party AI service. pro_manage owns identity, authorization, workflows, and the authoritative audit log.
 - **Connectors:** nine pluggable modules (**ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi**), each a container with a stable gRPC contract. Admins swap backends without a core release. New modules are built with the Connector SDK (shared auth, retry, polling, and event plumbing plus a conformance test kit).
 - **Deployment:** on-prem VMs with containers via docker-compose, designed so a later move to Kubernetes is a lift-and-shift rather than a redesign.
 - **Test governance:** UxTS from MVP: UATS (API contracts), UDTS (gRPC contracts), and UNTS (hash integrity on specs + fixtures), in CI from day one.

@@ -48,7 +48,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 ### Dependencies
 - Vault tech selection (Vault / cloud KMS / on-prem equivalent).
 - IdP sandbox (local Keycloak suffices for Phase 0).
-- MDEMG dev profile pinned at a specific tag.
+- MDEMG dev profile pinned at a specific tag, with the model pin (`mdemg-llm-v1` Q5_K_M) and the `pm-mdemg-01` host shape decided with IT; Phase 0 ends with a measured classify p50/p95 on that host (`§06`, `§11`).
 
 ## Phase 1: MVP vertical slice (weeks 7–16)
 
@@ -186,6 +186,8 @@ Vault provisioned              ──▶ Phase 0 complete
 | Risk | Probability | Impact | Mitigation |
 |---|---|---|---|
 | MDEMG beta wire-format changes break pro_manage | Medium | Medium | Adapter layer, UATS specs, pinned MDEMG version per release |
+| IT will not host the MDEMG LLM in either packaged shape (Apple Silicon host or GPU VM) | Medium | High | Raise in Phase 0 week 1; fallback is a CPU-only host with every action kind at Tier B until a suitable host exists, never a hosted LLM |
+| Local-LLM classify latency on the chosen host exceeds budget | Medium | Medium | Pre-classification cache, parallel space calls, `mdemg.classify.timeout_ms` tunable; tier down to B per action kind via policy variable |
 | ERP connector effort larger than estimated | Medium | Medium | Scope Phase 1 ERPi to actuals-only; defer commitments/invoices if needed |
 | Full-ACL complexity delivers slower than hoped | Medium | High | Ship section-level in Phase 1; defer document-level and field-level to Phase 2 if under pressure |
 | 200+ projects migration from current tools is heavy | High | Medium | Build a bulk-import tool as a Phase 2 scope; onboard in waves |
@@ -224,6 +226,6 @@ Each phase produces concrete, named artifacts that enable the next phase:
 
 - Confirm the start date and team shape.
 - Confirm the pilot-team identity and the 3 pilot projects (should be real, in-flight work).
-- Confirm the MDEMG version pin for the project.
+- Confirm the MDEMG version pin and model pin for the project, and the `pm-mdemg-01` host shape.
 - Confirm which Phase 2 connector backends are highest-value for the owner's company (shapes effort allocation).
 - Decide whether a parallel K8s cluster is stood up in Phase 4 or deferred.

@@ -56,6 +56,8 @@ Approval-chain conditions (a stage is included when `amount >= {car.threshold.vp
 | `baseline.variance.finance_pct` | percent | 5% | Baseline change stage 2 |
 | `baseline.variance.vp_finance_pct` | percent | 10% | Baseline change stage 3; MDEMG Tier A |
 | `change_order.threshold` | money | per contract | Change order stage 3; MDEMG Tier A |
+| `mdemg.tier.<action_kind>` | enum: `A`, `B`, `C` | per the table in `§06` | Which MDEMG fail-closed tier each governed action kind runs at |
+| `mdemg.classify.timeout_ms` | integer | 10 000 | Per-call budget for `/jiminy/classify`; a timeout counts as "unreachable" for the tier |
 | `health_review.cadence` | duration | monthly | Health review |
 | `health_review.high_value_threshold` | money | $25M | Biweekly cadence above this |
 | `early_mgmt.exit.nameplate_pct` | percent | 95% | Startup curve exit criterion |
@@ -289,7 +291,7 @@ Per `§06`:
 
 - **On stage render** (approver views the stage): pm-core calls `/jiminy/guide` × 2 (project + governance spaces), merges, role-filters, renders cards.
 - **On stage submit** (approver clicks Approve / Reject):
-  - If the workflow kind × amount tier is Tier A → `/jiminy/classify` × 2 (governance then project). First `deny` wins; blocks submit unless admin override.
+  - If the workflow kind × amount tier is Tier A (`mdemg.tier.<action_kind>`) → `/jiminy/classify` × 2 (governance and project, in parallel), or the cached pre-classified verdict for an unchanged payload. Any `deny` wins; blocks submit unless admin override.
   - If Tier B → `/jiminy/evaluate` (or just `/guide` re-read) → warning banner, allow submit.
   - If Tier C → no call.
 - **After decision** (committed to Postgres with AuditEvent): pm-core enqueues `/jiminy/feedback` to the outbox with `outcome ∈ {followed | ignored_with_reason | blocked_true_positive | blocked_false_positive | overridden_by_admin}`.

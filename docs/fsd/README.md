@@ -129,7 +129,7 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 - **pm-workers (Go):** scheduled jobs (metric harvest, exports, nudges, SLA tick), outbox drain to MDEMG and Commsi, long-running imports.
 - **pm-frontend (Next.js, TypeScript):** authenticated SSR+CSR UI; separate hardened `pm-frontend-public` for tokenized dashboard shares.
 - **Modular connector framework:** one gRPC contract per connector type (**ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi**), admin-registered, UDTS-governed. Admins swap backends without a core release. Modules are built on the **Connector SDK** (§15): shared runtime, auth and integration helpers, conformance tests, and a manifest the admin UI reads, so adding a vendor needs no core release.
-- **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metrics), Redis (sessions/cache), MinIO (S3-compatible object storage), all containerized. **MDEMG** stack runs adjacent on an isolated loopback network.
+- **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metrics), Redis (sessions/cache), MinIO (S3-compatible object storage), all containerized. **MDEMG** stack runs adjacent on an isolated loopback network, with its language model served locally on the same host (no project data goes to a third-party AI service; §06).
 - **Deployment:** on-prem VMs with containers, docker-compose topology designed for later Kubernetes migration without reshaping services.
 - **Test governance:** **UxTS** adoption from MVP: UATS (API contracts), UDTS (gRPC contracts), UNTS (hash integrity on specs + fixtures) in CI from day one; UBTS, USTS, UOTS, UPMTS as the system matures.
 
@@ -145,6 +145,7 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 - **Integrate with the operations TPM stack; don't rebuild it.** Autonomous maintenance, abnormality tagging, OEE boards, and daily management already live in CMMS and connected-worker tools. pro_manage is the EEM-pillar system: it reads their losses, tags, and failure history in and hands assets and turnover packages back out.
 - **Modularity for the external world.** Every ERP, IdP, CMMS, MES, QMS, scheduler, document store, and signer is a pluggable module. Zero vendor lock-in in the design.
 - **Isolate the beta.** MDEMG is beta software. The adapter layer absorbs churn so the core is stable even when MDEMG moves.
+- **No inference leaves the building.** The only AI in the loop runs on a host on the company network. That is a design rule, not a deployment option.
 - **Boring where it should be boring.** Go, Postgres, Timescale, Redis, MinIO, docker-compose. Nothing novel in the plumbing.
 
 ---

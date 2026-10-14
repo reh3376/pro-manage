@@ -59,6 +59,9 @@ Terms, acronyms, and project-specific names.
 | **Space** | MDEMG's tenant / partition tag. In pro_manage, `space=project_id` for day-to-day; `space=org.<id>.governance` for policy library. |
 | **Session** | MDEMG session identity. In pro_manage, `session_id = <user_id>:<project_id>`. |
 | **Trust (EMA)** | Jiminy's per-(session, constraint) trust score. We use EMA mode (default). |
+| **mdemg-llm-v1** | MDEMG's own language model: Qwen3-14B with a LoRA adapter trained on MDEMG's constraint, action, and outcome data, distributed as GGUF (Q5_K_M is the production tier). Served locally by `llama-server` on the MDEMG host; pro_manage never configures a hosted provider. |
+| **llama-server** | The `llama.cpp` inference server MDEMG uses in production (OpenAI-compatible HTTP on loopback port 8102, bounded context per slot). |
+| **Pre-classification** | pm-core classifying a settled governed form in the background and caching the verdict by payload hash, so a Tier A submit usually does not wait on a live LLM call. |
 | **Escalation ladder** | Jiminy's per-(session, constraint) state machine: `surfaced → warned → escalated → blocked`. For humans in pro_manage: `warn=1, escalate=2, block=3`. |
 | **Fail-closed / fail-open tier** | pro_manage's edge policy for how to behave when MDEMG classify errors. Tier A = refuse; Tier B = proceed with warning; Tier C = bypass. |
 | **CMS** | Conversation Memory Store inside MDEMG. The write path at `/v1/conversation/observe`. |

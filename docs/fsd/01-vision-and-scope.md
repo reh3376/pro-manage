@@ -137,7 +137,7 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 | **Audit** | Zero audit findings tied to missing or unreconstructable approval chains in the year-one internal or ISO audit of in-scope projects. |
 | **Governance adoption** | ≥90% of governed submits (CAR > threshold, baseline change > variance threshold) show evidence of Jiminy guidance consulted (via `guidance_id` referenced in the audit record). |
 | **User satisfaction** | Net Promoter Score ≥ 40 among project owners after 6 months of production use. |
-| **Operational** | p99 of core page loads ≤ 2.0s; MDEMG-dependent gates (classify) resolved in ≤ 1.5s; application monthly availability ≥ 99.5%. |
+| **Operational** | p99 of core page loads ≤ 2.0s; MDEMG-dependent gates (classify) resolved within `mdemg.classify.timeout_ms` (default 10 s) when run inline and ≤ 1.5 s when pre-classified, with at least 80% of Tier A submits hitting the pre-classified path; no AI inference leaves the intranet; application monthly availability ≥ 99.5%. |
 
 ## Risks that shape scope
 
