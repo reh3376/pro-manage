@@ -64,7 +64,7 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 
 **Initiate (Concept / Planning)**
 - Project typing (Greenfield · Brownfield expansion · Reliability · Efficiency · Compliance · Capacity debottleneck); TPM-pillar tagging; hazardous-area classification; regulatory stamps
-- Business case + Project Success Criteria capture
+- Business case + Project Success Criteria capture, with promises stated as recoverable losses (Six Big Losses, priced in dollars) against a baseline captured from production data
 - MP-information retrieval from governance space (Jiminy guidance)
 - AACE Class 5 estimate anchor
 
@@ -86,11 +86,11 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 **Monitor (Early Management Period)**
 - Startup curve + time-to-nameplate tracked daily
 - Operational KPIs harvested post-startup: OEE (Availability × Performance × Quality), TEEP, MTBF, MTTR, FPY/RFT, EPU, OLE, Changeover Time
-- Early Management exit criteria — configurable per project
+- Early Management exit criteria — configurable per project, including operator and maintenance certification on the new asset
 
 **Close (Handover + Benefits)**
 - Turnover Package: equipment master, spares, PM tasks, standard work, calibration — writable to the plant **CMMSi**
-- Benefits Realization window (default 6–12 months); ROI recomputed against business case
+- Benefits Realization window (default 6–12 months); **verified recovery** of the promised losses on the same assets, and ROI recomputed against the business case
 - MP-information harvest to governance space
 
 **Across every stage**
@@ -121,6 +121,7 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 - **Operator and maintenance participation is a feature, not a courtesy.** Design reviews, commissioning rehearsals, turnover sign-off, and MP-information authoring all route through the people who will live with the asset. The system refuses to pretend they can be an audience rather than participants.
 - **Governance in-band, not alongside.** Advisory guidance surfaces at the decision point. Audit happens in the same transaction as the mutation.
 - **MP information must flow.** The single most under-practiced TPM discipline — feeding what was learned from the last asset into the design of the next — is a first-class feature with explicit UX and automation, not an unread folder.
+- **Integrate with the operations TPM stack; don't rebuild it.** Autonomous maintenance, abnormality tagging, OEE boards, and daily management already live in CMMS and connected-worker tools. pro_manage is the EEM-pillar system: it reads their losses, tags, and failure history in and hands assets and turnover packages back out.
 - **Modularity for the external world.** Every ERP, IdP, CMMS, MES, QMS, scheduler, document store, and signer is a pluggable module. Zero vendor lock-in in the design.
 - **Isolate the beta.** MDEMG is beta software. The adapter layer absorbs churn so the core is stable even when MDEMG moves.
 - **Boring where it should be boring.** Go, Postgres, Timescale, Redis, MinIO, docker-compose. Nothing novel in the plumbing.

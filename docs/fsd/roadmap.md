@@ -53,6 +53,8 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 
 ### Deliverables
 - **Projects** — full CRUD; template system shipped with 2 templates; lifecycle transitions `Initiate → Plan → Execute`.
+- **Assets & business case** — Asset / AssetClass registry (planned assets owned in pro_manage; in-service mirrored later via CMMSi); LossCategory seeded with the Six Big Losses; `BusinessCasePromise` with CAR-time baseline and measurement basis required for CAR submission.
+- **Project health review** — recurring review with pre-filled agenda and owned actions.
 - **Membership & ACL** — ProjectMember, ACLGrant; the four enforcement layers of `§04` (edge, service, projection, DB row-security on sensitive tables).
 - **Budget** — manual baseline entry, baseline-change workflow, manual actuals (ERPi integration begins in parallel), variance computed.
 - **Schedule** — manual milestone entry + dependencies; completion rule enforcement; (Schedulei imports deferred to Phase 2).
@@ -87,6 +89,10 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **Metrics via Metrici** — relational connectors (Postgres, SQL Server), Timescale/Influx, and the first historian backend; derived-metric formulas via pm-sidecar; dashboards against real harvested data.
 - **HSEi** — first MES/WMS/QMS backend wired for one site; incidents + inspections flowing.
 - **Spreadsheet import/export** — xlsx budget baseline + risk register + milestones; UATS specs for each template.
+- **Loss harvest** — HSEi `FetchLossEvents` from the plant's OEE/loss platform; priced-loss metrics; **Loss & opportunity** dashboard; portfolio ranking by recoverable loss.
+- **Operations-TPM MP sources** — HSEi `FetchAbnormalityTags` + CMMSi failure history feeding per-asset-class MP-information candidates for human confirmation.
+- **Mobile field flows** — phone-first CQV/SAT walkdowns, punchlist capture, turnover inspections, with photo/QR proof and offline sync.
+- **Certification gate** — HSEi `FetchSkillCertifications` (or manual record) wired into Early Management exit.
 - **Scheduled exports** — PDF + PPTX generation via pm-sidecar; weekly steering export working for pilot projects.
 - **On-demand deck generation** — "Build steering deck" button functional against 2–3 templates.
 - **External stakeholder sharing** — tokenized dashboard links; attestation flow; `pm-frontend-public` live.

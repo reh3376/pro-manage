@@ -266,10 +266,10 @@ Read-only metric harvesting from relational DBs, time-series DBs, plant historia
 
 ---
 
-## HSEi — Safety / Quality / Compliance Integration
+## HSEi — Plant Operations Signals (Safety / Quality / Compliance / Losses)
 
 ### Purpose
-Pull signals from MES, WMS, QMS, and HSE systems: incidents, inspections, non-conformances, sign-off states. Feeds pro_manage's safety/quality/compliance metrics and surfaces aging items for guidance.
+Pull signals from MES, WMS, QMS, HSE, and operations TPM / connected-worker systems: incidents, inspections, non-conformances, sign-off states, **priced loss events, operator abnormality tags, and skill certifications**. Feeds pro_manage's safety/quality/compliance and loss metrics, MP-information harvest, the Early Management certification gate, and Benefits Realization verification. Read-only.
 
 ### gRPC interface (summary)
 - `HealthCheck`, `Capabilities`
@@ -277,9 +277,15 @@ Pull signals from MES, WMS, QMS, and HSE systems: incidents, inspections, non-co
 - `FetchInspections(FetchRequest) → stream Inspection`
 - `FetchNonconformances(FetchRequest) → stream Nonconformance`
 - `FetchSignoffs(FetchRequest) → stream Signoff`
+- `FetchLossEvents(FetchRequest) → stream LossEvent` — OEE / Six Big Losses events per asset, with category and (where the platform prices them) dollar value.
+- `FetchAbnormalityTags(FetchRequest) → stream AbnormalityTag` — operator-raised tags from autonomous-maintenance (CIL/CILT) routines; feeds MP-information pattern detection (`§06`).
+- `FetchSkillCertifications(FetchRequest) → stream Certification` — operator/technician certification status per asset or standard-work item; feeds the Early Management exit gate (`§08`).
+
+Not every backend supports every RPC; `Capabilities` declares which, and pm-core degrades gracefully (e.g. certification recorded manually in pro_manage when no skills platform is connected).
 
 ### Year-one backends
 - Vendor-specific adapters per the company's installed MES/WMS/QMS (owner's intel pending). Likely candidates: Honeywell MES, SAP MII, Siemens Opcenter, EtQ Reliance, MasterControl QMS, Intelex HSE.
+- **Operations TPM / connected-worker platforms** (loss events, abnormality tags, skills): candidates from the owner's market review — Fabrico (priced Six Big Losses, verified recovery), Cryotos (pillar-structured, abnormality register), Redzone, L2L, LeanSuite (abnormality tagging, operator certification), Augmentir and Poka/IFS Connected Worker (skills matrix, guided work). pro_manage integrates with these; it does not replicate them (`§01`).
 
 ### Config knobs
 - Vendor API endpoint + auth
@@ -331,6 +337,8 @@ Candidates (prioritize based on company's installed CMMS):
 - `cmmsi-infor-eam` (Infor EAM)
 - `cmmsi-mapcon` (Mapcon — smaller shops)
 - `cmmsi-upkeep` (UpKeep — SMB)
+- `cmmsi-maintainx` (MaintainX — mobile-first, common where operators raise requests directly)
+- `cmmsi-cryotos` (Cryotos — TPM-pillar-structured CMMS; also a candidate HSEi source for abnormality tags and OEE)
 
 ### Config knobs (per instance)
 - Base URL / tenant id / client credentials

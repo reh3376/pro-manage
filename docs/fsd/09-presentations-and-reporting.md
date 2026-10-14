@@ -6,6 +6,7 @@
 - **2026-10-13** — Dashboards are **composed of tiles** bound to the metric/entity model (`§03`, `§07`). Tiles are role-filtered at render time.
 - **2026-10-13** — Exports (PDF + PPTX) are rendered by **pm-sidecar** using versioned templates. The authoring source of truth for the template is Git-tracked; the active deployed template is cached in Postgres with a hash.
 - **2026-10-13** — External stakeholder sharing is via **tokenized dashboard links** (short-lived, revocable) with per-view attestation and audit, as defined in `§04`.
+- **2026-10-14** — Added **Loss & opportunity** and **Startup & Early Management** dashboard presets, and **mobile field flows** (CQV/SAT walkdowns, punchlists, turnover inspections, design-review input) with photo/QR proof, Phase 2.
 - **2026-10-13** — All charts follow a single, cohesive visual language (`dataviz` skill guidance), with a validated palette, light/dark mode, and consistent typography.
 
 ## Dashboards
@@ -22,6 +23,8 @@
 - **Finance** — budget-heavy view. Baseline vs actuals vs EAC across projects, cash-flow curves, approvals in flight.
 - **HSE** — safety and compliance across projects. Incidents, inspection pass rate, aged findings, upcoming sign-offs.
 - **Resources** — allocation heatmap, overallocation flags, equipment utilization.
+- **Loss & opportunity** — portfolio ranked by recoverable loss: top priced losses by asset and Six Big Losses bucket, which are already addressed by an open project, and which are not (FEL1 candidates). For closed projects, promised vs verified recovery. Gives Finance, CI, and Engineering one shared priority list.
+- **Startup & Early Management** — startup curve vs nameplate per asset in Early Management, exit-criteria checklist status (incl. operator certification), and punchlist burn-down.
 
 Admins can create and share custom dashboards. Users with `write:dashboards` grant on a project can modify project-scope dashboards.
 
@@ -60,6 +63,17 @@ All charts share a visual system. Choices and defaults (see the `dataviz` skill 
 - On open: `pm-frontend-public` (`§05`) renders. No authenticated APIs are reachable. First-time viewers may be challenged for identity (name + email) and acceptance of terms.
 - Every view is logged (`AuditEvent action_type=dashboard_external_view`), with viewer identity + IP + timestamp.
 - Owner can see view counts and identities and revoke the link anytime.
+
+## Field (mobile) flows
+
+Some capital work happens at the equipment, not at a desk. These flows get a phone-first UI (Phase 2; responsive web until then), borrowing from the operator-facing TPM tools' pattern of simple checklists with photo or QR proof:
+
+- **CQV / SAT walkdowns** — step through the test protocol at the asset; photo evidence per step; pass / fail / punchlist captured on the spot.
+- **Punchlist capture and closeout** — photo, location (asset QR), severity, owner; closure requires an "after" photo.
+- **Turnover inspections** — verify spares on the shelf, labels, LOTO points, and procedures posted, against the TurnoverPackage checklist.
+- **Design-review input at the equipment** — operators and maintenance techs comment on a model, drawing, or existing asset with photos, feeding the "easy-to" findings.
+
+Asset QR codes resolve to the pro_manage asset page (role-filtered). Offline capture with later sync is required for plant areas without coverage; conflicts resolve last-write-wins per field with the full history kept in audit.
 
 ## Scheduled exports
 

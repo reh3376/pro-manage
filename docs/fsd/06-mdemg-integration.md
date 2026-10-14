@@ -133,9 +133,10 @@ This is the single highest-value integration pattern in pro_manage. It operation
    - An observation to MDEMG governance space: `POST /v1/conversation/observe` with `obs_type=learning`, `space_id=org.<id>.governance`, `tags=[mp_info, equipment:<type>, category:<category>]`, `content=<narrative>`, `structured_data={source_project_id, severity_at_source, authored_by, authored_at}`.
 3. Governance Authors review promoted observations periodically and may codify repeatedly-cited lessons into formal constraints via `POST /v1/jiminy/rules`.
 
-**Periodically from running assets (via CMMSi):**
-- pm-workers scheduled job pulls `FetchHighFailureAssets` and `FetchAgedWork` from CMMSi.
-- Significant signals (new high-MTTR assets, aging work-order patterns) are proposed as `MPInformation` candidates to the Compliance/Maintenance team for authoring.
+**Periodically from running assets (via CMMSi and HSEi):**
+- pm-workers scheduled job pulls `FetchHighFailureAssets` and `FetchAgedWork` from CMMSi (failure history), and `FetchAbnormalityTags` / `FetchLossEvents` from HSEi (operator abnormality tags and priced losses from the operations TPM stack — Cryotos-, Fabrico-, Redzone-, L2L-class platforms).
+- Candidate detection runs per **asset class**: repeat failures, recurring abnormality-tag patterns (e.g. the same leak point tagged across three fillers), and top recoverable losses. Each pattern becomes a proposed `MPInformation` (`source_kind = cmms_failure_history | abnormality_tag_pattern | loss_pattern`) for the Maintenance/Operations lead to confirm or reject. Nothing is published to the governance space without human confirmation.
+- Rationale: operators already record what's hard to run, clean, and maintain — in their tagging tools, every shift. That is the richest MP-information source the plant has; pro_manage's job is to carry it to the next design, not to recapture it.
 
 **At Design stage on a new project (in UC-01 → UC-02 flow):**
 - When a user opens a Design screen for a specific equipment type (indicated by WBS tags or project typing), pm-core calls `/jiminy/guide` with:

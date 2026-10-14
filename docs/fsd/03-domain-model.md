@@ -8,6 +8,9 @@
 - **2026-10-13** — The **AACE Estimate Class** (5 → 1) is a required attribute of every BudgetBaseline. Workflow gates in `§08` enforce class progression (Class 5 at concept, Class 3 at CAR submission, Class 1 at execution).
 - **2026-10-13** — Budget is modeled with **TIC** (Total Installed Cost) and **LCC** (Lifecycle Cost) as separate sub-entities. TIC is tracked throughout the project; LCC is estimated during Design and compared against actuals during Benefits Realization.
 - **2026-10-13** — **MP (Maintenance Prevention) information**, **DesignReview**, **CommissioningRecord**, **TurnoverPackage**, and **BenefitsRealization** are first-class entities; see Entity catalog.
+- **2026-10-14** — **Asset** and **AssetClass** are first-class, mirrored from the plant CMMS via CMMSi. The CMMS stays the system of record for in-service assets; pro_manage owns *planned* assets (created during Design) until turnover pushes them into the CMMS. MP information, startup curve, OEE readings, TurnoverPackage, and BenefitsRealization key off `asset_id` / `asset_class_id` rather than free-form equipment tags.
+- **2026-10-14** — **Loss** and **LossCategory** are first-class. Categories default to the **Six Big Losses** (breakdowns, setup/changeover, minor stops, reduced speed, startup rejects, production rejects) and are extensible per site loss tree. Business-case promises are expressed as recoverable losses priced in dollars.
+- **2026-10-14** — **ProjectHealthReview** is first-class: the capital-side analogue of an operations huddle (see `§08`).
 - **2026-10-13** — **Postgres** holds the authoritative transactional model. **pro_manage's own TimescaleDB** holds metric time series. **MDEMG's Neo4j** holds derived memory and guidance substrate — never the source of truth for pro_manage domain data. **S3-compatible object storage** (on-prem MinIO or equivalent) holds attachment binaries; `Doci` holds pointers for externally-stored documents.
 - **2026-10-13** — Every mutable entity records its `created_at`, `created_by`, `updated_at`, `updated_by`, `version` (monotonic int), and `tenant_id` (always the same for a single-company install, but reserved for defense-in-depth).
 
@@ -177,8 +180,8 @@ A formal review event during Design (Plan) stage against the seven "easy-to" cri
 ### MPInformation
 Maintenance-Prevention information — observations harvested from running assets that feed future project designs. The institutional-memory substrate of EEM.
 
-- **Key fields:** `mp_id`, `source_project_id?` (where the observation originated — may be from a running asset not tracked in pro_manage), `authored_by_user_id`, `authored_at`, `content` (narrative), `category` ∈ `{failure, operability, maintainability, cleanability, changeover, safety, quality, energy, cost, other}`, `equipment_scope` (tags like `boiler`, `column_still`, `bottling_line`, `fermenter`, `conveyor`, `heat_exchanger`, …), `severity_at_source` (`low | med | high | critical`), `evidence_refs[]` (document / incident / metric references), `linked_mp_ids[]` (related observations).
-- **MDEMG binding:** each MPInformation row is also written as an `obs_type=learning` observation into the governance space (`space=org.<id>.governance`) with `scope=equipment:<type>` tags. Jiminy's retrieval surfaces these during Design-stage guidance for similar equipment on later projects.
+- **Key fields:** `mp_id`, `source_project_id?` (where the observation originated — may be from a running asset not tracked in pro_manage), `source_asset_id?`, `asset_class_id` (e.g. `boiler`, `column_still`, `bottling_line`, `fermenter`, `conveyor`, `heat_exchanger`, …), `source_kind` ∈ `{closeout_capture, cmms_failure_history, abnormality_tag_pattern, loss_pattern, manual}`, `authored_by_user_id`, `authored_at`, `content` (narrative), `category` ∈ `{failure, operability, maintainability, cleanability, changeover, safety, quality, energy, cost, other}`, `loss_category_id?` (which of the Six Big Losses it drove), `severity_at_source` (`low | med | high | critical`), `evidence_refs[]` (document / incident / metric / tag references), `linked_mp_ids[]` (related observations).
+- **MDEMG binding:** each MPInformation row is also written as an `obs_type=learning` observation into the governance space (`space=org.<id>.governance`) with `scope=equipment:<asset_class>` tags. Jiminy's retrieval surfaces these during Design-stage guidance for the same asset class on later projects.
 - **Lifecycle:** `draft → published → superseded?` Governance Authors can promote repeatedly-cited MPInformation into formal constraints (via `§06`).
 
 ### CommissioningRecord
@@ -207,7 +210,35 @@ The structured handover artifact assembled before Early Management exit. The pac
 ### BenefitsRealization
 Tracks whether the business case promise actually materialized post-startup. The third ROI calculation of a project.
 
-- **Key fields:** `br_id`, `project_id`, `window_opened_at` (defaults to project `Close` date), `window_duration_days` (default 180–365, policy-configurable), `window_closes_at`, `status` ∈ `{open, in_progress, closed_realized, closed_partial, closed_not_realized}`, `business_case_promises[]` (what the CAR committed to deliver — reductions in EPU, increases in capacity, OEE targets, CPU targets, …), `measurements[]` (periodic snapshots pulled from Metrici/HSEi during the window), `final_variance_report` (narrative + numeric: promised vs delivered, variance explanation), `signed_envelope_ref?` (if final review is formally signed via Sigi).
+- **Key fields:** `br_id`, `project_id`, `window_opened_at` (defaults to project `Close` date), `window_duration_days` (default 180–365, policy-configurable), `window_closes_at`, `status` ∈ `{open, in_progress, closed_realized, closed_partial, closed_not_realized}`, `business_case_promises[]` (see BusinessCasePromise), `measurements[]` (periodic snapshots pulled from Metrici/HSEi during the window), `final_variance_report` (narrative + numeric: promised vs delivered, variance explanation), `signed_envelope_ref?` (if final review is formally signed via Sigi).
+- **Verified recovery:** measurement is against the *specific* losses the business case promised to recover, on the *specific* assets, compared with a pre-project baseline captured at CAR time — not against generic KPIs. A promise of "recover $1.2M/yr of changeover loss on Line 3" is closed by measuring changeover loss on Line 3's assets during the window.
+
+### BusinessCasePromise
+One measurable commitment in a CAR's business case. The bridge between FEL, the CAR, and Benefits Realization.
+
+- **Key fields:** `promise_id`, `project_id`, `kind` ∈ `{loss_recovery, capacity, cost_per_unit, energy_per_unit, quality, safety, compliance, other}`, `asset_ids[]`, `loss_category_id?` (for `loss_recovery`), `metric_id` (how it will be measured), `baseline_value`, `baseline_period` (captured at CAR time from production data), `promised_value`, `promised_by_date`, `dollar_value_per_year` (the priced loss or saving), `measurement_basis` (narrative: what counts, over what period), `status` ∈ `{proposed, committed, realized, partially_realized, not_realized}`.
+- **Why first-class:** ROI is calculated three times (business case, closeout, Benefits Realization). Storing the promise with its basis at CAR time is what makes the third calculation honest — the measurement basis cannot drift after the fact.
+
+### Asset / AssetClass
+The physical equipment a project designs, installs, or modifies.
+
+- `AssetClass` — `asset_class_id`, `name` (`boiler`, `column_still`, `bottling_line`, …), `parent_class_id?`, `default_turnover_template_id?`, `default_easy_to_checklist_id?`.
+- `Asset` — `asset_id`, `asset_class_id`, `site_id`, `cmms_ref?` (CMMS equipment id once in service), `name`, `tag_number`, `status` ∈ `{planned, under_construction, commissioning, early_management, in_service, retired}`, `project_ids[]` (projects that touched it), `nameplate` (JSON: rated capacity, speed, etc.).
+- **System of record:** pro_manage owns `planned → early_management` assets it creates during Design. On TurnoverPackage delivery, the asset is upserted into the CMMS via CMMSi and `cmms_ref` is stored; from `in_service` onward the CMMS is authoritative and pro_manage mirrors.
+- **Why it matters:** startup curve, OEE, losses, MP information, turnover, and Benefits Realization all attach to the same `asset_id`, so "what did we learn from the last three boilers?" is a lookup by `asset_class_id`, not a fuzzy tag match.
+
+### Loss / LossCategory
+Production losses, in the vocabulary operations already uses.
+
+- `LossCategory` — `loss_category_id`, `name`, `six_big_losses_bucket` ∈ `{breakdowns, setup_changeover, minor_stops, reduced_speed, startup_rejects, production_rejects, none}`, `oee_component` ∈ `{availability, performance, quality}`, `parent_id?` (site loss tree), `default_cost_basis` (how to price an hour or unit of this loss).
+- `LossEvent` (time-series, pm-TSDB) — `asset_id`, `loss_category_id`, `ts_start`, `ts_end`, `quantity` (minutes / units), `priced_value` (dollars), `source` (`metrici | hsei | cmmsi | manual`), `source_ref`. Harvested from MES / OEE platforms; pro_manage does not originate loss events.
+- **Uses:** business-case baselines, Benefits Realization verification, portfolio ranking by recoverable loss (`§09`), and MP-information harvest (repeated losses on an asset class).
+
+### ProjectHealthReview
+A periodic structured review of an in-flight project — the capital-side counterpart to an operations huddle.
+
+- **Key fields:** `review_id`, `project_id`, `held_at`, `facilitator_user_id`, `participants[]`, `scope_stability` (1–5), `estimate_maturity_vs_stage` (AACE class vs FEL/lifecycle stage), `critical_path_float_days`, `top_risks[]` (with owners), `change_order_trend`, `contingency_burn_ratio` (from §03 Budget), `ops_maint_turnover_readiness` (1–5), `pm_concerns_not_on_register` (free text), `actions[]` (owner, due date), `overall` ∈ `{green, amber, red}`.
+- Produces actions with owners, not just a grade. Workflow and cadence in `§08`.
 - **Workflow (`§08`):** BenefitsRealization carries its own closeout workflow. The project does not move to `Archived` until BenefitsRealization is closed (except when the window itself is explicitly waived with admin override + audited reason).
 - **MDEMG binding:** at closeout of BenefitsRealization, pro_manage writes a `decision` observation to the governance space summarizing what was realized vs promised, with `scope` tags that let similar future projects surface it during their own business-case drafting.
 
@@ -215,13 +246,13 @@ Tracks whether the business case promise actually materialized post-startup. The
 
 | Store | Lives in | Holds | Written by | Read by |
 |---|---|---|---|---|
-| **Postgres** (pro_manage) | Docker | All transactional domain (`Project`, members, ACLs, budgets, schedule, scope, risk, docs metadata, workflows, templates, audit, outcomes) | Go backend | Go backend; Python sidecar for analytics/exports |
-| **TimescaleDB** (pro_manage) | Docker | Metric readings | Metrici connectors, Python sidecar for derived metrics | Go backend, dashboards |
+| **Postgres** (pro_manage) | Docker | All transactional domain (`Project`, members, ACLs, budgets, schedule, scope, risk, docs metadata, workflows, templates, assets, loss categories, business-case promises, health reviews, audit, outcomes) | Go backend | Go backend; Python sidecar for analytics/exports |
+| **TimescaleDB** (pro_manage) | Docker | Metric readings, loss events | Metrici / HSEi connectors, Python sidecar for derived metrics | Go backend, dashboards |
 | **Neo4j (MDEMG)** | Docker | Observations, constraints, outcomes graph, decisions, concepts | pro_manage via `/v1/conversation/observe`; MDEMG internal | pro_manage via `/v1/jiminy/*` |
 | **TimescaleDB (MDEMG)** | Docker | MDEMG metrics and effectiveness telemetry | MDEMG internal | Platform operators (Grafana) |
 | **Redis** (pro_manage) | Docker | Session, cache, rate-limit, warmed-guidance snapshots | Go backend | Go backend |
 | **S3-compatible object store** (MinIO) | Docker (or external bucket) | Document binaries, export artifacts (PDF/PPTX), signed envelopes | Go backend | Go backend; signed URLs to authenticated users |
-| **External systems** (via connector modules) | Off-cluster | Source-of-truth for actuals (ERPi), schedules (Schedulei), docs (Doci), identities (IdPi), signatures (Sigi), notifications (Commsi), raw metrics (Metrici), HSE signals (HSEi) | Those systems | pro_manage connectors |
+| **External systems** (via connector modules) | Off-cluster | Source-of-truth for actuals (ERPi), schedules (Schedulei), docs (Doci), identities (IdPi), signatures (Sigi), notifications (Commsi), raw metrics (Metrici), HSE / MES / OEE-and-loss signals and abnormality tags (HSEi), in-service assets and failure history (CMMSi) | Those systems | pro_manage connectors |
 
 ## Identifiers and versioning
 
