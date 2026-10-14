@@ -218,6 +218,8 @@ Tracks whether the business case promise actually materialized post-startup. The
 
 - **Key fields:** `br_id`, `project_id`, `window_opened_at` (defaults to project `Close` date), `window_duration_days` (from the `benefits.window_days` policy variable, overridable per project), `window_closes_at`, `status` ∈ `{open, in_progress, closed_realized, closed_partial, closed_not_realized}`, `business_case_promises[]` (see BusinessCasePromise), `measurements[]` (periodic snapshots pulled from Metrici/HSEi during the window), `final_variance_report` (narrative + numeric: promised vs delivered, variance explanation), `signed_envelope_ref?` (if final review is formally signed via Sigi).
 - **Verified recovery:** measurement is against the *specific* losses the business case promised to recover, on the *specific* assets, compared with a pre-project baseline captured at CAR time, not against generic KPIs. A promise of "recover $1.2M/yr of changeover loss on Line 3" is closed by measuring changeover loss on Line 3's assets during the window.
+- **Workflow (`§08`):** BenefitsRealization carries its own closeout workflow. The project does not move to `Archived` until BenefitsRealization is closed (except when the window itself is explicitly waived with admin override + audited reason).
+- **MDEMG binding:** at closeout of BenefitsRealization, pro_manage writes a `decision` observation to the governance space summarizing what was realized vs promised, with `scope` tags that let similar future projects surface it during their own business-case drafting.
 
 ### BusinessCasePromise
 One measurable commitment in a CAR's business case. The bridge between FEL, the CAR, and Benefits Realization.
@@ -296,12 +298,10 @@ The losses of the project itself, measured the way a plant measures equipment lo
 Role-based competency for the project team (owner, EPCM, and contractor staff), complementing the operator certification gate.
 
 - `CompetencyRequirement` (per workflow role or package kind) and `TeamCompetency` (`user_id`, `competency`, `level`, `evidence`, `expires_at?`). Gaps on a package's assigned team surface as a readiness warning, not a block.
-- **Workflow (`§08`):** BenefitsRealization carries its own closeout workflow. The project does not move to `Archived` until BenefitsRealization is closed (except when the window itself is explicitly waived with admin override + audited reason).
-- **MDEMG binding:** at closeout of BenefitsRealization, pro_manage writes a `decision` observation to the governance space summarizing what was realized vs promised, with `scope` tags that let similar future projects surface it during their own business-case drafting.
 
 ## System of record by deployment profile
 
-Which system owns project-controls records depends on what the ERP connector provides (`§10` capability tiers). The profile is set per deployment from the active `ERPi` module's `Capabilities`; it is not a per-project choice.
+Which system owns project-controls records depends on what the ERP connector provides (`§10` capability tiers). The profile is set per ERP instance from its module's `Capabilities`. ERP instances are routed by portfolio or business unit (`§05`), so a company running one ERP with project controls and another without runs ERP-led for the portfolios on the first and pro_manage-led for the rest. It is never a per-project choice.
 
 | Record | **ERP-led** profile (ERP has a projects module, e.g. IFS Cloud) | **pro_manage-led** profile (financials-only ERP) |
 |---|---|---|
@@ -337,27 +337,25 @@ Mirrored records are read-only in pro_manage except for pro_manage-only attribut
 ## Lifecycle state machine (Project)
 
 ```
-          ┌────────┐  owner-authorized   ┌──────┐  plan review   ┌─────────┐
-          │Initiate├────────────────────▶│ Plan ├───────────────▶│ Execute │
-          └────────┘                     └──────┘                └────┬────┘
-                                                                      │ monitor
-                                                                      ▼
-                                        ┌────────┐   closeout gate   ┌──────────┐
-                                        │ Monitor│◀──────────────────│  Execute │
-                                        └───┬────┘ (toggles freely)  └──────────┘
-                                            │  all closeout gates satisfied
-                                            ▼
-                                       ┌───────┐  retention window elapsed  ┌─────────┐
-                                       │ Close ├───────────────────────────▶│Archived │
-                                       └───────┘                            └─────────┘
+ ┌──────────┐ concept approved ┌──────┐ CAR approved +     ┌─────────┐ CQV complete,    ┌─────────┐
+ │ Initiate ├─────────────────▶│ Plan ├───────────────────▶│ Execute ├─────────────────▶│ Monitor │
+ └──────────┘ (FEL1 → FEL2)    └──────┘ design review       └─────────┘ first production └────┬────┘
+                              (FEL3)   sign-off (§08)                                        │ Early Management
+                                                                                             │ exit (§08)
+                                                                                             ▼
+                       ┌──────────┐  Benefits Realization review closed   ┌───────┐
+                       │ Archived │◀──────────────────────────────────────┤ Close │
+                       └──────────┘  (or window waived, audited override) └───────┘
 ```
 
-- **Initiate:** Owner only. Project exists, no team yet. Edits unrestricted; no audit chain required for exploratory data.
-- **Plan:** Team invited. Baselines being drafted. Writes audit; approvals not yet mandatory.
-- **Execute:** Baselines approved. Writes audit *and* enforce approval gates per `§08`. This is where most project time is spent.
-- **Monitor:** Variant of Execute (same rules) for projects in long-tail monitoring (e.g., warranty period, performance test).
-- **Close:** All closeout gates satisfied. Writes blocked except for allowed corrections (with elevated approval); reads unrestricted.
-- **Archived:** Read-only. Visible only to those with historical access rights or to compliance roles. Deletion only via an explicit admin workflow with full audit.
+Transitions only move forward; there is no toggling between states. Each arrow is a gate with its own workflow in `§08`.
+
+- **Initiate:** Concept / planning (FEL1 → FEL2). Owner only at first. Business case drafted, MP information gathered, Class 5 estimate. Edits unrestricted; no audit chain required for exploratory data.
+- **Plan:** Design (FEL3). Team invited; basis of design, design reviews, Class 3 estimate, business-case promises baselined. Writes audit. Ends with CAR submission; CAR approval and design-review sign-off gate the move to Execute.
+- **Execute:** Fabrication, installation, and commissioning against the authorized baselines. Writes audit *and* enforce the approval gates in `§08` (change orders, package release, hold points, CQV). This is where most project time is spent.
+- **Monitor:** Early Management Period. The asset is producing, with extra monitoring; the project still owns it. Punchlist and turnover work continue. Exit only through the Early Management exit workflow (startup curve, punchlist, turnover package, certification).
+- **Close:** Turnover delivered to operations and maintenance; Benefits Realization window open. Writes blocked except for allowed corrections (with elevated approval); reads unrestricted.
+- **Archived:** Read-only, after the Benefits Realization review closes (or the window is waived with an audited override). Visible only to those with historical access rights or to compliance roles. Deletion only via an explicit admin workflow with full audit.
 
 ## Open items for Section 03
 

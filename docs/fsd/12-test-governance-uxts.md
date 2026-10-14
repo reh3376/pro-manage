@@ -102,7 +102,7 @@ UxTS = Universal-x Test Specification: a methodology for declarative test govern
 
 ### UPMTS: Universal Project-Metric Test Specification (custom)
 
-**When:** Phase 2.
+**When:** Phase 3, once real derived-metric formulas exist to govern (matches the roadmap).
 
 **What it covers:** pro_manage-specific metric contracts. "Metric `budget.variance_pct` at project level is computed from `budget.actual.last`, `budget.committed.last`, and the current `BudgetBaseline.baseline_total` via the stated formula, within tolerance ε." The runner reads metric definitions and verifies the compute path. Catches silent drift in derived-metric formulas when inputs or math change.
 

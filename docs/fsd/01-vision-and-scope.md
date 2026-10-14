@@ -82,7 +82,7 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 13. **Benefits Realization window** (typically 6–12 months post-startup; length set per project by the `benefits.window_days` policy variable) with ROI calculated three times: business case, closeout, benefits realization.
 14. Safety/quality/compliance tracking: incident counts, inspection records, regulatory sign-offs. Pulled from MES/WMS/QMS via HSEi.
 15. Resource utilization: project allocation of named individuals and equipment; over/under-allocation detection.
-16. Approval workflows: multi-stage **CAR (Capital Authorization Request)** by threshold; budget baseline changes; design-review sign-off; milestone sign-off; CQV sign-off; Early Management exit; closeout. Routing, delegation, SLA.
+16. Approval workflows: multi-stage **CAR (Capital Authorization Request)** by threshold; budget baseline changes; design-review sign-off; milestone sign-off; CQV sign-off; change requests and change orders; RFI responses and submittal reviews; work package and hold point releases; shutdown & tie-in plans; Early Management exit; closeout; Benefits Realization review. Routing, delegation, SLA.
 17. Document management with permission mirroring from external document stores where used.
 18. Live stakeholder dashboards (shared URLs, auto-refreshing, role-filtered).
 19. Scheduled exports (PDF + PPTX) to distribution lists.
@@ -134,7 +134,7 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 | **Benefits realization** | ≥70% of projects >$1M complete a formal Benefits Realization review 6–12 months post-startup, with actuals-vs-business-case variance quantified and recorded. |
 | **MP information flow** | ≥90% of closeouts generate at least one MP-information observation into the governance space; measurable rate of Design-stage guidance referencing MP observations from prior projects. |
 | **Forecast accuracy** | Baseline-to-actual variance surfaced within 24 hours of actual landing in the ERP (connector lag budget). |
-| **Audit** | Zero audit findings tied to missing or unreconstructable approval chains in year-one SOX review of in-scope projects. |
+| **Audit** | Zero audit findings tied to missing or unreconstructable approval chains in the year-one internal or ISO audit of in-scope projects. |
 | **Governance adoption** | ≥90% of governed submits (CAR > threshold, baseline change > variance threshold) show evidence of Jiminy guidance consulted (via `guidance_id` referenced in the audit record). |
 | **User satisfaction** | Net Promoter Score ≥ 40 among project owners after 6 months of production use. |
 | **Operational** | p99 of core page loads ≤ 2.0s; MDEMG-dependent gates (classify) resolved in ≤ 1.5s; application monthly availability ≥ 99.5%. |

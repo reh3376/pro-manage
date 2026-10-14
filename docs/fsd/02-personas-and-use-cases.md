@@ -65,7 +65,7 @@ Runs FAT, SAT, and commissioning (and, in regulated contexts, qualification and 
 ### Platform roles (people who run pro_manage itself)
 
 #### Platform Administrator
-Operates pro_manage. Configures connector modules (ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi), manages SSO claims-to-role mapping, triggers backups, monitors health, provisions break-glass accounts.
+Operates pro_manage. Configures connector modules (ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi), manages SSO claims-to-role mapping, triggers backups, monitors health, provisions break-glass accounts.
 
 - Does not have blanket read access to project content. Admin privileges target *configuration*, not *data*. A Platform Admin can see that Project P-7 exists and who its Owner is, but cannot read its budget unless explicitly granted. (See `§04` for the admin audit discipline that enforces this.)
 - Local break-glass admin account exists for recovery scenarios when SSO is down; use is logged and reviewed.

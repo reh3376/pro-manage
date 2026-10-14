@@ -82,7 +82,7 @@
 | **pm-workers** | Go | Scheduled jobs (metric harvest triggers, scheduled exports, periodic ACL review notices, SLA tick, auto-close of inert sessions), outbox drain to MDEMG and `Commsi`, long-running imports. | Horizontal with per-job leasing (one worker claims a tick). |
 | **pm-frontend** | TS/React (Next.js) | Authenticated UI. SSR for first paint, CSR for interaction. Reads live data via SSE/WS. Includes phone-first field views (CQV/SAT walkdowns, punchlists, turnover inspections) with photo/QR capture and offline sync, Phase 2 (`§09`). | Horizontal (stateless). |
 | **pm-frontend-public** | TS/React (Next.js, slim bundle) | Read-only renderer for tokenized dashboard shares. Hardened: no auth-ed APIs reachable, strict CSP, no editorial UI. | Horizontal. |
-| **ERPi** (per backend) | Go (unless backend SDK is JVM-only, then Kotlin wrapper acceptable) | Pull actuals, commitments, invoices, chart-of-accounts, vendor records. | One per configured ERP backend. Horizontal within a backend. |
+| **ERPi** (per backend) | Go (Python runtime for Python-only vendor SDKs, `§15`) | Financials tier: actuals, commitments, invoices, chart of accounts, vendors. Project-controls tier where the ERP has one: structure, budgets, forecasts, EAC, earned value, subcontracts, change orders. Operational write-back and budget release where supported (`§10`). | One per configured ERP backend. Horizontal within a backend. |
 | **IdPi** | Go | OIDC + SAML abstractions. Session issuing. Claims resolution. | Horizontal. |
 | **Sigi** | Go | E-signature envelope lifecycle. | Horizontal. |
 | **Schedulei** | Go | Schedule import/export. | Horizontal, batch-shaped. |
@@ -92,7 +92,7 @@
 | **HSEi** | Go | Read-only plant operations signals: MES/WMS/QMS/HSE events, priced loss events, operator abnormality tags, skill certifications. | Horizontal. |
 | **CMMSi** | Go | CMMS read (failure history, aged work, asset mirror) and write (turnover-package delivery: equipment, spares, PM tasks, procedures). Idempotent writes. | One per configured CMMS backend. |
 | **Postgres** | n/a | OLTP source of truth. | Primary + hot standby; async WAL replica off-box for DR. |
-| **TimescaleDB (ours)** | n/a | Metric readings and loss events. | Single node with HA pair; tiered retention. |
+| **TimescaleDB (ours)** | n/a | Metric readings and loss events. | Primary with a streaming standby; tiered retention. |
 | **Redis** | n/a | Session store, rate-limit counters, warmed-guidance snapshot cache. | Sentinel pair. |
 | **MinIO** | n/a | Object storage for documents, exports, archived signed envelopes. | 4-node erasure-coded, or SAN-backed if the company has standard storage. |
 | **MDEMG stack** | Go + Python | Advisory layer. Operates alongside pm-core on an internal Docker network, reachable only from pm-core. | Follows MDEMG's own deployment guide. |
@@ -126,7 +126,7 @@ All external-system connectors share a common shell + a per-connector-type inter
 - **Connector interface (gRPC):** every connector-type service declares its RPCs in its own `.proto`. Health, capability discovery, and lifecycle RPCs are standard; backend-specific RPCs are per-connector-type (ERPi has `FetchActuals`; Sigi has `CreateEnvelope`; etc.).
 - **Module naming:** each backend implementation is a module named `<Type>i_<CODE>`, e.g. `ERPi_NS` (NetSuite), `CMMSi_MX` (MaintainX). Full convention and code registry in `§10`.
 - **Connector SDK:** modules are built on the SDK in `§15`, which supplies the base gRPC server, tier declaration, vault-backed config, auth and integration helpers, the conformance kit, and the module manifest that drives registration and the admin configuration form.
-- **Capability tiers and deployment profile:** connector types can declare tiers beyond their base contract (for ERPi: `financials`, `project_controls`, `operational_writeback`, `budget_release`; see `§10`). pm-core reads the active ERPi module's tiers at startup to set the deployment profile (**ERP-led** or **pro_manage-led**, `§03`), which decides whether project-controls records are owned locally or mirrored.
+- **Capability tiers and deployment profile:** connector types can declare tiers beyond their base contract (for ERPi: `financials`, `project_controls`, `operational_writeback`, `budget_release`; see `§10`). pm-core reads each ERPi instance's tiers at startup to set the profile (**ERP-led** or **pro_manage-led**, `§03`) for the portfolios routed to that instance, which decides whether their project-controls records are owned locally or mirrored.
 - **Connector registry (Postgres):** `connector_instances` table with `instance_id`, `type` (`erpi|idpi|sigi|…`), `module` (e.g. `ERPi_SAP`, `ERPi_NS`), `name` (admin-chosen), `endpoint` (gRPC target), `enabled`, `config_ref` (vault pointer), `health_status`, `last_health_at`. An `ERPi_SAP` instance and an `ERPi_NS` instance can coexist for different business units.
 - **Routing (pm-core):** when pm-core needs an operation, it looks up registered connector instances for that `type`, filters by `enabled` + `health_status`, picks one (round-robin for stateless; routed by `project_id → connector_instance_id` mapping for stateful cases).
 - **Config:** per-instance config lives in the deployment vault; the `config_ref` on the registry row points to it. Admin UI edits the ref; it does not reveal secret values.
