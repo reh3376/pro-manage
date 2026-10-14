@@ -37,6 +37,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - `pm.core.v1.ProjectService` + `ApprovalWorkflow` plumbing, enough to run a toy CAR approval end-to-end.
 - Prometheus/Grafana/Loki/Jaeger stack reachable; standard dashboards for RED metrics.
 - Connector framework: registry table, admin UI stub, standard `HealthCheck`/`Capabilities` RPCs implemented.
+- **Connector SDK (`§15`), Go runtime:** base module server, tier declaration, vault-backed config, OAuth 2.0 and SAML/OIDC helpers, resilient HTTP and OData clients, idempotency, ETag concurrency, polling scheduler, inbound event receiver, mapping layer, conformance kit with mock pm-core, scaffolding CLI, and module manifest. First modules built on it: `IdPi_SAML`, `IdPi_OIDC`, then `ERPi_IFS` in Phase 1. Python runtime deferred until a Python-only vendor requires it.
 - First UATS, UDTS, UNTS specs for the thin surfaces that exist.
 
 ### Success criteria

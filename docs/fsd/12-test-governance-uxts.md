@@ -53,6 +53,8 @@ UxTS = Universal-x Test Specification: a methodology for declarative test govern
 
 ### UDTS: Universal (gRPC) Data/Contract Test Specification
 
+*Connector-type UDTS specs are packaged in the Connector SDK as a conformance suite that every module of that type must pass before registration (`§15`).*
+
 **What it covers:** every internal gRPC service. In pro_manage:
 - `pm.core.v1.*` (service-to-service inside pm-core cluster)
 - `pm.sidecar.v1.*`

@@ -32,6 +32,9 @@ Terms, acronyms, and project-specific names.
 
 | Term | Meaning |
 |---|---|
+| **Connector SDK** | Toolkit for building `<Type>i_<CODE>` modules: runtime, integration helpers, mapping layer, conformance kit, scaffolding CLI. See `§15`. |
+| **Module manifest** | A module's `connector.yaml`: type, code, version, contract range, tiers, config schema, secrets, network needs. Read by pm-core at registration and by the admin UI to render configuration. |
+| **Conformance suite** | A connector type's contract tests packaged in the SDK; every module of that type must pass them. |
 | **ERPi** | ERP integration connector. Supports SAP, Oracle, NetSuite, Dynamics, Odoo, etc. |
 | **Deployment profile** | Whether the ERP owns project-controls records (**ERP-led**, e.g. IFS Cloud) or pro_manage does (**pro_manage-led**). Set from the ERPi module's capability tiers. |
 | **IFS projection / IFS Connect / Event Action** | IFS Cloud's integration surfaces: OData v4 REST APIs (projections), its built-in integration broker (Connect), and configurable outbound REST calls on business events (Event Actions). Used by `ERPi_IFS`. |

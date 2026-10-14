@@ -7,7 +7,7 @@
 - **2026-10-13:** Secrets per connector instance live in the deployment vault; the `config_ref` in `connector_instances` points to the vault entry.
 - **2026-10-13:** Connectors never bypass pro_manage's authorization. All project/data access from pm-core to a connector is already pre-authorized at pm-core's edge.
 
-This section is a catalog. The architecture, framework, and gRPC contract templates are in `§05`. The admin UX for routing and health is in `§05` and `§11`. This section records the specifics per module.
+This section is a catalog. The architecture, framework, and gRPC contract templates are in `§05`. The admin UX for routing and health is in `§05` and `§11`. This section records the specifics per module. New modules are built with the Connector SDK (`§15`); `pm-connector new --type <Type> --code <CODE>` scaffolds one.
 
 ## Connector module naming
 
