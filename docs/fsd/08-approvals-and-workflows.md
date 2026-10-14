@@ -20,11 +20,11 @@ No threshold, amount, percentage, SLA, cadence, or window in any workflow is har
 ### How a variable is defined
 
 - `PolicyVariable`: `key` (e.g. `car.threshold.vp_finance`), `type` ∈ `{money, percent, duration, integer, boolean, enum}`, `unit` / currency, `description`, `global_default`, `allowed_range` (min and max, enforced at every scope), `overridable_at[]` (which scopes may override it), `owner_role`.
-- `PolicyValue`: `variable_key`, `scope_kind` ∈ `{global, project_type, portfolio, project}`, `scope_id`, `value`, `effective_from`, `effective_to?`, `set_by`, `reason`, `approved_by?`, version.
+- `PolicyValue`: `variable_key`, `scope_kind` ∈ `{global, project_type, portfolio, site, project}`, `scope_id`, `value`, `effective_from`, `effective_to?`, `set_by`, `reason`, `approved_by?`, version.
 
 ### How the effective value is resolved
 
-Most specific scope wins: **project → portfolio (business unit) → project type → global default**. Every screen that uses a variable can show its effective value and where it came from (for example "$7.5M, project override set by J. Smith on 2026-11-02, reason: JV partner agreement").
+Most specific scope wins: **project → site → portfolio (business unit) → project type → global default**. Site scope exists because approval limits, SLAs, and calendars differ by place (a site in another country keeps its own currency, holidays, and regulatory sign-offs) without every project there needing an override. Every screen that uses a variable can show its effective value and where it came from (for example "$7.5M, project override set by J. Smith on 2026-11-02, reason: JV partner agreement").
 
 ### When values are locked
 
@@ -50,7 +50,17 @@ Approval-chain conditions (a stage is included when `amount >= {car.threshold.vp
 | `car.threshold.cfo` | money | $25M | CAR stage 4 |
 | `car.threshold.ceo` | money | $100M | CAR stage 5 |
 | `car.threshold.basis` | enum: `tic`, `tic_plus_contingency`, `total_project_cost` | `tic` | What the CAR amount is compared on |
-| `car.supplemental.reapproval_pct` | percent | 10% | Cost growth on an approved CAR that forces re-approval |
+| `car.threshold.currency` | enum: ISO 4217 | company reporting currency | Currency the thresholds are expressed in; requests convert at `fx.rate.*` on submission |
+| `car.fel_funding.required_aace_class` | integer | 5 | Minimum estimate class behind a FEL-funding CAR |
+| `car.fel_funding.cap_pct` | percent | 5% | FEL-funding CAR cap as a share of the current estimate |
+| `car.full.required_aace_class` | integer | 3 | Minimum estimate class behind the full CAR |
+| `car.full.requires_basic_design_review` | boolean | true | A closed `basic` design review with no open high findings before the full CAR |
+| `car.supplemental.reapproval_pct` | percent | 10% | Cost growth on an approved CAR that forces a supplemental |
+| `fx.rate.<from>.<to>` | decimal (dated) | per Finance | Currency conversion for thresholds and roll-ups |
+| `risk.quantify_above_score` | integer | 12 | Risks at or above this score must carry three-point cost and schedule impacts |
+| `contingency.coverage_warn_below` | decimal | 1.0 | Health-review flag when contingency remaining falls below the expected value of open risks |
+| `document.ifc_requires_detailed_review` | boolean | true | A document cannot go IFC without a closed `detailed` design review for its scope |
+| `procurement.float_warn_days` | integer | 14 | Delivery float below this flags the dependent package |
 | `car.esign.required_above` | money | $1M | DocuSign required vs internal attestation |
 | `baseline.variance.reforecast_pct` | percent | 10% | Jiminy warning; monthly re-forecast task |
 | `baseline.variance.finance_pct` | percent | 5% | Baseline change stage 2 |
@@ -116,23 +126,31 @@ An `ApprovalWorkflow` has an ordered list of `ApprovalStage` rows:
 
 ### Example: CAR approval chain (year-one defaults, admin-tunable)
 
-Pre-conditions for CAR submission: `project.fel_stage == fel3`, current `BudgetBaseline.aace_class ∈ {3, 2, 1}`, approved Basis of Design, at least one Design Review of `stage=detailed` closed with no `high`-severity findings open, and every `BusinessCasePromise` in `committed` state with a captured baseline and measurement basis (`§03`). A CAR whose benefits can't be measured later can't be submitted now.
+The CAR is staged (`§03 CapitalAuthorization`). Pre-conditions depend on `kind`:
+
+| Kind | When | Pre-conditions for submission | Routing amount |
+|---|---|---|---|
+| `fel_funding` | Initiate or Plan, to pay for FEL2 and FEL3 work | `EstimateArtifact.aace_class ≤ {car.fel_funding.required_aace_class}` (Class 5 or better); amount ≤ `{car.fel_funding.cap_pct}` of the current estimate; a business case narrative (promises may still be `proposed`) | The request amount |
+| `full` | End of Plan (FEL3) | `project.fel_stage == fel3`; `EstimateArtifact.aace_class ≤ {car.full.required_aace_class}` (Class 3 or better) with a basis-of-estimate document; approved Basis of Design; a `basic` design review closed with no `high`-severity findings open (when `{car.full.requires_basic_design_review}`); long-lead items identified as `ProcurementItem` rows; every `BusinessCasePromise` in `committed` state with a captured baseline and measurement basis. A CAR whose benefits cannot be measured later cannot be submitted now | The request amount |
+| `supplemental` | Execute, when forecast cost growth exceeds `{car.supplemental.reapproval_pct}` or a change needs money | Names the CAR it supplements; a current EAC and the change requests or materialized risks that explain the growth | The **cumulative** authorized amount, so thresholds cannot be crept past in steps |
+
+Detailed design reviews are not a CAR pre-condition: under EPCM, detailed engineering is paid for by the full CAR and happens in Execute, where `detailed` reviews gate documents going IFC (see "Document issue for construction" below).
 
 | Order | Role required | Pool | SLA |
 |---|---|---|---|
 | 1 | `project_owner` | the project's Owner | 24h |
-| 2 | `finance_approver` | `finance_approver_eligible` ∩ `project.business_unit = X` | 48h |
+| 2 | `finance_approver` | `finance_approver_eligible` ∩ the project's site or portfolio, per the DoA | 48h |
 | 3 (if amount ≥ `{car.threshold.vp_finance}`) | `vp_finance` | configured VPs | `{sla.car.vp_finance}` (72h) |
 | 4 (if amount ≥ `{car.threshold.cfo}`) | `cfo` | configured CFO + 1 delegate | `{sla.car.cfo}` (72h) |
 | 5 (if amount ≥ `{car.threshold.ceo}`) | `ceo` | configured CEO + 1 delegate | `{sla.car.ceo}` (7 days) |
 
-Thresholds and SLAs are policy variables (see Policy variables above); the amount is compared on the basis set by `{car.threshold.basis}`. Stage definitions and roles are stored with the workflow kind and are editable by `platform_admin` with a logged change.
+Thresholds and SLAs are policy variables (see Policy variables above); the amount is compared on the basis set by `{car.threshold.basis}`, in `{car.threshold.currency}`, converted at the rate in force on submission and recorded in the policy snapshot. SLA clocks run in business days of the project's site calendar. Stage definitions and roles are stored with the workflow kind and are editable by `platform_admin` with a logged change.
 
 **On final approval (ERP-led profile):** pm-core calls `ERPi.ReleaseBudget` to create or release the authorized budget in the ERP, keyed on the CAR id so retries are safe. The ERP's budget reference is stored on the CAR and in the AuditEvent. If the release fails, the CAR stays `approved` with a visible "budget release pending" flag and an operational alert; nobody re-approves.
 
 ### Example: Design review sign-off
 
-Required before transitioning Project from `Plan` to `Execute`.
+The same chain serves every review stage; what the sign-off unlocks differs: a `basic` review is a pre-condition of the full CAR and of the `Plan → Execute` transition; a `detailed` review is a pre-condition of its documents going IFC; a `post_change` review follows a change that touches equipment.
 
 | Order | Role required | SLA | Jiminy coupling |
 |---|---|---|---|
@@ -185,6 +203,19 @@ Fired at `BenefitsRealization.window_closes_at`.
 
 Outcome drives the project's final `Archived` transition and feeds a `decision` observation to MDEMG governance space with scope tags for similar future projects.
 
+### Example: Document issue for construction (IFC)
+
+| Order | Role required | SLA | Gate |
+|---|---|---|---|
+| 1 | `discipline_engineer` marks the revision ready for IFC | n/a | A `detailed` design review covering the document is closed with no open `high` findings (when `{document.ifc_requires_detailed_review}`); every RFI the revision answers is linked |
+| 2 | `document_controller` issues the transmittal (`purpose = for_construction`) to the contracts that need it | 2 business days | Register entry updated; prior revision marked `superseded` |
+
+Receiving contributors acknowledge the transmittal; unacknowledged transmittals past `response_due_at` nudge via Commsi. A planned IFC date that slips past a package's planned start starts accruing `waiting_information` loss against that package.
+
+### Example: Procurement expediting (recurring, not a gate)
+
+Not an approval; a cadence. The `procurement_lead` reviews every open `ProcurementItem` with `delivery_float_days < {procurement.float_warn_days}` at the health-review cadence, records expediting notes, and re-forecasts. A forecast that moves past `required_on_site_at` raises a readiness warning on the dependent package and, if the package is already released, a `waiting_material` loss. Purchase orders are placed and receipts recorded in the ERP; pro_manage mirrors the references.
+
 ### Example: RFI response
 
 | Order | Role required | SLA |
@@ -236,7 +267,7 @@ The capital-side counterpart to an operations huddle: short, regular, ends with 
 
 - **Cadence:** monthly by default during `Plan` and `Execute`; biweekly for projects at or above `{health_review.high_value_threshold}` or flagged `red` (cadence set by `{health_review.cadence}`); on demand by a Portfolio Executive.
 - **Facilitator:** someone other than the project owner (peer PM, portfolio lead, or CI lead).
-- **Agenda (pre-filled from live data):** scope stability, estimate maturity vs stage (AACE class vs FEL/lifecycle stage), critical-path float, top risks and owners, change-order trend, contingency burn vs % complete, Operations/Maintenance readiness for turnover, the project-loss Pareto (from which the review selects one **dominant loss** to attack this cycle, with an owner and a countermeasure), RFI / submittal aging, plan compliance with variance reasons, and one open prompt: *"What are you worried about that isn't on the register?"*
+- **Agenda (pre-filled from live data):** scope stability, estimate maturity vs stage (AACE class vs FEL/lifecycle stage), critical-path float, top risks and owners, contingency coverage (remaining contingency vs the expected value of open quantified risks; flag below `{contingency.coverage_warn_below}`), change-order trend, contingency burn vs % complete, IFC on-time and documents holding packages, long-lead items with negative or thin delivery float, Operations/Maintenance readiness for turnover, the project-loss Pareto (from which the review selects one **dominant loss** to attack this cycle, with an owner and a countermeasure), RFI / submittal aging, plan compliance with variance reasons, and one open prompt: *"What are you worried about that isn't on the register?"*
 - **Output:** actions with owners and dates (tracked like issues), an overall green/amber/red, and an optional `/jiminy/feedback`-style observation to the project space so recurring concerns become visible guidance.
 - **No approval chain:** it is a review, not a gate. A `red` result notifies the Portfolio Executive via Commsi.
 
@@ -353,7 +384,8 @@ Platform Admin UI exposes:
 ## Open items for Section 08
 
 - **CAR thresholds and chain (owner gathering).** The stage table above is a placeholder. To replace it, collect the company's **Delegation of Authority (DoA) / approval-limits matrix** and its capital policy, specifically:
-  - Approval limits by role and amount (who can approve up to what), and whether limits differ by business unit, site, or project type.
+  - Approval limits by role and amount (who can approve up to what), and whether limits differ by business unit, site, or project type (the policy-variable scopes `portfolio`, `site`, and `project_type` exist for exactly this).
+  - Whether FEL funding is authorized separately from the full CAR today (and its cap), or whether the company sanctions once at FEL3; the `fel_funding` kind can be disabled by policy if the latter.
   - What the threshold is measured against: TIC only, TIC + contingency, or total project cost including expensed portions.
   - Supplemental and overrun rules: when a cost increase on an approved CAR needs re-approval (e.g. > 10% or > $X).
   - Board-level thresholds and any capital committee steps.

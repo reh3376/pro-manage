@@ -14,6 +14,10 @@
 - **2026-10-14:** **First target ERP: IFS Cloud** (`ERPi_IFS`). Because IFS has a capital-projects module, that deployment runs **ERP-led**: IFS is the system of record for project structure, budgets, forecasts/EAC, earned value, subcontracts, and change orders, and pro_manage mirrors them and owns the TPM and governance layer (CAR and gates, design reviews, MP information, work-package readiness, project losses, Benefits Realization). Write-back to the ERP is limited to operational records plus one controlled budget release per approved CAR. Deployments with a financials-only ERP run **pro_manage-led**. See `§03` and `§10`.
 - **2026-10-14:** **No hard-coded thresholds.** CAR limits, variance thresholds, SLAs, cadences, and windows are admin-configurable policy variables that can be overridden per project (`§08`).
 - **2026-10-14:** **Connector SDK** (`§15`). Vendor-specific choices (IdP, CMMS, MES/QMS, e-signature) are answered by selecting or building a module at deployment; the SDK, built in Phase 0, makes new modules quick to build and consistent in auth, retries, idempotency, polling, events, and testing.
+- **2026-10-14:** **Site is first-class and the deployment is multi-site by design.** Time zone, currency, units, business calendar, regulatory and privacy regimes, and connector routing hang off the Site; a site in another country is a configuration, not a fork (`§03`, `§11`).
+- **2026-10-14:** **Capital authorization is staged** (FEL funding, full CAR, supplemental), with the estimate behind each kept as an artifact with its class and basis. Detailed engineering happens in Execute under the full CAR, as EPCM projects actually run (`§03`, `§08`).
+- **2026-10-14:** **Engineering document control and procurement status are in scope; document storage and purchasing are not.** The register, revision status (IFR, IFA, IFC, as-built), transmittals, and expediting status are pro_manage's because package readiness and project losses depend on them; files live where they live and purchase orders stay in the ERP.
+- **2026-10-14:** **Risks are quantified and contingency is tied to them**, with expected-value arithmetic in year one; Monte Carlo simulation is out of scope.
 - **2026-10-13:** Compliance regime: ISO (specific standards TBD). Baseline is ISO-aligned practices; SOX-grade audit log is a target quality bar even without an explicit SOX obligation.
 - **2026-10-13:** **Target vertical: TPM-driven process industry** (distilling, bottling, food & beverage, chemicals, similar manufacturing). The FSD is written in the vocabulary of that vertical: **CAR, FEL, EEM, Vertical Startup, Benefits Realization, MP information, AACE Estimate Class, TIC vs LCC**. pro_manage is not pretending to be a generic PM tool.
 - **2026-10-13:** The project lifecycle maps **one-to-one** onto the six EEM stages (Concept/Planning → Design → Fabrication/Build → Installation → Commissioning → Early Management Period), with explicit gates and exit criteria at each. See §03.
@@ -113,6 +117,11 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 35. **Built-in quality during construction:** inspection & test plans with hold points, non-conformance data fed back into specifications.
 36. **EPCM / contractor contributors:** external participants with edit rights scoped to the packages under their contract.
 37. **Project-team competency matrix** (Phase 3): role competencies for owner, EPCM, and contractor staff, alongside the operator certification gate.
+38. **Site registry and multi-site operation:** time zone, currency, units, business calendar, regulatory and privacy regimes, loss tree, and connector routing per site; policy variables scoped per site; cross-currency portfolio roll-ups with the rate recorded.
+39. **Staged capital authorization:** FEL-funding, full, and supplemental CARs routed on cumulative amount, each backed by an estimate artifact (AACE class, basis of estimate, accuracy range); ERP budget release per approved CAR.
+40. **Engineering document control:** master document register per package, revision status (IFR, IFA, IFC, as-built), transmittals in and out, IFC gated by detailed design review; feeds package readiness, turnover as-builts, and `waiting_information` losses. Not storage: files stay in MinIO, SharePoint, or an EDMS via Doci.
+41. **Procurement and expediting status** for long-lead equipment and bulk materials against site-need dates, with delivery float feeding package readiness and `waiting_material` losses; purchase orders and receipts stay in the ERP.
+42. **Risk quantification and contingency coverage:** three-point cost and schedule impacts on material risks, contingency basis recorded on every baseline, drawdowns naming the risk or change that consumed them, and contingency coverage (remaining vs expected value of open risks) on every health review.
 
 ## Explicitly out of scope (first year)
 
@@ -122,6 +131,9 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 - In-app GL / invoice posting (that remains in the ERP).
 - Automated contract redlining or e-signature (DocuSign or similar is called out as an integration seam, not an internal feature).
 - Machine-learning-driven forecasting (we present data; forecasting lives in future phases).
+- Monte Carlo cost and schedule risk simulation (P50/P80 contingency). Year one uses expected-value arithmetic on quantified risks; a simulation can be added later on the same data.
+- Purchasing itself (RFQs issued, bids compared, purchase orders placed, goods receipted, invoices matched). pro_manage tracks procurement status and expediting; the ERP performs procurement.
+- Engineering document storage and CAD management. pro_manage keeps the register, revision status, and transmittals; the files live in MinIO, SharePoint, or an EDMS.
 
 ## Success criteria
 

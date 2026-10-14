@@ -47,6 +47,7 @@ Connect pro_manage to the company ERP. Every ERP module provides **financials** 
 - `FetchInvoices(FetchInvoicesRequest) → stream Invoice`
 - `FetchChartOfAccounts(FetchCoARequest) → stream Account`
 - `FetchVendors(FetchVendorsRequest) → stream Vendor`
+- `FetchPurchaseOrders(FetchPORequest) → stream PurchaseOrder` and `FetchReceipts(FetchReceiptsRequest) → stream Receipt`: PO lines, promised dates, and goods receipts for the project's commitments, mirrored onto `ProcurementItem` rows (`§03`); the ERP performs procurement, pro_manage tracks expediting
 - *project_controls tier:* `FetchProjectStructure` (projects, sub-projects, activities, milestones), `FetchBudgetVersions`, `FetchForecastVersions`, `FetchEac`, `FetchEarnedValue` (BCWS/BCWP/ACWP, CPI/SPI), `FetchSubcontracts`, `FetchChangeOrders`, `FetchPaymentApplications`, `SubscribeProjectEvents` (where the ERP can emit events: new change order, forecast version published, budget variance threshold crossed)
 - *operational_writeback tier:* `CreateTask`, `AddNote`, `SetReadinessFlag` against a project or activity reference
 - *budget_release tier:* `ReleaseBudget(car_id, project_ref, amount, approval_ref)`; idempotent on `car_id`
@@ -249,9 +250,13 @@ Mirror external document stores (SharePoint, Drive, Confluence) into pro_manage 
 - Permission drift between upstream and pro_manage is surfaced to project Owners.
 - Content is **not** copied by default; pro_manage holds metadata + a reference. Owners can opt-in to local cache for offline reliability.
 
+### Engineering document management systems
+Where the company or its EPCM runs an EDMS (Aconex, ProjectWise, IFS Document Management, or a SharePoint library with revision metadata), a Doci module can mirror the **document register and revision status** (`§03 DocumentRevision`) in addition to files and permissions: `ListRegister(ProjectRef) → stream RegisterEntry` and `GetRevisionStatus(DocRef) → RevisionStatus` are optional capabilities declared in the module manifest. pro_manage remains the system that ties revisions to packages, readiness, and losses; the EDMS remains where the files and the formal issue happen if the company prefers it that way.
+
 ### Open items
 - Confirm the preferred backends (likely SharePoint if the company is M365; Drive if Google Workspace).
 - Decide the strict vs soft permission-mirror default.
+- Confirm whether the EPCM's EDMS should be mirrored (register and revision status) or whether contributors raise transmittals in pro_manage directly; this decides whether a `Doci_ACX`-class module is in year one.
 
 ---
 

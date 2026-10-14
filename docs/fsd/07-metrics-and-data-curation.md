@@ -161,7 +161,11 @@ quality:
 
 TPM applied to the project itself: the project is the "equipment," and its losses are measured and attacked the same way. Concept, OEE mapping, and open questions in `§14`. Sourced from pro_manage's own EPCM objects (`§03`), so no connector is needed.
 
-- `project_loss.by_category`: days and dollars by `ProjectLossCategory` (waiting on information, waiting on approval, rework, interface clash, unready package, safety stop, skill-gap error), per project and package, trailing period. The Pareto a health review uses to pick its dominant loss.
+- `project_loss.by_category`: days and dollars by `ProjectLossCategory` (waiting on information, waiting on approval, waiting on material, rework, interface clash, unready package, safety stop, skill-gap error), per project and package, trailing period. The Pareto a health review uses to pick its dominant loss.
+- `doc.ifc_on_time_pct`, `doc.revision_churn`: register entries issued IFC by their planned date; revisions per document after IFC (design stability, and a leading indicator of rework).
+- `doc.packages_held_by_documents`: construction packages due to start in the next N weeks with a required document not yet IFC.
+- `procurement.items_negative_float`, `procurement.min_float_days`: long-lead items forecast to land after the site needs them; the thinnest float on the project.
+- `contingency.coverage`: contingency remaining ÷ expected value of open quantified risks (`§03`).
 - `project_loss.cost_of_delay`: delay days × the project's configured cost-of-delay rate (where Finance has set one).
 - `admin.rfi_cycle_time`, `admin.rfi_open_aged`: median raise-to-answer days; count open past SLA.
 - `admin.submittal_cycle_time`, `admin.submittal_first_pass_rate`: review days; share approved on first submission (a project-side first-pass yield).

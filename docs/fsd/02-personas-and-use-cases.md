@@ -7,7 +7,7 @@
 
 ## Personas
 
-The fourteen canonical roles below cover every pro_manage interaction in year one. Role is distinct from permission: a user may hold several roles across different projects and the portfolio.
+The sixteen canonical roles below cover every pro_manage interaction in year one. Role is distinct from permission: a user may hold several roles across different projects and the portfolio.
 
 ### Primary roles (people who do work in pro_manage daily)
 
@@ -82,6 +82,12 @@ Authors Jiminy constraints via a dedicated admin UI that fronts MDEMG's `/v1/jim
 
 #### Construction Manager
 Owner-side or EPCM-side lead for site execution: sequencing, contractor coordination, package release, interface management, and site HSE. Takes part in design reviews to bring constructability and commissionability into the design (`§08`). Owns plan-compliance review for construction packages.
+
+#### Document Controller
+Owner-side or EPCM staff who keep the master document register honest: register entries per package, revision status (IFR, IFA, IFC, as-built), and transmittals in and out. Issues documents for construction once the discipline engineer and the detailed design review have cleared them (`§08`). The person who can answer "which drawings is this package waiting on?" from data rather than memory.
+
+#### Procurement / Expediting Lead
+Owner-side or EPCM staff tracking long-lead equipment and bulk materials from award to issue-to-package against the date the site needs them. Places orders in the ERP, not in pro_manage; records expediting status, forecast deliveries, and FAT scheduling here so package readiness and health reviews see delivery float (`§03 ProcurementItem`).
 
 ### External roles (people outside the owner's company)
 
@@ -209,12 +215,27 @@ Each use case lists its primary actor, the trigger, the main success scenario in
 - **Flow:** On a phone, the contributor updates quantities installed, flags deviations, and closes assigned punchlist items with photos; the owner's team reviews.
 - **Accept when:** Progress feeds earned value and plan compliance; the contributor saw only their own contract's packages throughout.
 
+### UC-22: Request FEL funding before sanction
+- **Actor:** Project Owner, then Finance Approver · **Trigger:** FEL2 studies and basic engineering need money before the full CAR.
+- **Flow:** The owner raises a `fel_funding` CAR against a Class 5 estimate artifact, capped by policy at a share of the estimate; it routes on its own amount; approval releases the money (and, ERP-led, the budget) without moving the lifecycle state.
+- **Accept when:** The project reaches FEL3 with its FEL spend visible against the FEL-funding CAR, and the full CAR's cumulative amount includes it.
+
+### UC-23: Issue drawings for construction
+- **Actor:** Discipline Engineer, then Document Controller · **Trigger:** Detailed design review closed for a package's scope.
+- **Flow:** The engineer marks revisions ready for IFC; the document controller issues a transmittal for construction to the affected contracts; register entries update, prior revisions are superseded, and the construction package's "drawings current" readiness constraint turns green without anyone ticking a box.
+- **Accept when:** Contributors acknowledge the transmittal; the package's readiness reflects the register; a slipped IFC date shows up as `waiting_information` on the package it holds.
+
+### UC-24: Expedite a long-lead item
+- **Actor:** Procurement / Expediting Lead · **Trigger:** A supplier's forecast delivery moves past the site-need date.
+- **Flow:** The lead updates the forecast and expediting notes on the `ProcurementItem`; pro_manage recomputes delivery float, flags the dependent construction package, and surfaces it in the next health review; if the package is already released, `waiting_material` loss accrues from the planned start.
+- **Accept when:** The package's readiness and the health review both show the item; the PO itself stays in the ERP with its reference mirrored.
+
 ## Key journeys
 
 Journeys are end-to-end narratives that cross multiple use cases and give sections 03–09 a concrete reference point.
 
 ### Journey A: Project lifecycle (Initiate → Close)
-UC-01 → UC-03 (several times) → UC-02 → UC-04 (weekly) → UC-05 (as milestones close) → UC-17 (commissioning and turnover walkdowns) → UC-15 → UC-18. Threaded through: UC-16 health reviews during Plan and Execute, continuous UC-09 metric and loss harvest, UC-13 constraint evolution, UC-12 occasional audit retrievals.
+UC-01 → UC-22 (FEL funding) → UC-03 (several times) → UC-02 (full CAR) → UC-23 (IFC issue) and UC-24 (expediting) through Execute → UC-04 (weekly) → UC-05 (as milestones close) → UC-17 (commissioning and turnover walkdowns) → UC-15 → UC-18. Threaded through: UC-16 health reviews during Plan and Execute, continuous UC-09 metric and loss harvest, UC-13 constraint evolution, UC-12 occasional audit retrievals.
 
 ### Journey B: Approval cycle (CAR > threshold)
 Submitter opens request → `/jiminy/guide` warms → Finance Approver receives notification via `Commsi` → opens request → `/jiminy/guide` returns high-priority item (CAR > $5M needs VP Finance co-sign) → approver reviews → either returns for revision or signs via `Sigi` (UC-02) → `/jiminy/feedback` records outcome → audit record finalized.

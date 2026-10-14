@@ -37,7 +37,7 @@ OEE multiplies three ratios. Each has a natural project counterpart, measured pe
 
 | OEE component | Plant meaning | Project analogue | Measured from |
 |---|---|---|---|
-| **Availability** | Run time ÷ planned production time | **Work-front availability**: time a released package was actually workable ÷ planned working time (lost to waiting on information, approvals, materials, permits, or safety stops) | Package status history, RFI/submittal aging, deviations, HSE stops |
+| **Availability** | Run time ÷ planned production time | **Work-front availability**: time a released package was actually workable ÷ planned working time (lost to waiting on information, approvals, materials, permits, or safety stops) | Package status history, RFI/submittal aging, document register (planned vs actual IFC), procurement delivery float, deviations, HSE stops |
 | **Performance** | Actual rate ÷ design rate | **Productivity**: earned quantities or hours ÷ planned for the time worked (lost to interface clashes, congestion, skill gaps) | Package progress vs plan, installed quantities |
 | **Quality** | Good-first-time ÷ total | **First-time-right**: work accepted without rework ÷ work completed (hold points passed first time, submittals approved first time, no NCR) | ITP hold points, submittal dispositions, NCRs |
 
@@ -54,7 +54,7 @@ Whether these three should be multiplied into a single "project OEE" is an open 
 | Startup rejects | Quality | **Commissioning rework**: punchlist and failed CQV at the end | CQV records, punchlists |
 | Production rejects | Quality | **Construction rework**: NCRs, failed hold points, revise-and-resubmit cycles | NCRs, hold points, submittals |
 
-Plus one category with no plant equivalent but large project impact: **waiting on approval** (submittals, change orders, and the owner's own internal approvals). It is kept separate because the owner controls it directly; it is the project's Office-TPM loss.
+Plus one category with no plant equivalent but large project impact: **waiting on approval** (submittals, change orders, and the owner's own internal approvals). It is kept separate because the owner controls it directly; it is the project's Office-TPM loss. **Waiting on material** (a released package held by a late procurement item) is recorded as its own category in `§03` so that expediting failures are visible separately from information and approval delays; in this mapping it sits with unready packages, since it is a precondition miss.
 
 The FSD's working category set (`§03 ProjectLossCategory`) uses these; the mapping above is a proposal to be tested against real project data.
 

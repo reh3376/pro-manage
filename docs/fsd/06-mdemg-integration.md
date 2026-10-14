@@ -79,8 +79,9 @@
 - **Tier mapping (global defaults, set by the policy owner as `mdemg.tier.<action_kind>`):** Thresholds in the table are policy variables (`§08`), resolved per project, so the same tier rule applies the right limit to each project. The tier itself is also a policy variable, so a pilot can start an action kind at Tier B and raise it to A once the constraint library and the false-positive rate justify it.
   | Action kind | Tier | Why |
   |---|---|---|
-  | `approval.car` (≥ `{car.threshold.vp_finance}`) | A | Dollars + policy stakes |
-  | `approval.car` (< `{car.threshold.vp_finance}`) | B | Lower stakes; warning OK |
+  | `approval.car` (`full` or `supplemental`, cumulative ≥ `{car.threshold.vp_finance}`) | A | Dollars + policy stakes |
+  | `approval.car` (below the threshold, or `fel_funding`) | B | Lower stakes; warning OK |
+  | `document.issue_ifc` | B | Detailed design review is the control; guidance surfaces MP information and past revision churn for the asset class |
   | `approval.baseline_change` (variance ≥ `{baseline.variance.vp_finance_pct}`) | A | Material financial |
   | `approval.baseline_change` (variance < `{baseline.variance.vp_finance_pct}`) | B | n/a |
   | `approval.milestone_signoff` | B | Mechanical rules already enforced |
