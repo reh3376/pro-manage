@@ -10,7 +10,9 @@
 
 It is designed for a single company (not a SaaS tenant model), hosted on the company's intranet in containers, and tuned to the discipline of **Capital Authorization Requests (CAR), Front-End Loading (FEL), Early Equipment Management (EEM), and benefits realization** at a scale of 100–500 users across 200+ concurrent projects ranging from $25,000 refurbishments to $250,000,000 greenfields.
 
-**Target context:** distilling, bottling, food & beverage manufacturing, chemicals, and similar process industries where TPM is the operating language and where plant operators measure a capital project by "did the asset start up clean, and did Operations and Maintenance inherit something they could run?"
+**Target context:** distilling, bottling, food & beverage manufacturing, chemicals, and similar process industries where TPM is the operating language.
+
+**The one question the whole system is organized around**, phrased the way a plant manager would: *"Did the asset start up clean, and did Operations and Maintenance inherit something they could run?"* Every capability, every workflow, every metric in pro_manage ties back to that.
 
 ---
 
@@ -25,7 +27,7 @@ Capital projects in a TPM-driven plant are rarely well-served by generic PM tool
 - **Vertical Startup** measured by the actual startup curve, with an explicit **Early Management Period** that doesn't end until declared exit criteria are met;
 - **Benefits Realization** confirmed 6–12 months post-startup, with ROI recomputed against the business case promise.
 
-Today, in most companies, these are patchworks of Excel, email approvals, SharePoint folders, Primavera files, and ERP pulls — with the audit trail distributed across inboxes and institutional memory lost at every turnover. pro_manage is the owner-side instrument that holds all of this in one shape with one audit log, and makes governance an in-band part of the work rather than a separate ritual.
+In most companies, this work is spread across Excel workbooks, email approval threads, SharePoint folders, Primavera files, and periodic ERP pulls — with the audit trail distributed across inboxes and institutional memory lost at every turnover. pro_manage is an owner-side instrument that holds the whole picture in one shape with one audit log, and makes governance an in-band part of the work rather than a separate ritual.
 
 ---
 
@@ -52,7 +54,7 @@ pro_manage integrates with **MDEMG** (Multi-Dimensional Emergent Memory Graph, [
 
 1. **At every decision point**, surfaces the applicable constraints, prior decisions, and lessons learned — rendered as cards in the UI, filtered by role.
 2. **On critical gates** (CAR above threshold, baseline change > variance, closeout, ownership transfer), classifies the proposed action against the constraint corpus and can refuse the write in fail-closed mode.
-3. **Flagship use case: closes the MP-information loop.** At Closeout, pro_manage prompts the owner, maintenance, and operators to capture lessons as scoped observations into MDEMG's governance space (`org.<id>.governance`). When a *different* project enters Design for similar equipment months or years later, those lessons automatically surface in the design-review guidance. This is EEM's whole point — made automatic.
+3. **Flagship use case: closes the MP-information loop.** At Closeout, pro_manage prompts the owner, maintenance, and operators to capture lessons as scoped observations into MDEMG's governance space (`org.<id>.governance`). When a *different* project enters Design for similar equipment months or years later, those lessons surface automatically in the design-review guidance. This is the discipline EEM calls for — built into the workflow rather than left to a lessons-learned folder nobody opens.
 
 pro_manage pins against JSON field shapes rather than specific constraint codes, isolates every MDEMG call behind an adapter layer, and tiers actions as fail-closed / fail-open / bypass per policy — so MDEMG availability affects guidance quality, never application integrity.
 
@@ -75,8 +77,9 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 
 **Execute (Fabricate / Install / Commission)**
 - Construction management + contractor tracking
-- Shutdown & tie-in planning for brownfield work
+- Shutdown & tie-in planning for brownfield work (sequenced around the production schedule, not the construction schedule)
 - FAT / SAT / CQV records; non-conformance tracking
+- Operator + maintenance participation in commissioning readiness and startup rehearsal
 - Change-request workflow with budget/schedule impact
 - Earned-value (CPI, SPI, BCWP) where inputs available
 
@@ -113,10 +116,11 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 
 ## Design principles
 
-- **The plant is the customer.** Every design decision ends at "did the asset start up clean, and can Ops + Maintenance run it?" If the FSD can't answer yes, the FSD is wrong.
+- **The plant is the customer.** Every design decision ends at "did the asset start up clean, and can Operations and Maintenance run it?" If the FSD can't answer yes, the FSD is wrong.
 - **Owner-side, not vendor-side.** This is an instrument for the people buying and running the asset, not for the engineering firm building it.
+- **Operator and maintenance participation is a feature, not a courtesy.** Design reviews, commissioning rehearsals, turnover sign-off, and MP-information authoring all route through the people who will live with the asset. The system refuses to pretend they can be an audience rather than participants.
 - **Governance in-band, not alongside.** Advisory guidance surfaces at the decision point. Audit happens in the same transaction as the mutation.
-- **MP information must flow.** The single most under-practiced TPM discipline — feeding what you learned from the last asset into the design of the next — is a first-class feature with explicit UX and automation.
+- **MP information must flow.** The single most under-practiced TPM discipline — feeding what was learned from the last asset into the design of the next — is a first-class feature with explicit UX and automation, not an unread folder.
 - **Modularity for the external world.** Every ERP, IdP, CMMS, MES, QMS, scheduler, document store, and signer is a pluggable module. Zero vendor lock-in in the design.
 - **Isolate the beta.** MDEMG is beta software. The adapter layer absorbs churn so the core is stable even when MDEMG moves.
 - **Boring where it should be boring.** Go, Postgres, Timescale, Redis, MinIO, docker-compose. Nothing novel in the plumbing.
