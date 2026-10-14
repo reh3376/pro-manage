@@ -1,0 +1,201 @@
+# 07 — Metrics & Data Curation
+
+## Decisions on record
+
+- **2026-10-13** — First-class metric families: **Financial, Schedule/Milestones, Scope/Risk/Issues, Safety/Quality/Compliance, Resource utilization**.
+- **2026-10-13** — Harvest architecture: pluggable `Metrici` connectors (relational, time-series, generic Historian / OPC UA) with per-backend throttles and schema contracts governed by UATS/UNTS.
+- **2026-10-13** — Metric readings land in **pro_manage's own TimescaleDB** (not MDEMG's). ERP actuals come via `ERPi` and settle into both the financial domain tables (Postgres) and the metric time series (ours).
+- **2026-10-13** — Spreadsheet import/export is first-class, with UATS-governed schema contracts for every supported workbook template.
+- **2026-10-13** — Derived metrics (CPI, SPI, EAC, variance) are computed in **pm-sidecar** (Python) via a sandboxed formula engine with an allowlist of operations.
+- **2026-10-13** — Data quality is modeled explicitly: every reading carries a `quality ∈ {good, questionable, bad}` with a `source_ref`. "Bad" readings are stored but excluded from aggregations by default.
+
+## Metric families (year-one catalog)
+
+Each family ships with a built-in set of standard metrics (admin-extensible via `MetricDefinition`). Baseline list:
+
+### Financial
+- `budget.baseline_total` (per baseline revision)
+- `budget.committed` (POs issued, from ERPi commitments)
+- `budget.actual` (invoiced + paid, from ERPi actuals)
+- `budget.forecast_eac` (point-in-time Estimate at Completion)
+- `budget.variance_pct` = `(committed + remaining_eac − baseline_total) / baseline_total`
+- `budget.cash_flow_actual` (period-based)
+- `budget.cost_performance_index` (CPI = BCWP / ACWP) — derived; requires earned-value inputs
+- `budget.schedule_performance_index` (SPI = BCWP / BCWS) — derived
+
+### Schedule
+- `schedule.milestones_total`, `milestones_completed`, `milestones_overdue`
+- `schedule.critical_path_slip_days` (if the schedule import includes CP info)
+- `schedule.baseline_variance_days` (per milestone)
+- `schedule.aged_milestones` (count open > N days)
+- `schedule.on_time_delivery_rate` (closed on-time / closed total)
+
+### Scope / Risk / Issues
+- `scope.completion_pct` (weighted by WBS)
+- `scope.deliverables_accepted` / `scope.deliverables_outstanding`
+- `scope.change_requests_open`, `scope.change_requests_impact_sum`
+- `risk.register_count`, `risk.high_or_critical_count`, `risk.aged_without_update`
+- `issue.open_count`, `issue.aged_without_update`
+
+### Safety / Quality / Compliance
+- `safety.incidents_mtd` (month-to-date)
+- `safety.near_miss_count`
+- `quality.inspection_pass_rate`
+- `quality.nonconformance_open`
+- `compliance.signoffs_due`, `compliance.signoffs_overdue`
+- `hse.open_findings_aged` (per aging bucket)
+
+### Resource utilization
+- `resource.named_allocation_pct` (person-level, concurrent sum)
+- `resource.overallocation_count` (people above 1.0)
+- `resource.equipment_uptime_pct` (from Historian / OPC)
+- `resource.contractor_headcount`
+
+Admin can add `MetricDefinition`s per-project or per-portfolio for domain-specific KPIs.
+
+## MetricDefinition vs MetricReading
+
+- `MetricDefinition` is **what a metric means**. Lives in Postgres. Fields recap: `metric_id`, `name`, `category`, `unit`, `aggregation` (`sum|avg|last|…`), `scope` (`project|portfolio|global`), `source` (`derived|erpi|metrici|manual`), `formula?`, `connector_mapping_id?`, `quality_rules?`, `retention_policy`, `active`.
+- `MetricReading` is **a measured value at a time**. Lives in pm-TimescaleDB. Fields: `metric_id`, `project_id`, `ts`, `value`, `quality`, `source_ref`, optional `tags` (JSON).
+- A metric can be read-sourced (connector pulls raw readings) **or** derived (sidecar computes from other readings on a schedule or on-demand). Hybrid metrics (ingested raw + corrected via a formula) are modeled as two definitions linked by `derived_from`.
+
+## Metric harvest architecture
+
+```
+                              ┌───────────────────┐
+                              │  Metric Harvester │
+                              │   (pm-workers)    │
+                              └─────────┬─────────┘
+                                        │ gRPC
+       ┌────────────────────────────────┼─────────────────────────────┐
+       │                                │                             │
+       ▼                                ▼                             ▼
+┌──────────────┐              ┌──────────────────┐           ┌─────────────────┐
+│ Metrici-     │              │ Metrici-timescale│           │ Metrici-pi      │
+│ postgres     │              │  (or influx)     │           │ (OSIsoft PI)    │
+│ (reads source│              │  (reads TSDB)    │           │                 │
+│  DB)         │              │                  │           │                 │
+└──────┬───────┘              └────────┬─────────┘           └────────┬────────┘
+       │                               │                              │
+       ▼                               ▼                              ▼
+   External OLTP               External TSDB                   Plant historian
+   (read-only user)            (read-only user)                (OSIsoft API)
+```
+
+**Harvest modes:**
+- **Poll**: default. Scheduler fires at the configured cadence per MetricDefinition; connector reads the batch since `last_ts_pulled`, streams back.
+- **Subscribe**: for connectors that support live push (OPC UA subscriptions, some historian APIs), pm-workers maintains a persistent stream.
+- **Event-driven**: webhook-style when the upstream can call us (e.g., ERPi fires on a new invoice posted).
+
+**Backfill:** admins can trigger a backfill for a MetricDefinition over a time window. pm-workers chunks the window, calls the connector per chunk, writes to pm-TSDB with `ingest_source=backfill`. Chunking budget prevents overwhelm on large sources.
+
+**Rate-limiting & circuit breaking:** per-connector-instance; configurable; health status reflects breaker state.
+
+## Derived metrics (pm-sidecar)
+
+The sidecar runs a sandboxed formula engine for derived metrics. Formulas are declarative:
+
+```yaml
+# Formula definition (admin-UI authored; stored in MetricDefinition.formula)
+inputs:
+  bcwp: metric_ref("budget.earned_value", project)
+  acwp: metric_ref("budget.actual", project)
+expression: "safe_div(bcwp.last, acwp.last)"
+output_unit: "ratio"
+quality:
+  bad_if: "bcwp.quality == 'bad' or acwp.quality == 'bad'"
+```
+
+- Allowed operations: arithmetic, time-window aggregations (`sum_window(ref, '7d')`, `avg_window`, `last_before`), safe division, boolean, min/max.
+- Disallowed: file I/O, network, subprocess, imports beyond the allowed math library.
+- Formulas are versioned (`formula_version`); a changed formula produces a new MetricDefinition version so historical readings remain reproducible.
+- Evaluation cadence: on schedule (per `MetricDefinition.aggregation.cadence`) or on-demand (dashboard refresh triggers a push-compute if the reading is stale beyond its freshness tolerance).
+
+## Rollups
+
+Rollup scope is defined per MetricDefinition:
+
+- **Project scope** metrics live per `project_id`.
+- **Portfolio scope** metrics are computed from project-scope metrics via a declared aggregation (`sum | avg | weighted_avg(weight=…)`).
+- **Global** metrics span portfolios (company-wide).
+
+Rollups are refreshed on a cadence (default: every 5 minutes for executive dashboards; configurable per MetricDefinition).
+
+Rolled-up readings are themselves stored in pm-TSDB with `scope=portfolio` and `project_id=NULL`.
+
+## Baselines & variance
+
+For metrics that have a plan vs actual story (budget, schedule):
+
+- A `MetricBaseline` row captures the planned value for the metric at a point in time, tied to a project baseline (Budget baseline or Schedule baseline from §03).
+- At read time, pm-core joins current readings against the current baseline to compute variance.
+- Baseline changes themselves fire a `Budget baseline change` workflow (§08); the old baseline is retained for historical variance queries.
+
+## Data quality
+
+- `quality ∈ {good, questionable, bad}` on every reading.
+- Connectors flag `questionable` when the upstream value crosses a reasonableness bound (per MetricDefinition `quality_rules`): e.g., a safety-incident count that drops in a reporting period.
+- `bad` is set when the connector detects a schema mismatch or a null value where none is expected. Bad readings are stored (don't silently drop) but excluded from aggregations and dashboards by default; admins can view "all including bad."
+- Late-arriving data (reading `ts` earlier than existing readings): accepted, with `ingested_at > ts`. Dashboards may re-render affected windows.
+- Out-of-order within a batch: accepted. pm-TSDB sorts by `ts` on query.
+- **Metric schema drift** (upstream changes shape, e.g., renaming a column): UNTS hash integrity on the `connector_mapping` fires in CI/CD and alerts operators. Readings pulled with a mismatched schema are tagged `bad` and the connector enters a "needs mapping update" state.
+
+## Spreadsheet import / export
+
+### Imports
+
+Supported inputs: `xlsx`, `csv`. Each import template is governed by a **UATS spec** that defines the expected sheet structure, column headers, data types, and reasonable-value bounds.
+
+Supported in year one (admin can add more):
+- **Budget baseline workbook** — WBS rows × account columns, with totals, revision notes, approver (shadow row for pm-core to resolve against users).
+- **Budget forecast workbook** — same shape as baseline + EAC column.
+- **Milestone list** — ordered milestones with baseline and target dates, dependencies.
+- **Risk register** — risks with likelihood, impact, response, owner.
+- **Manual metric table** — generic (metric_id, ts, value, quality) rows for metrics that have no connector.
+- **Resource plan** — allocations for named resources over time windows.
+
+Flow (UC-10): user uploads → pm-sidecar validates → pm-core applies on accept. Validation surfaces per-cell errors to the UI.
+
+### Exports
+
+For every import type above, pm-core can export the current state as the matching workbook template — allowing round-trips (export, edit in Excel, re-import). The exports include a hidden metadata sheet with the pm-core project id and the current revision hash, so pm-core can detect stale re-imports.
+
+### Beyond templates
+
+Admins can author custom export templates via a simple schema (one worksheet per report; column mapping to metric_ids / entity fields). pm-sidecar renders. UATS spec is required.
+
+## Dashboards query layer
+
+Dashboards (`§09`) don't query pm-TSDB directly — they go through a pm-core query API:
+
+- **`DashboardService.ResolveTile(tile_id, context)`** returns the data for a dashboard tile, scoped to the caller's effective grants and the dashboard's bound projects.
+- Each tile has a declared data shape: `scalar`, `timeseries`, `category_series`, `tabular`, `kpi_grid`. The visualization library in the frontend (`§09`) matches shape to chart.
+- Query results are cached in Redis with short TTLs (default 60s for live dashboards; longer for exported snapshots).
+- Live dashboards subscribe via SSE to `tile_updates` channels; cache invalidation on write cascades to the SSE channel so dashboards re-render.
+
+Query performance:
+- pm-TSDB continuous aggregates maintain pre-computed per-day/per-week/per-month rollups so executive queries scan narrow partitions.
+- The `MetricDefinition.scope=portfolio/global` rollup rows are first-choice; project-level ad-hoc queries only happen when drill-down is requested.
+
+## Retention & downsampling
+
+- **Raw readings:** retained per MetricDefinition `retention_policy` (default 2 years at full resolution).
+- **Continuous aggregates:** per-day, per-week, per-month roll-ups kept at longer retention (7 years day, 10 years month) — enough for ISO/SOX historical lookback.
+- **Dropped data:** archived to object storage (MinIO) as parquet before being removed from pm-TSDB. Admin-triggered re-ingestion is possible.
+- **Legal hold:** a project under legal hold has retention frozen; no deletion or downsampling occurs until the hold is released.
+
+## Baseline captures for governance
+
+When a workflow approves a baseline (budget or schedule), pm-core:
+1. Writes the new `BudgetBaseline` / `ScheduleBaseline` to Postgres.
+2. Writes a `metric_baseline` snapshot row to pm-TSDB (so historic variance queries can resolve the baseline as of any date).
+3. Writes a `decision` observation to MDEMG via the outbox: `{obs_type:"decision", content:"Budget baseline raised 42.0M → 48.5M on project P-X", structured_data:{...diffs...}}`.
+4. Writes an AuditEvent + GuidanceOutcome bound to the originating approval workflow.
+
+## Open items for Section 07
+
+- Confirm the specific chart of accounts shape expected from ERPi (sized once the first ERP backend is known).
+- Decide whether safety / HSE metrics are also captured in pm-TSDB or linked by reference into the HSE system (open: do we duplicate for availability, or always live-fetch?). First instinct: duplicate with daily cadence to pm-TSDB for dashboard performance; live-fetch for drill-down.
+- Decide the earned-value adoption bar — EVM is powerful but not every $25K project will have BCWS/BCWP inputs. First instinct: optional per-project, gated by a project-settings toggle; derived metrics skip when inputs absent.
+- Confirm whether we need user-authored custom charts beyond the built-in tiles. First instinct: yes but in Phase 2 — year one ships curated tiles.
+- Confirm acceptable retention bounds against ISO standards once the specific standards are confirmed.
