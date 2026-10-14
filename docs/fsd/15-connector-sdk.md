@@ -3,7 +3,7 @@
 ## Decisions on record
 
 - **2026-10-14:** pro_manage ships a **Connector SDK** for building `<Type>i_<CODE>` connector modules (`§10`). Vendor-specific questions (which IdP, CMMS, MES/QMS, e-signature vendor) are answered by selecting or building a module at deployment, and the SDK keeps building a new module to days of work rather than a project.
-- **2026-10-14:** The SDK is a **Phase 0 deliverable**, built before the first production modules (`ERPi_IFS`, `IdPi_SAML`, `IdPi_OIDC`), so every module shares the same plumbing for authentication, retries, idempotency, concurrency, polling, inbound events, observability, and testing.
+- **2026-10-14:** The SDK is **extracted, not pre-built**. The connector contract and the conformance kit (the per-type gRPC contracts and their UDTS specs) ship in Phase 0, because they are the contract. The runtime and helpers are lifted out of the first two production modules (`IdPi_OIDC`, then `ERPi_IFS`) once both work, and both are re-based on the SDK with their UDTS specs proving nothing changed; the third module (`Sigi_DS` or `Commsi_SMTP`) is the first built on it. Every module then shares the same plumbing for authentication, retries, idempotency, concurrency, polling, inbound events, observability, and testing. (Revised 2026-10-14 from "Phase 0 deliverable" after the full-document review: helpers guessed before two real modules exist tend to be the wrong helpers.)
 - **2026-10-14:** **Go first, Python second.** Go is the default for modules; a Python runtime with the same contract exists for vendors whose SDKs or protocols are Python-only.
 - **2026-10-14:** A module is registered by its **manifest**, not by a core release. The admin UI renders the module's configuration form from the manifest's config schema.
 
@@ -128,6 +128,6 @@ The interface described in `§10` maps onto SDK helpers almost entirely: OAuth 2
 ## Open items for Section 15
 
 - Confirm whether third parties (vendors, integrators) may build modules against the SDK; if so, decide the signing and review process for externally built modules.
-- Decide whether the Python runtime is built in Phase 0 or deferred until the first Python-only vendor appears. First instinct: defer, but keep the contract and conformance kit language-neutral.
+- Decide whether the Python runtime is built at SDK extraction or deferred until the first Python-only vendor appears. First instinct: defer, but keep the contract and conformance kit language-neutral.
 - Decide the policy for recorded fixtures: who scrubs them, and where they are stored.
 - Consider aligning the scaffold and validate commands with MDEMG's plugin tooling, which follows the same scaffold, validate, and register pattern.

@@ -140,6 +140,9 @@ Terms, acronyms, and project-specific names.
 | **Constructability / commissionability** | Design-review lenses: how readily the design can be built safely and efficiently, and commissioned and started up. |
 | **Contributor** | External EPCM / contractor / supplier staff with edit access scoped to their contract's packages. |
 | **Contract** | A commercial agreement the owner holds with an EPCM partner, designer, supplier, or contractor; scopes contributor access. |
+| **Capitalization handoff / AUC settlement** | At closeout, Finance settles the project's asset-under-construction balance to fixed assets in the ERP. pro_manage confirms it happened (`FetchCapitalizationStatus`) before the final closeout stage; it never performs it. |
+| **Permit to work** | A site's formal authorization for specific work in a specific area (hot work, confined space, isolation/LOTO). A work-package readiness constraint; read from the site's permit system via HSEi where one exists. |
+| **Thin spine** | The roadmap's committed scope: the smallest set of features that lets one real project's full CAR be approved in pro_manage with guidance, audit, e-signature, and an ERP-mirrored budget. Everything else is a layer pulled by real need. |
 | **Closeout** | Final project lifecycle gate. Confirms deliverables accepted, retention armed, Benefits Realization window begins. |
 | **PSC** | Project Success Criteria. Declared targets a project must meet to count as successful. |
 | **SLA** | Service-Level Agreement on an approval stage's response time. |

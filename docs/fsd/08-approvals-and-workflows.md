@@ -315,6 +315,8 @@ The capital-side counterpart to an operations huddle: short, regular, ends with 
 
 Enforces the "closeout plan on file" constraint (from the Governance space). Final stage is `project_owner` + `compliance_officer` co-sign. Milestone-dependency rules enforced in-process beforehand.
 
+**Capitalization handoff (pre-condition, ERP-led profile).** Before the final stage, Finance confirms that the project's asset-under-construction balance has been settled to fixed assets in the ERP: pm-core reads `ERPi.FetchCapitalizationStatus` and the closeout checklist shows settled vs outstanding; a `finance_approver` stage (`capitalization_confirmed`) sits before the co-sign and cannot complete while the outstanding balance exceeds `{closeout.capitalization.max_outstanding}` (policy variable, default $0) unless deferred with a reason and a date. pro_manage never performs the settlement; it proves it happened. In the pro_manage-led profile the stage is a Finance attestation with the fixed-asset references typed in.
+
 ## Routing & assignment
 
 - When a stage is entered, pm-core resolves the `assignee_pool`:
@@ -397,6 +399,7 @@ Every stage record carries `guidance_id`, `classification_verdict`, and a snapsh
 
 ## UX patterns
 
+- **In-app inbox:** every item that needs a person's action or attention lands in one list: stages awaiting their decision, transmittals to acknowledge, RFIs assigned, hold points to inspect, punchlist items, health-review actions, deviations routed to them, imports to reconcile, and Jiminy escalations. Each row carries its due date, SLA state, project, and a one-click path to the screen; rows clear when the underlying item does, never by dismissal. Commsi notifications link into the inbox rather than duplicating it, and a daily digest summarizes what is open. The inbox is part of the spine (`roadmap`).
 - **Workflow dashboard:** a user's view of workflows they initiated, workflows awaiting their decision, workflows they're observing. Grouped by SLA proximity.
 - **Approval screen:** on open, pm-core warms Jiminy. Primary view shows the subject (CAR details, baseline diff, closeout checklist). Right rail shows guidance cards. Submit button is masked by the classify result when Tier A deny.
 - **Delegate screen:** reassign button → pick from eligible pool filtered by availability.

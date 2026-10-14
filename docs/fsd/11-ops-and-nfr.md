@@ -124,6 +124,13 @@ Error budgets drive release-rate decisions: if the user surface burns > 50% of i
 - OS and runtime patches on a monthly cadence, out-of-band for critical CVEs.
 - Database and language-runtime upgrades tested in staging first; rollback plan documented.
 
+## Usability and accessibility
+
+- **Accessibility target: WCAG 2.1 AA** for the authenticated UI, the public share surface, and exported PDFs. Every governed form (CAR, approvals, design review, hold-point release) is fully operable by keyboard and screen reader, because those are the screens an auditor or a finance approver may need to use with assistive technology. Charts pair colour with pattern or label and expose a data table (`§09`). Automated checks run in CI on the reference screens; a manual assistive-technology pass is part of the Pilot-Readiness Review.
+- **Field use:** phone-first flows use large targets, high contrast for outdoor and plant lighting, and glove-friendly controls; offline capture is a later layer, but no field flow may lose data on a dropped connection (local draft until sent).
+- **Language and locale:** strings are externalized from the first screen; year one ships US English, with dates, numbers, units, and currency formatted per the site's locale (`§03 Site`). Additional languages are a layer pulled by a site that needs one.
+- **Help in place:** every governed form explains what the gate needs and why, linked to the FSD section (`§16`).
+
 ## Capacity and scaling
 
 - Horizontal scaling for pm-core, pm-sidecar, pm-workers, pm-frontend, pm-frontend-public, and each connector.

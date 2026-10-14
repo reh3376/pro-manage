@@ -216,6 +216,7 @@ Access checks happen at four layers, each a defense:
 2. **Service layer (Go):** the request handler for a specific section/entity checks the exact permission needed. If a request can serve a mix (e.g., list of risks spanning a project), the handler filters by effective grants per row before returning.
 3. **Projection layer (Go):** before serializing responses, strips or masks fields the caller doesn't have `read` on. UI never receives disallowed content, so it cannot leak via developer tools.
 4. **Database row-level security (defense-in-depth):** Postgres row-security policies on sensitive tables enforce `project_id ∈ user's visible projects` even if a bug slipped past the application layer. Set up with `SET LOCAL app.user_id = …` per connection pool checkout.
+   **What RLS does not backstop:** contributor scoping is *within* a project (a contributor may see only the packages, RFIs, submittals, and transmittals under their organization's contract), and row policies keyed on `project_id` cannot express that. For `contributor` members, the service and projection layers are the only controls, so the contract-scope filter lives in one shared query helper used by every package-family endpoint, and USTS specs (`§12`) prove, per endpoint, that a contributor on contract A cannot read or write contract B's rows in the same project. A later `contract_id` row policy on the package-family tables is a Phase 2 hardening item once those tables exist.
 
 ## Audit of access decisions
 
