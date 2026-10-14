@@ -52,7 +52,7 @@ Connect pro_manage to the company ERP. Every ERP module provides **financials** 
 - *budget_release tier:* `ReleaseBudget(car_id, project_ref, amount, approval_ref)`; idempotent on `car_id`
 
 ### Year-one backends
-**First target: `ERPi_IFS` (IFS Cloud)**, the ERP in use at the first target deployment. IFS Cloud combines ERP, enterprise asset management (EAM), and field service on one data model and has a capital-projects module (WBS, parallel forecasting, EAC workbench, earned value, subcontracts with payment applications and retentions, change control, project-to-asset handover). `ERPi_IFS` is expected to declare all four tiers, making that deployment **ERP-led**. To confirm: which IFS modules are licensed (Projects, EAM, HCM), the API surface (IFS Cloud is understood to expose REST/OData "projection" APIs and event actions; verify), and authentication.
+**First target: `ERPi_IFS` (IFS Cloud)**, the ERP in use at the first target deployment. IFS Cloud combines ERP, enterprise asset management (EAM), and field service on one data model and has a capital-projects module (WBS, parallel forecasting, EAC workbench, earned value, subcontracts with payment applications and retentions, change control, project-to-asset handover). `ERPi_IFS` is expected to declare all four tiers, making that deployment **ERP-led**. Still to confirm: which IFS modules are licensed (Projects, EAM, HCM, shop floor / MES), and the projection names for the Projects module in that environment (see below).
 
 Other candidate backends:
 - `ERPi_SAP` (SAP ECC via OData/BAPI; S/4HANA via CDS views)
@@ -78,6 +78,19 @@ Further ERP modules follow the same pattern (e.g. `ERPi_INFOR`, `ERPi_EPICOR`, `
 - Backfill via `FetchActualsRequest.from_ts` works for all backends; ranges > 90 days are chunked.
 - UNTS hashes the field-mapping YAML; any schema drift upstream is caught in CI.
 
+### IFS Cloud interface (`ERPi_IFS`)
+
+Based on the owner's research into IFS Cloud integration (October 2026; validate against the deployed IFS version).
+
+- **API:** OData v4 REST "projections" (the same services IFS's own web client uses), at `https://<env>.ifs.cloud/main/ifsapplications/projection/v1/<ProjectionName>.svc/...`, with standard query options (`$filter`, `$select`, `$expand`, `$top`, `$orderby`). Direct database access is not available in IFS's managed cloud and is not used.
+- **Discovery:** projections are found with IFS's in-application **API Explorer**; each publishes an OpenAPI description at its `$openapi` endpoint, which becomes the input to the module's UDTS contract tests. Prefer **Integration- or Premium-class projections**, which IFS keeps stable across upgrades. Projection names for the Projects module (project structure, forecasts, change orders, subcontracts) are identified in the target environment, not assumed here.
+- **Authentication:** OAuth 2.0 **client credentials** through IFS IAM, using a dedicated IAM client tied to a service account with a least-privilege permission set covering only the projections `ERPi_IFS` uses. The client secret lives in the deployment vault; tokens are cached and refreshed by the connector.
+- **Writes:** IFS uses **ETags** for optimistic concurrency, so every write (tasks, notes, readiness flags, `ReleaseBudget`) sends the record's ETag and treats a mismatch as a conflict to re-read, never as a forced overwrite.
+- **Events from IFS:** IFS can call out to an endpoint the connector exposes, via **IFS Connect** (REST sender, routing rules) or **Event Actions** of type REST Call. `SubscribeProjectEvents` uses this when available. IFS Cloud is hosted outside the company network, so receiving these calls requires an approved inbound path (see `§11`). **Until that path is approved, the module polls** on a schedule using `$filter` on last-modified timestamps; once approved, IFS pushes events and polling drops to a slow reconciliation check.
+- **Load:** prefer event-driven updates and narrow queries (`$select` only the fields mirrored); poll cadences are set per feed so pro_manage never becomes a heavy load on the company's IFS tenant.
+- **No middleware required.** IFS also integrates through platforms such as Boomi or MuleSoft, but the connector module already provides the retries, idempotency, mapping, and error handling middleware would. If the company already standardizes on a platform, `ERPi_IFS` can sit behind it instead.
+- **Rollout order:** read-only pulls first (project structure, then budgets and forecasts, then subcontracts and change orders), then operational write-back, then `ReleaseBudget`; failure cases (IFS unavailable, token expiry, ETag conflict, invalid data) tested at each step.
+
 ### IFS Cloud identifier mapping (`ERPi_IFS`)
 
 | IFS Cloud object | pro_manage entity |
@@ -93,7 +106,10 @@ Further ERP modules follow the same pattern (e.g. `ERPi_INFOR`, `ERPi_EPICOR`, `
 | Work order / work request (EAM) | target of operational write-back; MP-information source |
 
 ### Open items
-- Confirm the IFS Cloud modules licensed at the first target deployment and the API and authentication approach for `ERPi_IFS`.
+- Confirm the IFS Cloud modules licensed at the first target deployment (Projects, EAM, HCM, shop floor / MES).
+- Identify the Projects-module projection names in the target environment via the API Explorer and capture their OpenAPI descriptions for the UDTS specs.
+- Agree with the company's IT security team whether IFS Cloud may reach an inbound endpoint for event push (and through what path), or whether `ERPi_IFS` stays polling-only.
+- Set up the IFS IAM client, service account, and permission set for `ERPi_IFS`.
 - Confirm whether multiple ERP instances will run concurrently (e.g., SAP for industrial division, NetSuite for services). Design supports this.
 
 ---
@@ -330,7 +346,7 @@ Pull signals from MES, WMS, QMS, HSE, and operations TPM / connected-worker syst
 Not every backend supports every RPC; `Capabilities` declares which, and pm-core degrades gracefully (e.g. certification recorded manually in pro_manage when no skills platform is connected).
 
 ### Year-one backends
-Modules are named `HSEi_<CODE>` per vendor (e.g. `HSEi_OPCENTER`, `HSEi_MII`, `HSEi_ETQ`, `HSEi_FABRICO`, `HSEi_CRYOTOS`) once the installed systems are known.
+Modules are named `HSEi_<CODE>` per vendor (e.g. `HSEi_OPCENTER`, `HSEi_MII`, `HSEi_ETQ`, `HSEi_FABRICO`, `HSEi_CRYOTOS`) once the installed systems are known. **`HSEi_IFS`** is a candidate if the plants use IFS Cloud as their MES: IFS's shop-floor projections carry downtime, scrap, and quantities completed per operation, which map directly to priced loss events, through the same API and authentication as `ERPi_IFS`.
 - Vendor-specific adapters per the company's installed MES/WMS/QMS (owner's intel pending). Likely candidates: Honeywell MES, SAP MII, Siemens Opcenter, EtQ Reliance, MasterControl QMS, Intelex HSE.
 - **Operations TPM / connected-worker platforms** (loss events, abnormality tags, skills): candidates from the owner's market review: Fabrico (priced Six Big Losses, verified recovery), Cryotos (pillar-structured, abnormality register), Redzone, L2L, LeanSuite (abnormality tagging, operator certification), Augmentir and Poka/IFS Connected Worker (skills matrix, guided work). pro_manage integrates with these; it does not replicate them (`§01`).
 

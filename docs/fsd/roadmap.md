@@ -54,7 +54,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 ### Deliverables
 - **Projects:** full CRUD; template system shipped with 2 templates; lifecycle transitions `Initiate → Plan → Execute`.
 - **Assets & business case:** Asset / AssetClass registry (planned assets owned in pro_manage; in-service mirrored later via CMMSi); LossCategory seeded with the Six Big Losses; `BusinessCasePromise` with CAR-time baseline and measurement basis required for CAR submission.
-- **`ERPi_IFS` and the ERP-led profile:** mirror IFS project structure, budgets/forecasts/EAC, earned value, subcontracts, and change orders; CAR approval releases the budget in IFS. Confirm licensed IFS modules and API access first.
+- **`ERPi_IFS` and the ERP-led profile:** mirror IFS project structure, budgets/forecasts/EAC, earned value, subcontracts, and change orders; CAR approval releases the budget in IFS. Before building: confirm licensed IFS modules, set up the IAM client and service account, and identify the Projects projections in the API Explorer. Build order: read-only pulls, then operational write-back, then budget release; polling until IT approves an inbound path for IFS event push.
 - **Project health review:** recurring review with pre-filled agenda and owned actions.
 - **Membership & ACL:** ProjectMember, ACLGrant; the four enforcement layers of `§04` (edge, service, projection, DB row-security on sensitive tables).
 - **Budget:** manual baseline entry, baseline-change workflow, manual actuals (ERPi integration begins in parallel), variance computed.

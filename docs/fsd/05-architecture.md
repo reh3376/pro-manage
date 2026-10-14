@@ -223,6 +223,7 @@ VM: pm-observe
 - Internal docker network per VM for intra-VM traffic; a dedicated overlay or VLAN per host-pair for cross-VM traffic (encrypted at the network layer).
 - MDEMG binds loopback-only inside its VM. pm-core reaches it via an internal, authenticated gRPC/HTTP tunnel (an SSH-forwarded socket or a dedicated routable address within the overlay).
 - No service except the reverse proxy is reachable from the user network. Everything else is private.
+- Inbound calls from cloud-hosted systems (IFS Cloud event push, DocuSign webhooks) also terminate at the reverse proxy, are off until IT approves an inbound path, and are restricted and authenticated per `§11`; until then the affected connectors poll.
 
 ### Readiness for Kubernetes
 
