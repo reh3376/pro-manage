@@ -297,6 +297,62 @@ Pull signals from MES, WMS, QMS, and HSE systems: incidents, inspections, non-co
 
 ---
 
+## CMMSi — Computerized Maintenance Management System Integration
+
+### Purpose
+Bidirectional integration with the plant CMMS. The symmetry makes this distinct from HSEi:
+- **Read**: harvest MP (Maintenance Prevention) information — equipment failure history, repeat work orders, high-MTTR assets, aged open work — into pro_manage's `MPInformation` entity, which then surfaces via MDEMG during Design-stage reviews on later projects.
+- **Write**: at Early Management exit, push the TurnoverPackage into the CMMS — equipment master data, spares, PM task library, operating procedures, cleaning procedures, LOTO procedures, calibration schedule — so Operations and Maintenance inherit a loaded, ready-to-run asset.
+
+### gRPC interface (summary; see `pm.connector.v1.cmmsi.proto`)
+- `HealthCheck`, `Capabilities`
+- **Read side:**
+  - `FetchEquipmentHistory(FetchEquipmentHistoryRequest) → stream EquipmentHistoryEntry` — failures, work orders, downtime by asset.
+  - `FetchHighFailureAssets(FetchHighFailureAssetsRequest) → stream AssetFailureSummary` — top-N by failure count / MTBF / MTTR across a filter.
+  - `FetchAgedWork(FetchAgedWorkRequest) → stream WorkOrder` — open work orders aged past threshold.
+  - `FetchSpareUsage(FetchSpareUsageRequest) → stream SpareUsageEntry` — spare parts consumption, lead-time outliers.
+- **Write side:**
+  - `UpsertEquipment(UpsertEquipmentRequest) → UpsertResponse` — create or update the equipment hierarchy.
+  - `UpsertSpares(UpsertSparesRequest) → UpsertResponse` — spares with suppliers, min/max, criticality.
+  - `UpsertPMTasks(UpsertPMTasksRequest) → UpsertResponse` — PM task library with frequencies and procedures.
+  - `UpsertProcedures(UpsertProceduresRequest) → UpsertResponse` — operating / cleaning / LOTO procedures.
+  - `UpsertCalibrationSchedule(UpsertCalibrationScheduleRequest) → UpsertResponse` — calibration intervals + certificate refs.
+  - `AttachCMMSArtifact(AttachCMMSArtifactRequest) → UpsertResponse` — bind pro_manage document refs to CMMS equipment records.
+- **Status:**
+  - `GetTurnoverStatus(GetTurnoverStatusRequest) → TurnoverStatus` — pro_manage polls after push to confirm equipment/spares/PMs landed; drift is logged.
+
+All write operations are **idempotent** (keyed on pro_manage's turnover package id + sub-item id); retries are safe. Delivery outcome is persisted in `TurnoverPackage.delivered_to_cmms_at` and linked to the audit record.
+
+### Year-one backends
+Candidates (prioritize based on company's installed CMMS):
+- `cmmsi-maximo` (IBM Maximo — enterprise standard in heavy industry)
+- `cmmsi-sap-pm` (SAP Plant Maintenance — common where SAP ERP is in play)
+- `cmmsi-fiix` (Fiix by Rockwell Automation — mid-market, common in food/beverage)
+- `cmmsi-infor-eam` (Infor EAM)
+- `cmmsi-mapcon` (Mapcon — smaller shops)
+- `cmmsi-upkeep` (UpKeep — SMB)
+
+### Config knobs (per instance)
+- Base URL / tenant id / client credentials
+- Equipment hierarchy mapping (how pro_manage's project equipment relates to the CMMS site/area/line/asset tree)
+- Default criticality mapping (pro_manage severity → CMMS criticality code)
+- Policy on existing records (block overwrite / merge / replace)
+- Read cadence per feed (MP information harvest: daily for recent, weekly for aged, monthly for historical trends)
+
+### Operational
+- Read-side pulls are rate-limited per vendor.
+- Write-side pushes happen in a single transaction per turnover package where the backend supports it; otherwise pm-core sequences and tracks progress with checkpoints.
+- Permission mirroring: pro_manage's documents attached to equipment inherit CMMS-side visibility rules (surfaced for owner review).
+- Schema drift (CMMS field renames, custom-field changes): UNTS hashes the mapping YAML; drift fires in CI/CD.
+
+### Open items
+- Confirm the company's CMMS vendor (owner's intel pending; likely one of SAP PM or Fiix for a mid-sized distillery). Priority of year-one backend follows.
+- Decide the write-side policy on CMMS records that pre-exist pro_manage: merge (preserve CMMS-side edits) vs replace (pro_manage is source-of-truth for turnover). First instinct: merge, with conflict surfaces to the owner.
+- Decide whether in-flight work orders (not from a pro_manage turnover) are read into pro_manage's audit view or stay strictly in the CMMS. First instinct: expose as read-only context on the Early Management dashboard; don't duplicate.
+- Decide whether MP information harvest triggers automatically on new MPInformation observations in the CMMS (via webhook) or on polling.
+
+---
+
 ## Shared operational concerns
 
 All connectors share:
