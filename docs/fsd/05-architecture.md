@@ -65,11 +65,11 @@
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  Connector modules (each a separate container, admin-registered)             │
 │                                                                              │
-│   ERPi(-sap, -oracle, -netsuite, -odoo…)    Schedulei(-msproject, -p6, -ss)  │
-│   IdPi(-oidc, -saml, -adfs…)                Doci(-sharepoint, -drive, -conf) │
-│   Sigi(-docusign, -adobesign…)              Metrici(-postgres, -oracle,      │
-│   Commsi(-smtp, -teams, -slack…)              -timescale, -influx, -pi, -opcua)│
-│   CMMSi(-maximo, -sap-pm, -fiix, -maintainx…) HSEi(-{mes,qms,oee/loss}…)     │
+│   ERPi_{SAP,ORA,NS,D365,ODOO…}            Schedulei_{MSP,P6,SS}              │
+│   IdPi_{OIDC,SAML}                        Doci_{SP,GD,CF}                    │
+│   Sigi_{DS,AS,OS}                         Metrici_{PG,ORA,MSSQL,TS,INFLUX,   │
+│   Commsi_{SMTP,TEAMS,SLACK}                        PI,OPCUA,HIST}            │
+│   CMMSi_{MAX,SAPPM,FIIX,MX,…}             HSEi_{<vendor>}                    │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -124,11 +124,12 @@ All external-system connectors share a common shell + a per-connector-type inter
 ### Framework pieces
 
 - **Connector interface (gRPC):** every connector-type service declares its RPCs in its own `.proto`. Health, capability discovery, and lifecycle RPCs are standard; backend-specific RPCs are per-connector-type (ERPi has `FetchActuals`; Sigi has `CreateEnvelope`; etc.).
-- **Connector registry (Postgres):** `connector_instances` table — `instance_id`, `type` (`erpi|idpi|sigi|…`), `backend` (`sap|oracle|…`), `name` (admin-chosen), `endpoint` (gRPC target), `enabled`, `config_ref` (vault pointer), `health_status`, `last_health_at`. One ERPi-sap and one ERPi-oracle can coexist for different BUs.
+- **Module naming:** each backend implementation is a module named `<Type>i_<CODE>` — e.g. `ERPi_NS` (NetSuite), `CMMSi_MX` (MaintainX). Full convention and code registry in `§10`.
+- **Connector registry (Postgres):** `connector_instances` table — `instance_id`, `type` (`erpi|idpi|sigi|…`), `module` (e.g. `ERPi_SAP`, `ERPi_NS`), `name` (admin-chosen), `endpoint` (gRPC target), `enabled`, `config_ref` (vault pointer), `health_status`, `last_health_at`. An `ERPi_SAP` instance and an `ERPi_NS` instance can coexist for different business units.
 - **Routing (pm-core):** when pm-core needs an operation, it looks up registered connector instances for that `type`, filters by `enabled` + `health_status`, picks one (round-robin for stateless; routed by `project_id → connector_instance_id` mapping for stateful cases).
 - **Config:** per-instance config lives in the deployment vault; the `config_ref` on the registry row points to it. Admin UI edits the ref; it does not reveal secret values.
 - **Health check:** every connector exposes `HealthCheck() → Status`. pm-core polls on a configurable cadence (default 60s); unhealthy instances are routed away.
-- **UDTS contract:** every connector-type `.proto` has UDTS specs. Backend implementations (ERPi-sap vs ERPi-oracle) run the same contract tests, so swapping backends surfaces behavior gaps immediately.
+- **UDTS contract:** every connector-type `.proto` has UDTS specs. Modules of the same type (e.g. `ERPi_SAP` vs `ERPi_NS`) run the same contract tests, so swapping backends surfaces behavior gaps immediately.
 
 ### Per-connector-type contract (sketch)
 
@@ -184,7 +185,7 @@ Other connector types follow the same shape: `HealthCheck`, `Capabilities`, and 
 Platform Admin UI exposes:
 - Register a new connector instance (pick type, pick backend, name it, point to its endpoint, link to a vault config).
 - Enable / disable / probe-health per instance.
-- Route rules (e.g., "all projects in portfolio X use ERPi-sap-primary; failover to ERPi-sap-dr").
+- Route rules (e.g., "all projects in portfolio X use the `ERPi_SAP` primary instance; fail over to the `ERPi_SAP` DR instance").
 - View recent calls, errors, latencies per instance.
 
 ## Deployment topology (on-prem VMs with containers)

@@ -9,6 +9,19 @@
 
 This section is a catalog. The architecture, framework, and gRPC contract templates are in `§05`. The admin UX for routing and health is in `§05` and `§11`. This section records the specifics per module.
 
+## Connector module naming
+
+Every backend implementation is a connector module named **`<Type>i_<CODE>`**:
+
+- `<Type>i` is the connector type: `ERPi`, `IdPi`, `Sigi`, `Schedulei`, `Doci`, `Commsi`, `Metrici`, `HSEi`, `CMMSi`.
+- `<CODE>` is a short uppercase code for the vendor or protocol, unique within the type: `ERPi_NS` is the NetSuite ERP connector, `ERPi_SAP` the SAP connector, `CMMSi_MX` the MaintainX connector.
+- A module implements its type's gRPC contract and passes that type's UDTS specs, so swapping `ERPi_NS` for `ERPi_SAP` is a configuration change, not a core release.
+- Modules are listed in a code registry (the tables below and the `connector_modules` table). New codes are added there when a module is written.
+- **Instances vs modules:** a deployment registers one or more *instances* of a module in `connector_instances` (`§05`), e.g. `ERPi_NS` for one business unit and `ERPi_SAP` for another, each with its own vault config.
+- **Container and proto names** are lowercase because Docker requires it: `ERPi_NS` ships as image `pm-erpi-ns` and service `pm.connector.v1.Erpi` with backend id `ns`.
+
+Codes are assigned for the candidate backends below. The specific modules a deployment needs are chosen once the company's ERP, CMMS, MES/QMS, and identity provider are confirmed.
+
 ---
 
 ## ERPi — ERP Integration
@@ -26,11 +39,13 @@ Pull financial actuals, commitments, invoices, chart of accounts, and vendors fr
 
 ### Year-one backends
 To be prioritized once the owner confirms the first production ERP (pending). Candidate backends:
-- `erpi-sap` (SAP ECC via OData/BAPI; S/4HANA via CDS views)
-- `erpi-oracle` (EBS tables or Fusion REST APIs)
-- `erpi-netsuite` (SuiteTalk REST)
-- `erpi-dynamics` (Dynamics 365 F&O REST)
-- `erpi-odoo` (Odoo XML-RPC / JSON-RPC)
+- `ERPi_SAP` (SAP ECC via OData/BAPI; S/4HANA via CDS views)
+- `ERPi_ORA` (EBS tables or Fusion REST APIs)
+- `ERPi_NS` (SuiteTalk REST)
+- `ERPi_D365` (Dynamics 365 F&O REST)
+- `ERPi_ODOO` (Odoo XML-RPC / JSON-RPC)
+
+Further ERP modules follow the same pattern (e.g. `ERPi_INFOR`, `ERPi_EPICOR`, `ERPi_SAGE`).
 
 ### Config knobs (per instance)
 - Base URL / tenant id
@@ -67,8 +82,8 @@ Front SSO for pro_manage. OIDC + SAML abstractions. Resolve IdP claims into pro_
 - `Logout(LogoutRequest) → LogoutResponse`
 
 ### Year-one backends
-- `idpi-oidc` (generic OIDC — Entra ID, Okta, Keycloak, Google Workspace, etc. via the generic flow)
-- `idpi-saml` (generic SAML 2.0 — ADFS, Shibboleth, PingFederate, etc.)
+- `IdPi_OIDC` (generic OIDC — Entra ID, Okta, Keycloak, Google Workspace, etc. via the generic flow)
+- `IdPi_SAML` (generic SAML 2.0 — ADFS, Shibboleth, PingFederate, etc.)
 - Backend convenience wrappers (optional) for Okta, Entra ID, ADFS to simplify admin config.
 
 ### Config knobs (per instance)
@@ -104,9 +119,9 @@ Formal e-signature on CAR approvals, change requests, closeout, and other config
 - `OnWebhook(Webhook) → WebhookAck` (backend → connector → pm-core)
 
 ### Year-one backends
-- `sigi-docusign` (DocuSign eSignature REST)
-- `sigi-adobesign` (Adobe Acrobat Sign)
-- `sigi-onespan` (OneSpan Sign)
+- `Sigi_DS` (DocuSign eSignature REST)
+- `Sigi_AS` (Adobe Acrobat Sign)
+- `Sigi_OS` (OneSpan Sign)
 
 ### Config knobs
 - Account id / integration key
@@ -139,9 +154,9 @@ Import and (optionally) export project schedules from external tools. Preserves 
 - `Subscribe(SubscribeRequest) → stream ScheduleEvent` (where supported)
 
 ### Year-one backends
-- `schedulei-msproject` (MPP via XML/MPX export; .mpp read-only requires an unofficial lib — likely MVP uses XML export)
-- `schedulei-p6` (Primavera P6 XER file; XER export/import)
-- `schedulei-smartsheet` (Smartsheet API; project sheets)
+- `Schedulei_MSP` (MPP via XML/MPX export; .mpp read-only requires an unofficial lib — likely MVP uses XML export)
+- `Schedulei_P6` (Primavera P6 XER file; XER export/import)
+- `Schedulei_SS` (Smartsheet API; project sheets)
 
 ### Config knobs
 - Credentials per backend
@@ -174,9 +189,9 @@ Mirror external document stores (SharePoint, Drive, Confluence) into pro_manage 
 - `OnChange(SubscribeRequest) → stream ChangeEvent`
 
 ### Year-one backends
-- `doci-sharepoint` (Microsoft Graph / SharePoint REST)
-- `doci-drive` (Google Drive v3 API)
-- `doci-confluence` (Confluence Cloud REST)
+- `Doci_SP` (Microsoft Graph / SharePoint REST)
+- `Doci_GD` (Google Drive v3 API)
+- `Doci_CF` (Confluence Cloud REST)
 
 ### Config knobs
 - OAuth client config per backend
@@ -206,9 +221,9 @@ Deliver notifications (approval prompts, overdue nudges, digests, alerts, dashbo
 - `OnDeliveryReceipt(Receipt) → Ack` (for channels that support it)
 
 ### Year-one backends
-- `commsi-smtp` (email)
-- `commsi-teams` (Microsoft Teams via adaptive cards + bot or webhook)
-- `commsi-slack` (Slack API + blocks)
+- `Commsi_SMTP` (email)
+- `Commsi_TEAMS` (Microsoft Teams via adaptive cards + bot or webhook)
+- `Commsi_SLACK` (Slack API + blocks)
 
 ### Config knobs
 - SMTP server, from-address, DKIM/SPF alignment
@@ -240,14 +255,14 @@ Read-only metric harvesting from relational DBs, time-series DBs, plant historia
 - `Subscribe(SubscribeRequest) → stream Reading` (where supported)
 
 ### Year-one backends
-- `metrici-postgres` (generic Postgres with configurable queries)
-- `metrici-oracle`
-- `metrici-sqlserver`
-- `metrici-timescale`
-- `metrici-influx`
-- `metrici-pi` (OSIsoft PI Web API)
-- `metrici-opcua` (generic OPC UA)
-- `metrici-historian` (generic Historian — Honeywell PHD, Wonderware, Aveva, etc.)
+- `Metrici_PG` (generic Postgres with configurable queries)
+- `Metrici_ORA`
+- `Metrici_MSSQL`
+- `Metrici_TS`
+- `Metrici_INFLUX`
+- `Metrici_PI` (OSIsoft PI Web API)
+- `Metrici_OPCUA` (generic OPC UA)
+- `Metrici_HIST` (generic Historian — Honeywell PHD, Wonderware, Aveva, etc.)
 
 ### Config knobs
 - Connection string + credentials (read-only account strongly recommended)
@@ -263,7 +278,7 @@ Read-only metric harvesting from relational DBs, time-series DBs, plant historia
 
 ### Open items
 - Prioritize backends per the company's actual stack (owner's intel pending).
-- Decide whether `metrici-opcua` needs certificate-based auth from day one.
+- Decide whether `Metrici_OPCUA` needs certificate-based auth from day one.
 
 ---
 
@@ -285,6 +300,7 @@ Pull signals from MES, WMS, QMS, HSE, and operations TPM / connected-worker syst
 Not every backend supports every RPC; `Capabilities` declares which, and pm-core degrades gracefully (e.g. certification recorded manually in pro_manage when no skills platform is connected).
 
 ### Year-one backends
+Modules are named `HSEi_<CODE>` per vendor (e.g. `HSEi_OPCENTER`, `HSEi_MII`, `HSEi_ETQ`, `HSEi_FABRICO`, `HSEi_CRYOTOS`) once the installed systems are known.
 - Vendor-specific adapters per the company's installed MES/WMS/QMS (owner's intel pending). Likely candidates: Honeywell MES, SAP MII, Siemens Opcenter, EtQ Reliance, MasterControl QMS, Intelex HSE.
 - **Operations TPM / connected-worker platforms** (loss events, abnormality tags, skills): candidates from the owner's market review — Fabrico (priced Six Big Losses, verified recovery), Cryotos (pillar-structured, abnormality register), Redzone, L2L, LeanSuite (abnormality tagging, operator certification), Augmentir and Poka/IFS Connected Worker (skills matrix, guided work). pro_manage integrates with these; it does not replicate them (`§01`).
 
@@ -332,14 +348,14 @@ All write operations are **idempotent** (keyed on pro_manage's turnover package 
 
 ### Year-one backends
 Candidates (prioritize based on company's installed CMMS):
-- `cmmsi-maximo` (IBM Maximo — enterprise standard in heavy industry)
-- `cmmsi-sap-pm` (SAP Plant Maintenance — common where SAP ERP is in play)
-- `cmmsi-fiix` (Fiix by Rockwell Automation — mid-market, common in food/beverage)
-- `cmmsi-infor-eam` (Infor EAM)
-- `cmmsi-mapcon` (Mapcon — smaller shops)
-- `cmmsi-upkeep` (UpKeep — SMB)
-- `cmmsi-maintainx` (MaintainX — mobile-first, common where operators raise requests directly)
-- `cmmsi-cryotos` (Cryotos — TPM-pillar-structured CMMS; also a candidate HSEi source for abnormality tags and OEE)
+- `CMMSi_MAX` (IBM Maximo — enterprise standard in heavy industry)
+- `CMMSi_SAPPM` (SAP Plant Maintenance — common where SAP ERP is in play)
+- `CMMSi_FIIX` (Fiix by Rockwell Automation — mid-market, common in food/beverage)
+- `CMMSi_EAM` (Infor EAM)
+- `CMMSi_MAPCON` (Mapcon — smaller shops)
+- `CMMSi_UPKEEP` (UpKeep — SMB)
+- `CMMSi_MX` (MaintainX — mobile-first, common where operators raise requests directly)
+- `CMMSi_CRY` (Cryotos — TPM-pillar-structured CMMS; also a candidate HSEi source for abnormality tags and OEE)
 
 ### Config knobs (per instance)
 - Base URL / tenant id / client credentials

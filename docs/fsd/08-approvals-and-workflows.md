@@ -292,7 +292,15 @@ Platform Admin UI exposes:
 
 ## Open items for Section 08
 
-- Confirm the dollar thresholds (sample above is a plausible baseline; the owner's company will have real figures).
+- **CAR thresholds and chain (owner gathering).** The stage table above is a placeholder. To replace it, collect the company's **Delegation of Authority (DoA) / approval-limits matrix** and its capital policy, specifically:
+  - Approval limits by role and amount (who can approve up to what), and whether limits differ by business unit, site, or project type.
+  - What the threshold is measured against: TIC only, TIC + contingency, or total project cost including expensed portions.
+  - Supplemental and overrun rules: when a cost increase on an approved CAR needs re-approval (e.g. > 10% or > $X).
+  - Board-level thresholds and any capital committee steps.
+  - Which approvals require formal e-signature (DocuSign) vs internal attestation.
+  - Required CAR content and attachments (business case template, AACE class, IRR/NPV/payback hurdle rates, risk register).
+  - Delegation rules when an approver is out (who can sign on their behalf, and up to what limit).
+  These populate the `WorkflowPolicy` table directly; no design change is expected.
 - Confirm whether `Change request` is a workflow kind of its own, or always a nested sub-step of a Budget or Scope change. First instinct: standalone, with references into Budget and Scope.
 - Decide whether "re-submit after reject" creates a brand-new workflow id or extends the existing one. First instinct: new id, with explicit linkage, so the audit record for each attempt is clean.
 - Confirm which workflow kinds are mandatory-Sigi vs. optional-Sigi.

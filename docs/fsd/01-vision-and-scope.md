@@ -10,6 +10,7 @@
 - **2026-10-13** — Approvals are a core feature.
 - **2026-10-13** — Progress presentations include live dashboards, scheduled exports (PDF/PPTX), and on-demand deck generation.
 - **2026-10-13** — **All external-system connectors are modular.** No ERP, IdP, e-signature, schedule tool, document store, communication platform, or MES/WMS/QMS vendor is hard-wired into the core. Each is a pluggable module with a declared contract (gRPC interface + UATS-governed REST surface) that an administrator can configure, enable, or swap without a core release. First-class modules in year one: ERPi (ERP), IdPi (SSO), Sigi (e-signature), Schedulei (schedule tools), Doci (document stores), Commsi (notifications), Metrici (relational + time-series connectors), HSEi (MES/WMS/QMS and operations TPM platforms), CMMSi (CMMS read/write; added 2026-10-13).
+- **2026-10-14** — **Connector modules are named `<Type>i_<CODE>`** (e.g. `ERPi_NS` for NetSuite, `ERPi_SAP` for SAP, `CMMSi_MX` for MaintainX). The company's specific ERP, CMMS, MES, and IdP are not yet known; pro_manage does not depend on knowing them, because the matching modules are selected at deployment. See `§10`.
 - **2026-10-13** — Compliance regime: ISO (specific standards TBD). Baseline is ISO-aligned practices; SOX-grade audit log is a target quality bar even without an explicit SOX obligation.
 - **2026-10-13** — **Target vertical: TPM-driven process industry** (distilling, bottling, food & beverage, chemicals, similar manufacturing). The FSD is written in the vocabulary of that vertical: **CAR, FEL, EEM, Vertical Startup, Benefits Realization, MP information, AACE Estimate Class, TIC vs LCC**. pro_manage is not pretending to be a generic PM tool.
 - **2026-10-13** — The project lifecycle maps **one-to-one** onto the six EEM stages (Concept/Planning → Design → Fabrication/Build → Installation → Commissioning → Early Management Period), with explicit gates and exit criteria at each. See §03.
@@ -144,7 +145,7 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 
 ## Open items for Section 01
 
-- Confirm the first ERP backend to implement for ERPi (pending owner confirmation). Second-priority backends to list under "Phase 2" in the roadmap.
+- Identify the company's ERP, CMMS, MES/QMS, and IdP so the matching `<Type>i_<CODE>` modules are built first. Not a design blocker: the modular connector approach means the core is built against connector contracts, not vendors.
 - Confirm specific schedule tools in use (which Schedulei backends to prioritize).
 - Confirm MES/WMS/QMS vendors in play (which HSEi backends to prioritize).
 - Confirm which ISO standards are binding (ISO 9001, ISO 55000, ISO 27001, industry-specific). Shapes retention, access-review cadence, and change-control detail in §08 and §11.
