@@ -4,6 +4,7 @@
 
 - **2026-10-13** — Authentication: **SSO primary + local break-glass admin fallback**. SSO backed by `IdPi` module (OIDC and SAML abstractions). Local admin accounts exist for recovery only and are policy-fenced.
 - **2026-10-13** — Authorization: **full ACL per section, per document, per field** on top of three base roles (`owner`, `editor`, `viewer`) plus platform roles (`platform_admin`, `governance_author`, `compliance_officer`, `portfolio_executive`).
+- **2026-10-14** — Fourth base role **`contributor`** for external EPCM partner, contractor, supplier, and designer staff, scoped by `Contract`. New workflow roles: `construction_manager`, `discipline_engineer`, `inspector`.
 - **2026-10-13** — Default policy is **deny**. Access requires an explicit base role (via project membership) or a platform role.
 - **2026-10-13** — Grant evaluation order: **explicit DENY → explicit ALLOW → base role default**. Base role is only consulted if no explicit grant matches.
 - **2026-10-13** — Project **Owner** always has read + write on their own project. Grants cannot DENY an Owner on their own project. If finer-grained control is needed, assign a different person as Owner.
@@ -97,6 +98,9 @@ Approval stages in `§08` name a **workflow role**, not a person. pm-core resolv
 | `compliance_officer` | Platform role, by jurisdiction | Early Management exit (regulated), closeout |
 | `portfolio_executive` | Platform role, by portfolio | Benefits Realization closure |
 | `facilitator` | Any user other than the Owner, named per review | Design review, project health review |
+| `construction_manager` | Named per project (owner-side or EPCM staff) | Design review (constructability), work package release, shutdown & tie-in plan |
+| `discipline_engineer` | Named per project and discipline | RFI response, submittal review |
+| `inspector` | Named per ITP (owner QA, EPCM QA, or third party) | Hold point release |
 
 Site representatives and the commissioning engineer get `read + comment` on the project sections their stages touch (scope, schedule, documents, design reviews, CQV, turnover) for the life of their assignment. Budget sections stay deny-by-default for them.
 
@@ -109,6 +113,7 @@ Assigned via `ProjectMember.base_role`.
 | `owner` | **Everything** on their own project. Cannot be masked by DENY grants on their own project. |
 | `editor` | Default `read` on **non-sensitive** sections (Overview, Scope, Schedule, Risk/Issues, Documents, Metrics, Audit summary). Writes require an explicit WRITE grant per section. |
 | `viewer` | Default `read` on non-sensitive sections. No write. |
+| `contributor` | **External** (EPCM partner, contractor, supplier, designer staff). Access is scoped by `Contract`: `read + write` on the work packages, RFIs, submittals, change orders, deviations, hold points, and punchlist items under their organization's contract(s); `read` on the drawings, schedule, and scope those packages reference. **Deny** on budget (except their own contract value), other contracts' commercials, internal approvals, governance, audit, and other contractors' packages. Cannot hold `owner` or be a CAR approver. |
 
 ### What is a "section"
 
@@ -179,6 +184,13 @@ Platform admin can extend; these are hard-wired as deny-by-default for `editor`/
 - Grants can specify `expires_at`. Expired grants are inert; the UI surfaces expiring grants to the Owner weekly.
 - Owners can delegate grant-management on specific sections ("Alice may manage document grants on this project") — a meta-grant with `scope_kind=section, scope_target=team.grants.documents`.
 - Platform Admin cannot grant themselves access to project content via the normal grant UI; any such access is a separate audited action requiring a reason, time-boxed, and surfaced to the Owner.
+
+### EPCM and contractor contributors
+
+- **Identity:** preferably federated — the contractor's own IdP trusted through IdPi (OIDC/SAML), so leavers are deprovisioned at their source; otherwise company-issued guest accounts with MFA and an `expires_at` tied to the contract end date.
+- **Scoping:** a contributor's effective grants are computed from `Contract → WorkPackage` membership, not hand-assigned per section. Adding a package to a contract extends access; closing a contract revokes it.
+- **Audit:** every contributor action carries `counterparty_org` in the AuditEvent, so "what did contractor X change" is one query.
+- **MDEMG:** contributors see Jiminy guidance only from constraints whose `annotations.roles` include `contributor`; project-internal observations are not shown to them.
 
 ### External stakeholders and tokenized access
 

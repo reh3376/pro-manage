@@ -6,6 +6,7 @@
 - **2026-10-13** — The primary approval instance in a TPM shop is the **CAR (Capital Authorization Request)**. "CapEx" is retained as the generic framing.
 - **2026-10-13** — Workflow kinds in year one: **CAR, Baseline change, Design review sign-off, CQV sign-off, Milestone sign-off, Change request, Shutdown & tie-in plan, Early Management exit, Closeout, Benefits Realization review**, plus a configurable **Custom** kind for policies pro_manage doesn't ship with.
 - **2026-10-14** — CAR submission requires every business-case promise to carry a CAR-time baseline and measurement basis. Early Management exit requires operator and maintenance certification on the new asset. A recurring **Project health review** (not a gate) is added.
+- **2026-10-14** — EPCM administration workflows added: **RFI response, submittal review, change order, work package release, hold point release**. Each records cycle time; delays become project-loss events. Design reviews add constructability, commissionability, and safety-in-design lenses with a Construction Manager stage. Health reviews select one dominant project loss from data.
 - **2026-10-13** — Pre-authorization workflow enforces **FEL stage** progression (FEL1 → FEL2 → FEL3) and **AACE Estimate Class** gates: Class 5 at concept, Class 3 required at CAR submission, Class 1 required at execution kickoff. Violations block submit (Tier A fail-closed).
 - **2026-10-13** — Formal e-signature via `Sigi` (DocuSign at launch). Workflow kinds for which Sigi is mandatory are configurable per policy; the rest rely on the authenticated AuditEvent as the sign-off of record.
 - **2026-10-13** — AuditEvents are append-only with chained signed hashes (tamper evidence). Retention aligned with the longest applicable regime (`§11`); baseline is 7 years for financial-impacting events.
@@ -80,6 +81,7 @@ Required before transitioning Project from `Plan` to `Execute`.
 |---|---|---|---|
 | 1 | `facilitator` closes the review | at session+24h | `/jiminy/guide` surfaces MP-information from past assets of same equipment type |
 | 2 | `operator_representative` + `maintenance_representative` acknowledge | 48h | — |
+| 2b | `construction_manager` acknowledges constructability + commissionability findings | 48h | `/jiminy/guide` surfaces project-loss lessons (e.g. past submittal or interface problems) for this asset class |
 | 3 | `project_owner` approves | 48h | `/jiminy/evaluate` on open `high`-severity findings — must be dispositioned |
 
 ### Example — CQV sign-off (per equipment / per batch)
@@ -126,13 +128,56 @@ Fired at `BenefitsRealization.window_closes_at`.
 
 Outcome drives the project's final `Archived` transition and feeds a `decision` observation to MDEMG governance space with scope tags for similar future projects.
 
+### Example — RFI response
+
+| Order | Role required | SLA |
+|---|---|---|
+| 1 | `discipline_engineer` answers | per policy (default 5 business days; 2 if the package is blocked) |
+| 2 (if the answer changes scope or cost) | `project_owner` acknowledges; spawns a ChangeRequest / ChangeOrder | 48h |
+
+Overdue RFIs nudge via Commsi; blocked-package days accrue as `waiting_information` losses.
+
+### Example — Submittal review
+
+| Order | Role required | SLA |
+|---|---|---|
+| 1 | `discipline_engineer` reviews and dispositions (approved / approved-as-noted / revise-resubmit / rejected) | per contract (default 10 business days) |
+| 2 (vendor data for turnover-critical assets) | `maintenance_representative` reviews maintainability data | 5 business days |
+
+Revise-resubmit cycles are counted per submittal; repeat offenders by supplier or asset class become MP / quality lessons at closeout.
+
+### Example — Change order (contractual)
+
+| Order | Role required | SLA |
+|---|---|---|
+| 1 | `construction_manager` validates scope and quantum | 5 business days |
+| 2 | `project_owner` approves | 48h |
+| 3 (if cost ≥ contract threshold or contingency would go negative) | `finance_approver` | 72h |
+
+Approved change orders update the `Contract` value and, where they implement an internal `ChangeRequest`, close it.
+
+### Example — Work package release
+
+| Order | Role required | SLA | Gate |
+|---|---|---|---|
+| 1 | `construction_manager` releases | — | All readiness constraints met (`§03 WorkPackage`), or an audited override with reason; override is Tier A in `§06` |
+| 2 | Contractor `contributor` acknowledges release | 24h | — |
+
+### Example — Hold point release
+
+| Order | Role required | SLA |
+|---|---|---|
+| 1 | `inspector` named in the ITP verifies criteria with evidence (photos, test results) | per ITP |
+
+Work on the package cannot progress past the hold point until released. A failed inspection opens a non-conformance and a `rework` loss.
+
 ### Example — Project health review (recurring, not a gate)
 
 The capital-side counterpart to an operations huddle: short, regular, ends with owned actions rather than a grade. Records a `ProjectHealthReview` (`§03`).
 
 - **Cadence:** monthly by default during `Plan` and `Execute`; biweekly for projects ≥ $25M or flagged `red`; on demand by a Portfolio Executive.
 - **Facilitator:** someone other than the project owner (peer PM, portfolio lead, or CI lead).
-- **Agenda (pre-filled from live data):** scope stability, estimate maturity vs stage (AACE class vs FEL/lifecycle stage), critical-path float, top risks and owners, change-order trend, contingency burn vs % complete, Operations/Maintenance readiness for turnover, and one open prompt: *"What are you worried about that isn't on the register?"*
+- **Agenda (pre-filled from live data):** scope stability, estimate maturity vs stage (AACE class vs FEL/lifecycle stage), critical-path float, top risks and owners, change-order trend, contingency burn vs % complete, Operations/Maintenance readiness for turnover, the project-loss Pareto (from which the review selects one **dominant loss** to attack this cycle, with an owner and a countermeasure), RFI / submittal aging, plan compliance with variance reasons, and one open prompt: *"What are you worried about that isn't on the register?"*
 - **Output:** actions with owners and dates (tracked like issues), an overall green/amber/red, and an optional `/jiminy/feedback`-style observation to the project space so recurring concerns become visible guidance.
 - **No approval chain** — it is a review, not a gate. A `red` result notifies the Portfolio Executive via Commsi.
 

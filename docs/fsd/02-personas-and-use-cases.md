@@ -7,7 +7,7 @@
 
 ## Personas
 
-The eleven canonical roles below cover every pro_manage interaction in year one. Role is distinct from permission — a user may hold several roles across different projects and the portfolio.
+The thirteen canonical roles below cover every pro_manage interaction in year one. Role is distinct from permission — a user may hold several roles across different projects and the portfolio.
 
 ### Primary roles (people who do work in pro_manage daily)
 
@@ -77,7 +77,18 @@ Authors Jiminy constraints via a dedicated admin UI that fronts MDEMG's `/v1/jim
 - Reviews constraint effectiveness metrics from MDEMG and tunes thresholds.
 - Does *not* have blanket read access to projects — their work is in the governance space (`space=org.<id>.governance`), not individual project spaces.
 
-### External roles (people who view but don't log in daily, or at all)
+#### Construction Manager
+Owner-side or EPCM-side lead for site execution: sequencing, contractor coordination, package release, interface management, and site HSE. Takes part in design reviews to bring constructability and commissionability into the design (`§08`). Owns plan-compliance review for construction packages.
+
+### External roles (people outside the owner's company)
+
+#### EPCM / Contractor Contributor
+Staff of the EPCM partner, designers, suppliers, or construction contractors working under a `Contract` (`§03`). Under EPCM the owner holds the contracts and these people act as the owner's extended team, so they need to *work* in pro_manage, not just watch.
+
+- Scoped by contract: they see and update only the work packages, RFIs, submittals, and change orders under their organization's contract(s), plus the project sections those packages need.
+- Can update package progress and readiness, raise and answer RFIs, upload submittals, raise deviation tags, record hold-point inspections, and respond to punchlist items assigned to them.
+- Never see budget lines beyond their own contract value, other contractors' commercial data, or internal approvals.
+- Sign in via federated identity (their own IdP trusted through IdPi) or company-issued guest accounts (`§04`).
 
 #### External Stakeholder
 A specific view-only user of a specific dashboard. Could be a contractor PM, a joint-venture partner's rep, an external investor, a regulator during an audit window.
@@ -179,6 +190,21 @@ Each use case lists its primary actor, the trigger, the main success scenario in
 - **Actor:** Project Owner, then Finance Approver and Portfolio Executive · **Trigger:** Benefits Realization window closes.
 - **Flow:** pro_manage compares priced losses and promised KPIs on the promised assets during the window against the CAR-time baselines; the owner writes the variance narrative; Finance validates; the Portfolio Executive approves closure; a `decision` observation goes to the MDEMG governance space for similar future projects.
 - **Accept when:** Every `BusinessCasePromise` has a realized / partially realized / not realized status with numbers on its original measurement basis; the project can move to `Archived`.
+
+### UC-19 — Raise and answer an RFI
+- **Actor:** Contractor Contributor raises; EPCM or owner engineer answers · **Trigger:** A drawing conflicts with site conditions.
+- **Flow:** The contributor raises an RFI against the affected work package with photos; it routes to the responsible discipline engineer with an SLA; the answer is recorded, linked to any resulting drawing revision or change order, and the package's readiness updates.
+- **Accept when:** RFI age and cycle time are tracked; the time the package spent waiting is recorded as a project loss (`waiting_information`); the answer is visible to everyone on that package.
+
+### UC-20 — Release a work package
+- **Actor:** Construction Manager · **Trigger:** A construction work package is scheduled to start next week.
+- **Flow:** pro_manage shows the readiness checklist — approved-for-construction drawings, open RFIs, materials on site, crew and equipment, permits, HSE prerequisites, hold points defined. Unmet items block release (or need a logged override); release notifies the contractor.
+- **Accept when:** Packages are only released when ready or with an audited override; weekly plan compliance (released and completed vs planned) is recorded with variance reasons.
+
+### UC-21 — Contractor updates package progress
+- **Actor:** Contractor Contributor · **Trigger:** End of shift or week.
+- **Flow:** On a phone, the contributor updates quantities installed, flags deviations, and closes assigned punchlist items with photos; the owner's team reviews.
+- **Accept when:** Progress feeds earned value and plan compliance; the contributor saw only their own contract's packages throughout.
 
 ## Key journeys
 

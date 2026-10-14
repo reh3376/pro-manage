@@ -92,6 +92,20 @@ Terms, acronyms, and project-specific names.
 | **EPC / EPCM** | Engineer-Procure-Construct (lump-sum delivery by a single contractor) / Engineering, Procurement, Construction Management (owner retains PM; contractor manages execution). Contracting models. |
 | **WBS** | Work Breakdown Structure. Hierarchical decomposition of project scope. |
 | **Change request (CR)** | A request to change scope, with declared budget and schedule impact; routes through an approval workflow. |
+| **Change order (CO)** | A contractual change under a specific contract (scope, price, or time). May implement an internal change request. |
+| **RFI** | Request for Information. A formal question from the field or a contractor to the design team; its cycle time is a project-loss measure. |
+| **Submittal** | A document a contractor or supplier submits for review (shop drawings, product data, method statements, vendor data). |
+| **AWP (EWP / CWP / IWP)** | Advanced Work Packaging: planning work as engineering, construction, and installation work packages released only when ready. |
+| **Package readiness** | Whether a work package's prerequisites (drawings, RFIs closed, materials, crew, permits, HSE) are all met before release. |
+| **Percent plan complete (PPC)** | Packages completed as planned ÷ packages planned for the period; misses carry a variance reason. |
+| **ITP / hold point / witness point** | Inspection & Test Plan; a hold point stops work until an inspector releases it, a witness point only requires notice. |
+| **Project as equipment / Project TPM** | pro_manage's core concept: treating the capital project itself as a piece of equipment and applying TPM to it — its losses are named, priced, and eliminated like equipment losses. See `§14`. |
+| **Work-front availability / productivity / first-time-right** | The project analogues of OEE's availability, performance, and quality (`§14`). |
+| **Project loss** | A loss of the project itself: waiting on information or approval, rework, interface clash, unready package, safety stop, skill-gap error. |
+| **Project deviation** | A tag raised by someone close to the work when something is off on the project (the project-side analogue of an abnormality tag). |
+| **Constructability / commissionability** | Design-review lenses: how readily the design can be built safely and efficiently, and commissioned and started up. |
+| **Contributor** | External EPCM / contractor / supplier staff with edit access scoped to their contract's packages. |
+| **Contract** | A commercial agreement the owner holds with an EPCM partner, designer, supplier, or contractor; scopes contributor access. |
 | **Closeout** | Final project lifecycle gate. Confirms deliverables accepted, retention armed, Benefits Realization window begins. |
 | **PSC** | Project Success Criteria. Declared targets a project must meet to count as successful. |
 | **SLA** | Service-Level Agreement on an approval stage's response time. |

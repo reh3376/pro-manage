@@ -93,6 +93,11 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **Operations-TPM MP sources** — HSEi `FetchAbnormalityTags` + CMMSi failure history feeding per-asset-class MP-information candidates for human confirmation.
 - **Mobile field flows** — phone-first CQV/SAT walkdowns, punchlist capture, turnover inspections, with photo/QR proof and offline sync.
 - **Certification gate** — HSEi `FetchSkillCertifications` (or manual record) wired into Early Management exit.
+- **Validate the project-as-equipment loss model (`§14`)** — before relying on it, run the project-loss accounting retrospectively on two or three completed projects (from their RFI logs, NCRs, submittal registers, and schedules) and check that the categories capture where the time actually went. Done first in this phase, so `ProjectLossCategory` is adjusted before the EPCM objects below are built on it. Prior-art search in parallel.
+- **EPCM delivery objects** — Contracts, work packages with readiness constraints and plan compliance, RFIs, submittals, change orders, ITPs and hold points, project deviations.
+- **Contributor access** — scoped `contributor` role for EPCM/contractor staff, federated identity via IdPi.
+- **Project losses** — project-loss events derived from the above; **Project reliability** dashboard; health reviews select a dominant loss.
+- **Design-review lenses** — constructability, commissionability, safety in design; Construction Manager stage.
 - **Scheduled exports** — PDF + PPTX generation via pm-sidecar; weekly steering export working for pilot projects.
 - **On-demand deck generation** — "Build steering deck" button functional against 2–3 templates.
 - **External stakeholder sharing** — tokenized dashboard links; attestation flow; `pm-frontend-public` live.
@@ -112,6 +117,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 
 ### Deliverables
 - Additional ERPi, Schedulei, Doci, Metrici, HSEi backends per demand.
+- **Project-team competency matrix** — role competencies for owner, EPCM, and contractor staff; gaps surface as package readiness warnings.
 - **Resource allocation** — Resource + Allocation entities; overallocation detection; dashboards.
 - **Closeout workflow** — full lifecycle to `Close` + `Archived`.
 - **Legal hold** — admin-triggered retention freeze; dashboards reflect holds.
