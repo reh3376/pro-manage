@@ -58,13 +58,12 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - **`ERPi_IFS` and the ERP-led profile:** mirror IFS project structure, budgets/forecasts/EAC, earned value, subcontracts, and change orders; CAR approval releases the budget in IFS. Before building: confirm licensed IFS modules, set up the IAM client and service account, and identify the Projects projections in the API Explorer. Build order: read-only pulls, then operational write-back, then budget release; polling until IT approves an inbound path for IFS event push.
 - **Project health review:** recurring review with pre-filled agenda and owned actions.
 - **Membership & ACL:** ProjectMember, ACLGrant; the four enforcement layers of `§04` (edge, service, projection, DB row-security on sensitive tables).
-- **Budget:** manual baseline entry, baseline-change workflow, manual actuals (ERPi integration begins in parallel), variance computed.
+- **Budget:** in the ERP-led profile (IFS), baselines, forecasts, EAC, commitments, and actuals are mirrored through `ERPi_IFS`; pro_manage adds AACE class, CAR linkage, contingency drawdown, and variance views. Manual baseline entry and the pro_manage-led baseline-change chain are also built, for the pro_manage-led profile and for projects not yet in IFS.
 - **Schedule:** manual milestone entry + dependencies; completion rule enforcement; (Schedulei imports deferred to Phase 2).
 - **Approvals:** CAR + Baseline change workflows live, with all thresholds and SLAs as policy variables (global, project-type, portfolio, and per-project overrides) and a policy editor; multi-stage routing via eligibility pools; delegation (basic); SLA tick + nudges via Commsi; admin override path; signed-hash audit chain.
 - **Sigi:** DocuSign integration live for CAR ≥ configurable threshold; signed-artifact capture to MinIO.
-- **IdPi:** Entra ID *or* Okta backend production-ready (whichever is the owner's primary); SAML backend scaffolded (not necessarily live).
+- **IdPi:** `IdPi_OIDC` and `IdPi_SAML` production-ready on the SDK; which one is primary depends on the company's IdP (pending).
 - **Commsi:** SMTP + Teams (or Slack, per company culture) notifications for approvals + overdue nudges.
-- **ERPi:** one backend wired against the primary ERP (owner confirms 2026-10-14 which); `FetchActuals` live, `FetchCommitments` live, `FetchInvoices` live for in-scope projects.
 - **Dashboards:** Project Overview dashboard template; 6–8 built-in tiles bound to the headline metrics; live SSE updates working.
 - **MDEMG:** governance space seeded with ~20 real constraints authored by Governance Author (compliance team); project spaces created per project.
 - **Audit:** nightly chain verification job; retrieval UI for approval chains.
@@ -78,7 +77,7 @@ Companion to the FSD at `docs/fsd/`. Phase timings assume a dedicated small-team
 - SLOs hit for every metric in `§11` at the pilot load.
 
 ### Dependencies
-- ERP backend chosen (owner intel).
+- IFS Cloud: licensed modules confirmed, IAM client and service account provisioned, Projects-module projections identified in the API Explorer.
 - Identity provider confirmed (owner intel).
 - Governance Author (compliance team member) committed to constraint authoring part-time.
 

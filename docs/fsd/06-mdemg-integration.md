@@ -33,7 +33,7 @@
 **Call-time routing:**
 - `/jiminy/guide` is called **twice** for governed actions: once against `project_id` space and once against `org.<orgId>.governance`. Results are merged, deduplicated by `constraint_code`, re-ranked, and projected through role-filter. pm-core caches the merged result briefly (per request).
 - `/jiminy/classify` for critical actions is called **against both spaces** sequentially (governance first, since it holds the hard rules; project second, since it may have local overrides). First `deny` wins.
-- `/v1/conversation/observe` writes to the **project space only**. Governance constraints are not derived from runtime observations; they are explicitly authored.
+- `/v1/conversation/observe` writes **project events to the project space** and **institutional learnings to the governance space** (MP information, recurring project-loss and quality patterns, Benefits Realization reports; see the OBSERVE table). Governance *constraints* are never derived automatically from observations: a Governance Author promotes a learning into a constraint deliberately.
 - `/jiminy/feedback` is written to the space the originating guidance came from. In practice, outcomes are logged against both spaces when both contributed items.
 
 **No cross-space promotion.** `IncludeGlobalSpace` is explicitly disabled on every call; `METALEARN_ENABLED=false` in MDEMG config.
@@ -135,6 +135,9 @@
   | Recurring project-loss pattern at closeout (e.g. submittals for one equipment class repeatedly revise-resubmit) | `learning` | governance | `[project_loss, category:<cat>, package_kind:<kind>, asset_class:<cls>, contracting_model:<model>]` |
   | Recurring non-conformance cause | `learning` | governance | `[quality_pattern, asset_class:<cls>, spec_ref:<doc>]` |
 
+- **Delivery:** via **Postgres outbox**: every state-changing transaction in pm-core writes a mutation + an `AuditEvent` + an outbox row. A pm-workers process drains the outbox and POSTs to MDEMG with retries. **At-least-once delivery.** MDEMG is idempotent-tolerant for our usage: we include a `source_ref` (= `audit_id`) so dedup is per audit event.
+- **Why outbox (not inline):** we never couple a user's transaction to MDEMG availability. If MDEMG is down for 2 hours, outbox depth grows, drains when it returns. pro_manage's audit log remains the authoritative record regardless.
+
 ### MP information flow: the flagship use case
 
 This is the single highest-value integration pattern in pro_manage. It operationalizes the EEM loop: *lessons from running assets → design of the next asset.*
@@ -161,8 +164,6 @@ This is the single highest-value integration pattern in pro_manage. It operation
 
 **At Benefits Realization closeout (new):**
 - The final variance report is written as a `decision`-type observation to the governance space with scope tags that match similar future projects (`[benefits_realization, equipment:<type>, kpi:<metric>]`). Later projects' Business Case drafting surfaces these: "projects building similar <equipment_type> have historically delivered X% of promised EPU reduction."
-- **Delivery:** via **Postgres outbox**: every state-changing transaction in pm-core writes a mutation + an `AuditEvent` + an outbox row. A pm-workers process drains the outbox and POSTs to MDEMG with retries. **At-least-once delivery.** MDEMG is idempotent-tolerant for our usage: we include a `source_ref` (= `audit_id`) so dedup is per audit event.
-- **Why outbox (not inline):** we never couple a user's transaction to MDEMG availability. If MDEMG is down for 2 hours, outbox depth grows, drains when it returns. pro_manage's audit log remains the authoritative record regardless.
 
 ## Session identity
 
