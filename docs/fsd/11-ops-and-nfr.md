@@ -78,6 +78,7 @@ Error budgets drive release-rate decisions: if the user surface burns > 50% of i
 - All services behind the reverse proxy; only the proxy is reachable from the user network.
 - MDEMG binds loopback-only inside its VM; pm-core reaches it via an authenticated internal channel.
 - Connectors that need outbound access to vendor APIs have egress through a controlled proxy with per-destination allowlisting.
+- **Inbound calls from cloud-hosted systems** (for example IFS Cloud event push to `ERPi_IFS`, DocuSign webhooks to `Sigi`) are the only traffic that originates outside the company network. They are disabled until the company's IT security team approves a path (DMZ reverse proxy, VPN, or private connection). When enabled, they terminate at the reverse proxy, are restricted to the sender's published address ranges, and require authentication on every request (OAuth or signed payloads); each such endpoint accepts only its own sender's messages. Connectors fall back to polling when no inbound path exists.
 - All in-cluster traffic uses TLS; mTLS between internal services where feasible (gRPC default).
 
 ### Authentication / authorization
