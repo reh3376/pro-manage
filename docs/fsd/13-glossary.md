@@ -12,7 +12,7 @@ Terms, acronyms, and project-specific names.
 | **pm-workers** | Go background jobs (scheduler, outbox drain, nudges, SLA tick). |
 | **pm-frontend** | The Next.js SSR+CSR frontend for authenticated users. |
 | **pm-frontend-public** | The hardened Next.js renderer for tokenized dashboard shares. |
-| **pm-TSDB** | pro_manage's own TimescaleDB instance for metric readings. Distinct from MDEMG's own TSDB. |
+| **pm-TSDB** | pro_manage's own TimescaleDB instance for metric readings and loss events. Distinct from MDEMG's own TSDB. |
 | **Project** | The central aggregate. One Owner. Full ACL for team members. Lifecycle: Initiate → Plan → Execute → Monitor → Close → Archived. |
 | **Portfolio** | Group of projects visible as a unit to Portfolio Executives. |
 | **ACLGrant** | Fine-grained grant on top of a ProjectMember's base role. `scope_kind ∈ {section, document, field}`. |
@@ -20,6 +20,11 @@ Terms, acronyms, and project-specific names.
 | **MetricDefinition / MetricReading** | A metric's definition (what it means) vs its measured values over time. |
 | **ApprovalWorkflow / ApprovalStage** | A multi-stage approval instance and its individual gates. |
 | **AuditEvent** | Append-only, chained-hash row recording a state-changing action. |
+| **Asset / AssetClass** | A physical piece of equipment and its type. Planned assets are owned in pro_manage until turnover; in-service assets are mirrored from the CMMS. |
+| **Loss / LossCategory / LossEvent** | Production losses in the Six Big Losses + site loss tree; LossEvents are harvested, priced time-series records. |
+| **BusinessCasePromise** | One measurable CAR commitment with its CAR-time baseline, measurement basis, and dollar value. |
+| **ProjectHealthReview** | Recorded recurring review of an in-flight project with owned actions. |
+| **Workflow role** | A role named on an approval stage (e.g. `site_operations_lead`, `commissioning_engineer`), resolved to a pool when the stage opens. See `§04`. |
 | **GuidanceOutcome** | pro_manage-side record of MDEMG guidance presented + user response. Written alongside AuditEvent. |
 
 ## Connector modules
@@ -33,6 +38,7 @@ Terms, acronyms, and project-specific names.
 | **Doci** | Document-store connector with permission mirroring. SharePoint, Drive, Confluence. |
 | **Commsi** | Notification / communication connector. SMTP, Teams, Slack. |
 | **Metrici** | Metric harvest connector. Relational, time-series, historian, OPC UA. |
+| **CMMSi** | CMMS connector, read and write: failure history and asset mirror in; turnover-package delivery (equipment, spares, PM tasks, procedures) out. |
 | **HSEi** | Plant operations signals connector: MES/WMS/QMS/HSE plus operations TPM / connected-worker platforms (priced losses, abnormality tags, skill certifications). |
 
 ## MDEMG terms
@@ -69,7 +75,7 @@ Terms, acronyms, and project-specific names.
 | Term | Meaning |
 |---|---|
 | **CAR** | Capital Authorization Request. The formal document that authorizes capital spend; routes through pro_manage's multi-stage approval workflow. |
-| **CapEx** | Capital expenditure. Generic framing; CAR is the specific document kind in a Heaven Hill-style shop. |
+| **CapEx** | Capital expenditure. Generic framing; CAR is the specific authorization document pro_manage routes. |
 | **FEL** | Front-End Loading. Pre-authorization planning. **FEL1** = conceptual (business case + rough scope). **FEL2** = scoping/development (basis of design + preliminary estimate). **FEL3** = execution-ready (defined scope + Class 3 estimate + ready for CAR). |
 | **AACE Estimate Class** | AACE International's cost-estimate maturity scale. **Class 5** = concept, −50/+100%. **Class 4** = study, −30/+50%. **Class 3** = budget authorization, −20/+30%. **Class 2** = control, −15/+20%. **Class 1** = definitive/bid-ready, −10/+15%. |
 | **TIC** | Total Installed Cost. All capital cost to install the asset (equipment + engineering + construction + commissioning). |

@@ -8,7 +8,7 @@
 
 ## What UxTS is (recap)
 
-UxTS = Universal-x Test Specification: a methodology for declarative test governance. Each framework has four layers (schema, specs, runner, CI gate) and prevents three failure modes (silent drift, 0-of-0 false pass, reinvention tax). Research synthesis in `scratchpad/fsd/00-mdemg-findings-synthesis.md`. UxTS is not a time-series layer and is not integrated at runtime — it is a build-time + CI-time concern.
+UxTS = Universal-x Test Specification: a methodology for declarative test governance. Each framework has four layers (schema, specs, runner, CI gate) and prevents three failure modes (silent drift, 0-of-0 false pass, reinvention tax). UxTS is not a time-series layer and is not integrated at runtime — it is a build-time + CI-time concern.
 
 ## Year-one adoption
 
@@ -28,8 +28,8 @@ UxTS = Universal-x Test Specification: a methodology for declarative test govern
   "auth": "bearer",
   "cases": [
     {
-      "name": "capex_under_threshold_201",
-      "request": { "kind": "capex", "subject_ref": "...", "amount": 50000 },
+      "name": "car_under_threshold_201",
+      "request": { "kind": "car", "subject_ref": "...", "amount": 50000 },
       "assertions": [
         { "type": "status_code", "equals": 201 },
         { "type": "jsonpath", "path": "$.workflow_id", "exists": true },
@@ -37,12 +37,12 @@ UxTS = Universal-x Test Specification: a methodology for declarative test govern
       ]
     },
     {
-      "name": "capex_tier_a_denied_when_classify_blocks",
-      "setup": { "mdemg_classify_fixture": "deny:capex-over-5m-needs-vp-finance" },
-      "request": { "kind": "capex", "subject_ref": "...", "amount": 8400000 },
+      "name": "car_tier_a_denied_when_classify_blocks",
+      "setup": { "mdemg_classify_fixture": "deny:car-over-5m-needs-vp-finance" },
+      "request": { "kind": "car", "subject_ref": "...", "amount": 8400000 },
       "assertions": [
         { "type": "status_code", "equals": 409 },
-        { "type": "jsonpath", "path": "$.violated_codes[0]", "equals": "capex-over-5m-needs-vp-finance" }
+        { "type": "jsonpath", "path": "$.violated_codes[0]", "equals": "car-over-5m-needs-vp-finance" }
       ]
     }
   ]

@@ -28,7 +28,7 @@
 
 **Why hybrid:**
 - **Project spaces** give hard isolation. Observations about Project A's budget never leak to Project B's guidance, outcomes against A's constraints never influence B.
-- **Governance space** holds the company's policy library: CapEx thresholds, baseline-change rules, closeout checklists, HSE sign-off rules. Authored once, applied to every project.
+- **Governance space** holds the company's policy library: CAR thresholds, baseline-change rules, closeout checklists, HSE sign-off rules. Authored once, applied to every project.
 
 **Call-time routing:**
 - `/jiminy/guide` is called **twice** for governed actions — once against `project_id` space and once against `org.<orgId>.governance`. Results are merged, deduplicated by `constraint_code`, re-ranked, and projected through role-filter. pm-core caches the merged result briefly (per request).
@@ -49,10 +49,10 @@
   {
     "space_id":    "proj_<uuid>",
     "session_id":  "<user_id>:<project_id>",
-    "context":     "User alice is reviewing CapEx request CR-2457 for $8.4M on project P-INDUSTRIAL-EAST-7",
-    "file_path":   "pro_manage://projects/<project_id>/capex/CR-2457",
+    "context":     "User alice is reviewing CAR CR-2457 for $8.4M on project P-INDUSTRIAL-EAST-7",
+    "file_path":   "pro_manage://projects/<project_id>/car/CR-2457",
     "agent_output":"<serialized readable summary of current form state>",
-    "query":       "<optional user-typed search like 'capex approval'>",
+    "query":       "<optional user-typed search like 'car approval'>",
     "max_items":   20
   }
   ```
@@ -65,7 +65,7 @@
 
 - **Endpoint:** `POST /v1/jiminy/classify`
 - **When:** pm-core calls when a user submits a **governed** action. Governance Author labels each action kind with a **fail-closed tier**:
-  - **Tier A — fail-closed on error.** Critical gates: CapEx ≥ threshold, baseline changes ≥ variance threshold, closeout sign-off, project ownership transfer. If classify errors or times out, pm-core **refuses the write** with "Governance system unavailable" and offers admin override.
+  - **Tier A — fail-closed on error.** Critical gates: CAR ≥ threshold, baseline changes ≥ variance threshold, closeout sign-off, project ownership transfer. If classify errors or times out, pm-core **refuses the write** with "Governance system unavailable" and offers admin override.
   - **Tier B — fail-open with surfaced warning.** Non-critical governed actions. If classify errors, pm-core proceeds but records a visible warning in the audit record and operationally alerts.
   - **Tier C — bypass.** Read-only and low-governance writes (comments, personal filters). No classify call.
 - **Payload shape identical to `/guide` but adds `tool_name` (the action kind) and `agent_output` is the proposed mutation payload.**
@@ -74,11 +74,16 @@
 - **Tier mapping (initial, Governance Author tunable):**
   | Action kind | Tier | Why |
   |---|---|---|
-  | `approval.capex` (≥ $5M) | A | Dollars + policy stakes |
-  | `approval.capex` (< $5M) | B | Lower stakes; warning OK |
+  | `approval.car` (≥ $5M) | A | Dollars + policy stakes |
+  | `approval.car` (< $5M) | B | Lower stakes; warning OK |
   | `approval.baseline_change` (variance ≥ 10%) | A | Material financial |
   | `approval.baseline_change` (variance < 10%) | B | — |
   | `approval.milestone_signoff` | B | Mechanical rules already enforced |
+  | `approval.design_review_signoff` | B | Findings dispositioned in-process; guidance advisory |
+  | `approval.cqv_signoff` | B | Test evidence is the control |
+  | `approval.shutdown_tiein_plan` | A | Production and safety exposure on a running plant |
+  | `approval.early_mgmt_exit` | A | Hands the asset to operations |
+  | `approval.benefits_realization_review` | B | Retrospective; no write to the asset |
   | `approval.closeout` | A | Final gate |
   | `project.transfer_ownership` | A | High-impact admin action |
   | `project.set_lifecycle_state → Archived` | A | Irreversible-ish |
@@ -94,7 +99,7 @@
   ```json
   {
     "guidance_id":   "<from /guide>",
-    "action_summary":"User alice attached CFO signoff and approved $8.4M CapEx",
+    "action_summary":"User alice attached CFO signoff and approved the $8.4M CAR",
     "space_id":      "proj_<uuid>",
     "session_id":    "<user_id>:<project_id>",
     "outcome":       "followed"

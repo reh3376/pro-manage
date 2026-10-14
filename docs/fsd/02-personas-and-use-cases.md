@@ -7,7 +7,7 @@
 
 ## Personas
 
-The nine canonical roles below cover every pro_manage interaction in year one. Role is distinct from permission — a user may hold several roles across different projects and the portfolio.
+The eleven canonical roles below cover every pro_manage interaction in year one. Role is distinct from permission — a user may hold several roles across different projects and the portfolio.
 
 ### Primary roles (people who do work in pro_manage daily)
 
@@ -34,23 +34,33 @@ Read-only access to specific sections of a project.
 - Can comment where comments are enabled; cannot change state.
 
 #### Portfolio Executive
-Reads across many projects. Does not perform day-to-day work in individual projects. May approve CapEx above a certain threshold (`§08`).
+Reads across many projects. Does not perform day-to-day work in individual projects. May approve CARs above a certain threshold (`§08`).
 
 - Primary surface is cross-project dashboards (`§09`) and the on-demand steering deck generator.
 - Receives scheduled executive digests (`Commsi`).
 - Jiminy guidance aggregates portfolio-level signals when they engage with a project directly.
 
 #### Finance Approver
-Approves budget-related gates (CapEx thresholds, baseline changes). May be a chain (Director → VP Finance → CFO) depending on amount.
+Approves budget-related gates (CAR thresholds, baseline changes). May be a chain (Director → VP Finance → CFO) depending on amount.
 
 - Not necessarily a project teammate. Enters a project only at the point of approval, with `§08` surfacing a scoped read of the relevant sections.
-- Jiminy constraints often target this persona (CapEx > $X requires co-sign, variance > Y% requires re-forecast).
+- Jiminy constraints often target this persona (CAR > $X requires co-sign, variance > Y% requires re-forecast).
 
 #### Compliance / HSE Officer
 Reviews safety, quality, and ISO-compliance tracking across projects. May approve safety-related sign-offs. Often also serves as **Governance Author** (below) — authoring Jiminy constraints for the org.
 
 - Reads safety/quality sections of any project under their jurisdiction.
 - Flags aged incidents, missed inspections, overdue sign-offs.
+
+#### Site Operations & Maintenance Representatives
+The people who will run and maintain the asset. EEM treats them as participants, not an audience. Four workflow roles (`§04`, `§08`), usually held by people who don't own projects:
+
+- **Operator representative** and **maintenance representative** — take part in "easy-to" design reviews, commissioning rehearsal, and turnover inspections; author and confirm MP information.
+- **Site operations lead** and **site maintenance lead** — acknowledge shutdown & tie-in plans, co-sign Early Management exit, and accept the TurnoverPackage on behalf of the site.
+- Scoped to their site's projects and assets; read + comment by default, plus sign-off rights on the stages that name their role. Mostly use the phone-first field views (`§09`).
+
+#### Commissioning Engineer / QA Lead
+Runs FAT, SAT, and commissioning (and, in regulated contexts, qualification and validation). Closes `CommissioningRecord`s with pass / pass-with-punchlist / fail and owns punchlist closure. The QA lead gives final CQV sign-off where regulation requires it. Works largely in the field views.
 
 ### Platform roles (people who run pro_manage itself)
 
@@ -85,8 +95,8 @@ Each use case lists its primary actor, the trigger, the main success scenario in
 - **Flow:** Owner creates project, sets lifecycle state to Initiate, defines WBS skeleton, invites teammates with per-section ACL grants.
 - **Accept when:** Teammates appear in Membership with correct grants; attempted access outside grants is denied and logged.
 
-### UC-02 — Approve a CapEx request above threshold
-- **Actor:** Finance Approver · **Trigger:** Submitter clicks "Submit for approval" on a $10M CapEx.
+### UC-02 — Approve a CAR (Capital Authorization Request) above threshold
+- **Actor:** Finance Approver · **Trigger:** Submitter clicks "Submit for approval" on a $10M CAR whose business-case promises carry CAR-time baselines (`§08` pre-conditions).
 - **Flow:** `Sigi` creates the envelope (DocuSign at launch); Jiminy guidance surfaces at approver's view (`/jiminy/guide`), approver signs or returns for revision, outcome recorded via `/jiminy/feedback`.
 - **Accept when:** Approval chain preserved end-to-end in audit log; approver saw guidance at decision time; signed artifact stored and linked to the project.
 
@@ -141,12 +151,12 @@ Each use case lists its primary actor, the trigger, the main success scenario in
 - **Accept when:** Chain is reconstructible for any approved action from the past 7 years (ISO/SOX retention baseline); referenced artifacts (signed PDFs, backup e-sig records) are retrievable.
 
 ### UC-13 — Author a new governance constraint
-- **Actor:** Governance Author · **Trigger:** Policy change (e.g., CapEx threshold raised).
+- **Actor:** Governance Author · **Trigger:** Policy change (e.g., CAR threshold raised).
 - **Flow:** User opens the Governance admin UI, drafts the constraint text, picks `constraint_type` + `scope`, submits. pro_manage calls `/v1/jiminy/rules` behind the write flag; if MDEMG's dedup returns a near-match, the user chooses to use the existing rule, override, or revise.
 - **Accept when:** Constraint appears in guidance within 60s of creation; constraint can be tombstoned by the author (via `/v1/jiminy/rules/{code}/tombstone`); every author action is logged.
 
 ### UC-14 — Governed action attempted while MDEMG is unreachable
-- **Actor:** Project Owner · **Trigger:** User submits a Tier A governed action (e.g., >$5M CapEx approval) during a MDEMG outage.
+- **Actor:** Project Owner · **Trigger:** User submits a Tier A governed action (e.g., >$5M CAR approval) during a MDEMG outage.
 - **Flow:** `/jiminy/classify` times out or errors; pro_manage's edge applies the Tier A fail-closed policy; user sees "Governance system unavailable — this action requires policy classification. Options: retry, or request a Platform Admin override." Admin override is a separate logged action.
 - **Accept when:** Tier A action is refused in a reachable UI; Tier B actions degrade with a visible warning but proceed; Tier C actions proceed silently; retry attempts succeed once MDEMG returns.
 
@@ -155,15 +165,30 @@ Each use case lists its primary actor, the trigger, the main success scenario in
 - **Flow:** Jiminy surfaces the closeout checklist constraint ("Projects at >80% schedule complete must have an approved closeout plan on file"); outstanding items are listed; Owner completes them; final sign-off chain runs via `Sigi`; project moves to Closed state; archive view becomes read-only.
 - **Accept when:** All constraint-required items are satisfied before closeout; the final audit record is complete and un-editable; downstream readers (dashboards, external viewers) continue to resolve historical data.
 
+### UC-16 — Run a project health review
+- **Actor:** Facilitator (peer PM, portfolio lead, or CI lead) with the Project Owner · **Trigger:** Monthly cadence, a `red` flag, or a Portfolio Executive request.
+- **Flow:** pro_manage pre-fills the agenda from live data (scope stability, AACE class vs stage, critical-path float, top risks, change-order trend, contingency burn vs % complete, Ops/Maintenance turnover readiness); the group adds the "what worries you that isn't on the register?" items; actions are assigned with owners and dates.
+- **Accept when:** A `ProjectHealthReview` is recorded with owned actions; a `red` result notifies the Portfolio Executive.
+
+### UC-17 — Field walkdown with punchlist capture
+- **Actor:** Commissioning Engineer with operator and maintenance representatives · **Trigger:** SAT or turnover inspection scheduled on an asset.
+- **Flow:** On a phone, the engineer scans the asset QR, steps through the protocol, attaches photos per step, and records pass / fail / punchlist items with owners. Works offline; syncs on reconnect.
+- **Accept when:** The `CommissioningRecord` and punchlist items exist with photo evidence; punchlist items block Early Management exit until closed with an "after" photo.
+
+### UC-18 — Verify benefits realization against the business case
+- **Actor:** Project Owner, then Finance Approver and Portfolio Executive · **Trigger:** Benefits Realization window closes.
+- **Flow:** pro_manage compares priced losses and promised KPIs on the promised assets during the window against the CAR-time baselines; the owner writes the variance narrative; Finance validates; the Portfolio Executive approves closure; a `decision` observation goes to the MDEMG governance space for similar future projects.
+- **Accept when:** Every `BusinessCasePromise` has a realized / partially realized / not realized status with numbers on its original measurement basis; the project can move to `Archived`.
+
 ## Key journeys
 
 Journeys are end-to-end narratives that cross multiple use cases and give sections 03–09 a concrete reference point.
 
 ### Journey A — Project lifecycle (Initiate → Close)
-UC-01 → UC-03 (several times) → UC-02 → UC-04 (weekly) → UC-05 (as milestones close) → UC-15. Threaded through: continuous UC-09 metric harvest, UC-13 constraint evolution, UC-12 occasional audit retrievals.
+UC-01 → UC-03 (several times) → UC-02 → UC-04 (weekly) → UC-05 (as milestones close) → UC-17 (commissioning and turnover walkdowns) → UC-15 → UC-18. Threaded through: UC-16 health reviews during Plan and Execute, continuous UC-09 metric and loss harvest, UC-13 constraint evolution, UC-12 occasional audit retrievals.
 
-### Journey B — Approval cycle (CapEx > threshold)
-Submitter opens request → `/jiminy/guide` warms → Finance Approver receives notification via `Commsi` → opens request → `/jiminy/guide` returns high-priority item (CapEx VP Finance co-sign) → approver reviews → either returns for revision or signs via `Sigi` (UC-02) → `/jiminy/feedback` records outcome → audit record finalized.
+### Journey B — Approval cycle (CAR > threshold)
+Submitter opens request → `/jiminy/guide` warms → Finance Approver receives notification via `Commsi` → opens request → `/jiminy/guide` returns high-priority item (CAR > $5M needs VP Finance co-sign) → approver reviews → either returns for revision or signs via `Sigi` (UC-02) → `/jiminy/feedback` records outcome → audit record finalized.
 
 ### Journey C — Weekly status (UC-04 narrative in full)
 Owner opens Status Post form → `/jiminy/guide` surfaces aged-risk warning + any other applicable items → owner either resolves issues (updates risks, closes items) and submits (`outcome=followed`), or submits with dismissal reasons (`outcome=ignored`) → next week's attempt sees `warned` escalation state if ignores accumulate.
