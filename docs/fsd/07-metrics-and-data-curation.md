@@ -97,6 +97,13 @@ Losses are the common currency between operations and capital. pro_manage does n
 
 Pricing basis (cost per downtime hour, per scrapped unit, etc.) is owned by Finance and versioned; a pricing change does not retroactively alter a committed promise's basis.
 
+### Capital plan and funnel
+
+- `funnel.count_by_status`, `funnel.value_by_status`: opportunities by status (proposed, screened, shortlisted, planned, converted, deferred, rejected) and their priced benefit, per fiscal year and portfolio.
+- `funnel.conversion_pct`: planned opportunities that became projects; `funnel.realization_pct`: converted opportunities whose Benefits Realization closed `realized` or `partially_realized`. The two numbers that say whether the plan picks the right things.
+- `plan.envelope_remaining`, `plan.committed_pct`, `plan.planned_vs_authorized_vs_forecast` per line, `plan.unplanned_projects_value` (projects created outside a plan line).
+- `onboarding.level_distribution`, `onboarding.median_days_registered_to_governed`: the adoption scorecard inputs (`§16`).
+
 Admin can add `MetricDefinition`s per-project or per-portfolio for domain-specific KPIs.
 
 ## MetricDefinition vs MetricReading

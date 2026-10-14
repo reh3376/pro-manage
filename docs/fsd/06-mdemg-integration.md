@@ -26,6 +26,9 @@
           ├─── space="proj_<UUID-2>"         ◄── project P-2's observations, outcomes
           ├─── ...                           (one space per project, up to ~500)
           │
+          ├─── space="portfolio_<UUID>"      ◄── portfolio-level decisions with no project yet:
+          │                                     opportunity screening, capital plan outcomes
+          │
           └─── space="org.<orgId>.governance"◄── company-wide policy constraints,
                                                   authored by Governance Authors
 ```
@@ -79,6 +82,8 @@
 - **Tier mapping (global defaults, set by the policy owner as `mdemg.tier.<action_kind>`):** Thresholds in the table are policy variables (`§08`), resolved per project, so the same tier rule applies the right limit to each project. The tier itself is also a policy variable, so a pilot can start an action kind at Tier B and raise it to A once the constraint library and the false-positive rate justify it.
   | Action kind | Tier | Why |
   |---|---|---|
+  | `approval.capital_plan` | A | The year's money; the committee's decision of record |
+  | `opportunity.screen` | B | Guidance is the point (Benefits Realization history); a screening is reversible |
   | `approval.car` (`full` or `supplemental`, cumulative ≥ `{car.threshold.vp_finance}`) | A | Dollars + policy stakes |
   | `approval.car` (below the threshold, or `fel_funding`) | B | Lower stakes; warning OK |
   | `document.issue_ifc` | B | Detailed design review is the control; guidance surfaces MP information and past revision churn for the asset class |
@@ -135,6 +140,8 @@
   | **MP information harvested at Closeout** (per observation) | **`learning`** | **governance** | `[mp_info, equipment:<type>, category:failure \| operability \| maintainability \| …, source_project:XYZ]` |
   | MP information harvested from running asset (periodic) | `learning` | governance | same as above |
   | Benefits Realization variance report | `decision` | governance | `[benefits_realization, promised:X, delivered:Y, variance_pct:Z, equipment:<type>]` |
+  | Opportunity screened, deferred, or rejected; capital plan approved or revised | `decision` | portfolio space (`space = portfolio_<id>`, a project-less space per portfolio) | `[capital_plan, fiscal_year:N, opportunity:<code>, outcome:<o>, asset_class:<cls>]` |
+  | Imported history at onboarding (prior approvals, baselines) | `decision` | project | `[imported, source:<kind>, approved_at:<date>]` |
   | Design-review disposition | `decision` | project | `[design_review, criterion:easy_to_maintain, disposition:design_change]` |
   | Lesson learned (manual tag by operator / maintainer) | `learning` | governance (if generalized) or project | `[lesson, project:XYZ, scope:equipment:<type>]` |
   | Policy exception granted | `decision` | project | `[policy_exception, scope:X]` |

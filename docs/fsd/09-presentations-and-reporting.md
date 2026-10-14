@@ -25,6 +25,8 @@
 - **HSE:** safety and compliance across projects. Incidents, inspection pass rate, aged findings, upcoming sign-offs.
 - **Resources:** allocation heatmap, overallocation flags, equipment utilization.
 - **Loss & opportunity:** portfolio ranked by recoverable loss: top priced losses by asset and Six Big Losses bucket, which are already addressed by an open project, and which are not (FEL1 candidates). For closed projects, promised vs verified recovery. Gives Finance, CI, and Engineering one shared priority list.
+- **Capital plan & funnel:** the fiscal-year plan by portfolio: envelope vs planned vs authorized vs forecast per line, the opportunity funnel (proposed → screened → planned → converted → realized) with values, unplanned projects, carry-over, and the screening backlog ahead of the submission deadline. The Portfolio Executive's and PMO Lead's working view.
+- **Adoption scorecard (admin):** onboarding level distribution, CARs in-system share, deck replacement, contributor activity, guidance consulted, and the other `§16` measures as monthly trends.
 - **Startup & Early Management:** startup curve vs nameplate per asset in Early Management, exit-criteria checklist status (incl. operator certification), and punchlist burn-down.
 - **Project reliability:** the project-side counterpart to an OEE board (`§14`): project-loss Pareto by category and package, package readiness for the next N weeks, weekly plan compliance with variance reasons, RFI / submittal / change-order aging, open deviations, and hold-point first-pass rate. Contributors see a version filtered to their own contract's packages.
 

@@ -40,6 +40,7 @@ It is for a single company, hosted on the company's intranet in containers, tune
 | Presentations (live dashboards incl. Project reliability, scheduled exports, on-demand decks, mobile field flows) | [`docs/fsd/09-presentations-and-reporting.md`](./docs/fsd/09-presentations-and-reporting.md) |
 | Integrations catalog (ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi) | [`docs/fsd/10-integrations.md`](./docs/fsd/10-integrations.md) |
 | Connector SDK (build new `<Type>i_<CODE>` modules) | [`docs/fsd/15-connector-sdk.md`](./docs/fsd/15-connector-sdk.md) |
+| Onboarding, data migration, and adoption (levels, bulk import, waves, change management, scorecard) | [`docs/fsd/16-onboarding-migration-and-adoption.md`](./docs/fsd/16-onboarding-migration-and-adoption.md) |
 | Operations & non-functional requirements | [`docs/fsd/11-ops-and-nfr.md`](./docs/fsd/11-ops-and-nfr.md) |
 | Test governance (UxTS: hashed contract specs per surface, framework matrix, adjudication registries) | [`docs/fsd/12-test-governance-uxts.md`](./docs/fsd/12-test-governance-uxts.md) |
 | **The project as equipment: Project TPM (core concept)** | [`docs/fsd/14-project-as-equipment.md`](./docs/fsd/14-project-as-equipment.md) |
