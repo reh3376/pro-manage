@@ -6,6 +6,7 @@
 - **2026-10-13:** Dashboards are **composed of tiles** bound to the metric/entity model (`§03`, `§07`). Tiles are role-filtered at render time.
 - **2026-10-13:** Exports (PDF + PPTX) are rendered by **pm-sidecar** using versioned templates. The authoring source of truth for the template is Git-tracked; the active deployed template is cached in Postgres with a hash.
 - **2026-10-13:** External stakeholder sharing is via **tokenized dashboard links** (short-lived, revocable) with per-view attestation and audit, as defined in `§04`.
+- **2026-10-14:** **Charts are user-authored, saved as definitions, and usable everywhere.** A chart builder lets any user build a chart from the metrics, losses, funnel, budget, schedule, and entity data they can see; the saved `ChartDefinition` renders identically on dashboards, in decks and exports, and as PNG/SVG/CSV downloads with a provenance footer. Pareto, S-curve, waterfall, and timeline join the chart grammar.
 - **2026-10-14:** Added **Loss & opportunity** and **Startup & Early Management** dashboard presets, and **mobile field flows** (CQV/SAT walkdowns, punchlists, turnover inspections, design-review input) with photo/QR proof, Phase 2.
 - **2026-10-14:** Added a **Project reliability** preset (project-loss Pareto, package readiness, plan compliance, RFI/submittal aging) and contractor-facing field flows (progress updates, deviation tagging, hold-point inspections).
 - **2026-10-13:** All charts follow a single, cohesive visual language (`dataviz` skill guidance), with a validated palette, light/dark mode, and consistent typography.
@@ -42,11 +43,29 @@ All charts share a visual system. Choices and defaults (see the `dataviz` skill 
   - Scalar KPI → labeled large number with trend arrow and sparkline.
   - Timeseries → line chart (preferred) or small multiples when multi-project.
   - Category series → ordered bar (horizontal when many categories).
+  - Loss ranking → **Pareto**: bars sorted largest to smallest with the cumulative-percentage line; the default for plant losses, project losses, and the two combined on one chart in the same dollars (`§14`).
+  - Cumulative plan vs actual → **S-curve** (planned value, earned value, actual cost, cash flow) with the baseline as a reference line.
+  - Bridge from one total to another → **waterfall** (baseline to EAC by change, contingency drawdown, promised to realized benefit).
+  - Milestones and packages over time → **timeline** (baseline vs current dates, dependencies; a lightweight Gantt, not a scheduler).
+  - Startup curve, punchlist, and readiness → line with target band and burn-down.
   - Status grid → heatmap-style cells for cross-project rollups.
   - Gauge → only for bounded 0–100% metrics, never for budget variance.
   - Map → geo projects (phase 2).
 - **Accessibility**: all encodings pair color with pattern/shape or label; contrast is ≥ WCAG AA. Tooltips expose precise values.
 - **Interaction**: hover for details, click to drill (same tile → scoped detail; or new tile linked), range brush for timeseries, link to the governing audit record where applicable.
+
+### Charts and graphs people build themselves
+
+Presets cover the recurring views; the rest of the time someone needs a specific chart for a specific meeting ("changeover loss on Line 3 against the three projects that touched it, last 18 months"). pro_manage ships a chart builder rather than leaving that to Excel.
+
+- **Builder flow:** pick the data (a metric set, a loss ranking, a funnel, budget or schedule series, an entity list such as RFIs by discipline), pick the scope (project, portfolio, site, asset class, fiscal year, date range), pick the chart type from the grammar above (the builder proposes one from the data shape), set grouping and filters, title it. Every choice is a field in a `ChartDefinition` (`§03`), so the chart is data, not a picture: it can be re-run, shared, pinned, and rendered identically on a page or a slide.
+- **Where a chart can go:** a tile on any dashboard the user can edit; a slide in an on-demand deck or a scheduled export (the deck templates expose "insert saved chart" slots); an attachment on a health review, an approval form, a CAR business case, a change request, or an RFI answer; an external share (tokenized, viewable only, same rules as dashboards); a link in a Commsi notification.
+- **Export formats:** PNG and SVG for the picture, CSV (and Parquet for large sets) for the data behind it, PDF for a single chart with its caption. Every exported image carries a footer with the as-of timestamp, the scope and filters, and the chart id, so a chart pasted into an email can be traced back to the definition that made it.
+- **Same spec, same picture:** the frontend renders live charts and pm-sidecar renders exported ones from the same `ChartDefinition` and the same chart grammar (palette, encodings, accessibility rules), so what a stakeholder sees on a slide is what the owner saw on screen. Render fidelity between the two is a UOTS-style artifact check in CI (`§12`): the reference set of chart definitions renders to pinned images on both paths.
+- **Role filtering applies to charts exactly as to tiles:** the data binding is evaluated through the viewer's effective grants at render time, including on export, so a chart shared with a contributor shows their contract's packages only, and a chart with nothing visible for the viewer renders the "No data visible for your role" tombstone rather than an empty axis.
+- **Sharing and ownership:** a chart has an owner; `private`, `project`, `portfolio`, or `company` visibility; and a version history. Editing a shared chart creates a new version; dashboards and decks pin a version so a slide does not change under a presenter.
+- **Spreadsheet round trip:** the data behind any chart exports as the matching workbook template (`§07`), and a chart can be built from an imported workbook's metric table, so people who think in Excel can still land the result in pro_manage.
+- **Year one vs later:** the grammar's chart types with grouping and filters ship in year one (Phase 2, with dashboards); calculated fields, custom axes, and annotations (callouts, target lines typed by the user) in Phase 3; combined-axis and custom chart types by admins later.
 
 ### Role filtering
 
@@ -138,7 +157,8 @@ All exports are logged with retrievable requests ("who exported what, when").
 
 ## Open items for Section 09
 
-- Confirm the first batch of custom chart types desired by executives (e.g., S-curves for cash flow). First instinct: ship the base library in year one, admin-authorable S-curves and advanced charts in Phase 2.
+- Confirm the first batch of chart types executives and Finance actually ask for beyond the grammar (Pareto, S-curve, waterfall, timeline, startup curve are in). First instinct: ship those in Phase 2 with the builder; add calculated fields and annotations in Phase 3; let admins register further types later.
+- Decide the charting library pair (frontend and pm-sidecar) that can share one grammar definition; the constraint is identical rendering on both paths, not features.
 - Decide whether live dashboards support anonymous (unauthenticated) tokenized viewing for truly external parties, or whether even tokenized viewers must self-attest identity. Current draft: self-attest (lightest audit still exists).
 - Confirm PDF rendering engine for the sidecar (Chromium headless vs ReportLab/WeasyPrint). Chromium is heavier but handles any CSS; WeasyPrint is lighter but has rendering limits. First instinct: Chromium headless.
 - Decide the default retention for generated export artifacts in MinIO (space-management). First instinct: 90 days for ad-hoc, aligned with retention regime for workflow-attached artifacts.

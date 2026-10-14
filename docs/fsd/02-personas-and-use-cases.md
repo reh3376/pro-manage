@@ -246,6 +246,11 @@ Each use case lists its primary actor, the trigger, the main success scenario in
 - **Flow:** The owner fills the registration workbook (Registered level); the CAR-history and budget-baseline workbooks are validated, dry-run, and imported with provenance (Governed level); the reconciliation report compares imported totals to the ERP mirror; the owner accepts the imported state; the project space is created in MDEMG with the history as `imported` decisions.
 - **Accept when:** The project shows its level on the dashboard, imported records are visibly marked and read-only, the next CAR starts in pro_manage, and onboarding took under the wave's target days.
 
+### UC-27: Build a chart for a meeting
+- **Actor:** Project Owner (or anyone with read on the data) · **Trigger:** A steering meeting needs "changeover loss on Line 3 against the three projects that touched it, last 18 months".
+- **Flow:** The owner opens the chart builder, picks the loss ranking for the asset and the three projects, the date range, and a Pareto or line as proposed; saves the `ChartDefinition` with project visibility; pins it to the project dashboard, inserts it into the steering deck, and downloads a PNG for an email.
+- **Accept when:** The deck slide, the dashboard tile, and the PNG show the same picture with the same as-of footer; a Finance viewer without the asset's loss grant sees the tombstone rather than the numbers; re-running next month updates the dashboard but not the pinned slide version.
+
 ## Key journeys
 
 Journeys are end-to-end narratives that cross multiple use cases and give sections 03–09 a concrete reference point.

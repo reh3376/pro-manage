@@ -149,6 +149,8 @@ Terms, acronyms, and project-specific names.
 
 | Term | Meaning |
 |---|---|
+| **S-curve** | Cumulative plan vs actual over time (planned value, earned value, actual cost, or cash flow); the classic project-controls chart, so called for its shape. |
+| **Waterfall (chart)** | A bridge from one total to another in steps (baseline to EAC by change, promised to realized benefit). |
 | **Pareto (chart)** | A bar chart of loss categories sorted largest to smallest, with a cumulative-percentage line, used to decide what to attack first (the 80/20 rule: a few categories carry most of the cost). In pro_manage, plant losses and project losses are priced in the same dollars so they can sit on one Pareto. Pronounced pah-RAY-toh. |
 | **TPM** | Total Productive Maintenance. Discipline for maximizing equipment effectiveness through operator engagement, autonomous maintenance, planned maintenance, focused improvement, early equipment management, and five other pillars. |
 | **TPM pillars** | The eight canonical pillars: Autonomous Maintenance, Planned Maintenance, Focused Improvement, Early Equipment Management (EEM), Quality Maintenance, Training & Education, Office TPM, Safety/Health/Environment. |
