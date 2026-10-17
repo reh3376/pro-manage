@@ -279,5 +279,4 @@ When a workflow approves a baseline (budget or schedule), pm-core:
 - Confirm the specific chart of accounts shape expected from ERPi (sized once the first ERP backend is known).
 - Decide whether safety / HSE metrics are also captured in pm-TSDB or linked by reference into the HSE system (open: do we duplicate for availability, or always live-fetch?). First instinct: duplicate with daily cadence to pm-TSDB for dashboard performance; live-fetch for drill-down.
 - Decide the earned-value adoption bar: EVM is powerful but not every $25K project will have BCWS/BCWP inputs. First instinct: optional per-project, gated by a project-settings toggle; derived metrics skip when inputs absent.
-- Confirm whether we need user-authored custom charts beyond the built-in tiles. First instinct: yes but in Phase 2; year one ships curated tiles.
 - Confirm acceptable retention bounds against ISO standards once the specific standards are confirmed.

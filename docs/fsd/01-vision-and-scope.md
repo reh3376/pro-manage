@@ -166,7 +166,8 @@ The cost: slow approvals, forecast surprises, re-litigated decisions, audit find
 
 ## Open items for Section 01
 
-- Identify the company's ERP, CMMS, MES/QMS, and IdP so the matching `<Type>i_<CODE>` modules are built first. Not a design blocker: the modular connector approach means the core is built against connector contracts, not vendors.
+- Identify the company's CMMS, MES/QMS, and IdP so the matching `<Type>i_<CODE>` modules are built first (the ERP is known: IFS Cloud). Not a design blocker: the modular connector approach means the core is built against connector contracts, not vendors.
+- The consolidated, owner-facing list of every open item across the FSD, grouped by what each unblocks, is [open-items.md](./open-items.md).
 - Confirm specific schedule tools in use (which Schedulei backends to prioritize).
 - Confirm MES/WMS/QMS vendors in play (which HSEi backends to prioritize).
 - Confirm which ISO standards are binding (ISO 9001, ISO 55000, ISO 27001, industry-specific). Shapes retention, access-review cadence, and change-control detail in §08 and §11.

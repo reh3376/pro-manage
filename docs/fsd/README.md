@@ -175,7 +175,8 @@ The FSD is split into focused sections. For a complete picture, read in order. F
 | 14 | [project-as-equipment.md](./14-project-as-equipment.md) | **Core concept.** The project as equipment: OEE and Six Big Losses mapped to project delivery, the eight pillars applied, version-1 implementation, open questions, prior art |
 | 15 | [connector-sdk.md](./15-connector-sdk.md) | Connector SDK: module runtime, integration helpers (OAuth, SAML/OIDC, OData, idempotency, ETags, polling, inbound events), mapping layer, conformance kit, scaffolding CLI, module manifest, versioning |
 | 16 | [onboarding-migration-and-adoption.md](./16-onboarding-migration-and-adoption.md) | Onboarding levels, data migration sources and the bulk-import tool, cut-over rules (history imported, never re-approved), waves, change management (sponsor, change lead, champions), mandatory-use dates, training, support, adoption scorecard |
-| n/a | [roadmap.md](./roadmap.md) | Phased delivery, milestones, dependencies, risks |
+| n/a | [roadmap.md](./roadmap.md) | Thin spine, delivery scenarios, layer catalogue, phased delivery, milestones, dependencies, risks |
+| n/a | [open-items.md](./open-items.md) | **Owner decision checklist:** every open item across the FSD, grouped by what it unblocks (Phase 0, first real CAR, wave 1, later, technical defaults), with an answer column |
 
 ### Quick paths
 
