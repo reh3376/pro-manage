@@ -45,7 +45,8 @@ It is for a single company, hosted on the company's intranet in containers, tune
 | Test governance (UxTS: hashed contract specs per surface, framework matrix, adjudication registries) | [`docs/fsd/12-test-governance-uxts.md`](./docs/fsd/12-test-governance-uxts.md) |
 | **The project as equipment: Project TPM (core concept)** | [`docs/fsd/14-project-as-equipment.md`](./docs/fsd/14-project-as-equipment.md) |
 | Glossary (TPM, EEM, CAR, AACE, LCC/TIC, OEE/MTBF/…) | [`docs/fsd/13-glossary.md`](./docs/fsd/13-glossary.md) |
-| Phased roadmap, milestones, risk register | [`docs/fsd/roadmap.md`](./docs/fsd/roadmap.md) |
+| Phased roadmap (thin spine, delivery scenarios, layer catalogue), milestones, risk register | [`docs/fsd/roadmap.md`](./docs/fsd/roadmap.md) |
+| Owner decision checklist (every open item, grouped by what it unblocks) | [`docs/fsd/open-items.md`](./docs/fsd/open-items.md) |
 
 ---
 
