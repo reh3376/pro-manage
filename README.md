@@ -2,7 +2,7 @@
 
 **An owner-side capital-project management, data-curation, and metrics system for a TPM-driven process industry.**
 
-Status: **Working draft: FSD and roadmap in [`docs/fsd/`](./docs/fsd/README.md).** No application code committed yet; design and specification are the current artifact.
+Status: **FSD and roadmap in [`docs/fsd/`](./docs/fsd/README.md); spine development started 2026-10-20** under the owner-plus-AI scenario (see the roadmap's "Delivery scenarios"). Code arrives one slice per PR, infrastructure first.
 
 ---
 
@@ -68,6 +68,7 @@ It is for a single company, hosted on the company's intranet in containers, tune
 - Default development branch: `pro-dev01`. Changes flow via pull requests into `main` for owner review and approval.
 - PRs are opened automatically by `.github/workflows/auto-pr.yml` (as `github-actions[bot]`) when `pro-dev01` is pushed, so the owner can formally approve each one. PRs are never opened by hand.
 - Direct commits to `main` are not permitted; `main` is the reviewed-and-merged state only.
+- Code lands one slice per PR (a scaffold, a set of migrations, an adapter), small enough to review in one sitting and leaving `main` runnable after each merge.
 - Commits are attributed to the actual author (Roger Henley for human-authored work; `Claude <noreply@anthropic.com>` for AI-assisted drafting).
 
 ---

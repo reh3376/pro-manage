@@ -46,6 +46,8 @@ The roadmap is honest about who is building it. Two scenarios, same order, diffe
 
 The success criteria per phase apply to both; in scenario A they are read as "at the end of this stage" rather than "by week N".
 
+**Decided 2026-10-20: Scenario A.** Development started on that basis with these settled choices (recorded in `§05`, `§06`, `§12`, and `docs/fsd/open-items.md`): monorepo in this repository, one PR per slice; this workstation with Docker Desktop; a dedicated MDEMG Compose stack pinned to `v0.11.0-beta.3` with `apikey` auth; Go 1.26, Python 3.14, Next.js 16, goose, pgx + sqlc; `.env` secrets behind a provider interface; Keycloak as the dev IdP; infrastructure-first build order; UxTS runners vendored at `c1f14f74`; stub MDEMG in PR CI with live UATS locally; Northfield Spirits Co. as the seed company; `IdPi_OIDC` as the first module.
+
 ## Phases at a glance
 
 | Phase | Weeks | Theme | Headline deliverable |
@@ -306,7 +308,7 @@ Each phase produces concrete, named artifacts that enable the next phase:
 
 ## Open items for the roadmap
 
-- Choose the delivery scenario (A: owner plus AI, B: small team) and, for B, the start date and team shape. The spine is the same either way; the choice sets the clock.
+- ~~Choose the delivery scenario.~~ **Decided 2026-10-20: Scenario A.** Re-assess at the end of the spine.
 - Confirm the pilot-team identity and the 3 pilot projects (should be real, in-flight work).
 - Confirm the MDEMG version pin and model pin for the project, and the `pm-mdemg-01` host shape.
 - Confirm which Phase 2 connector backends are highest-value for the owner's company (shapes effort allocation).
