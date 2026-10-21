@@ -55,13 +55,31 @@ It is for a single company, hosted on the company's intranet in containers, tune
 - **Backend:** Go monolith (`pm-core`) with a Python sidecar (`pm-sidecar`) for render / spreadsheets / derived-metric formulas, and a Go workers tier (`pm-workers`) for scheduled jobs and outbox dispatch.
 - **Frontend:** Next.js (TypeScript / React), SSR + CSR; a hardened `pm-frontend-public` variant for tokenized dashboard shares.
 - **APIs:** gRPC between internal services; REST + SSE / WebSockets to the frontend.
-- **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metric readings and loss events), Redis (sessions / cache), MinIO (S3-compatible object storage). All containerized.
+- **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metric readings and loss events), Redis (sessions / cache), an S3-compatible object store (RustFS in dev). All containerized.
 - **Governance substrate:** [MDEMG](https://github.com/reh3376/mdemg) running adjacent on an isolated internal network, used for advisory guidance and institutional memory (MP information flow). Its language model runs locally on the MDEMG host, so no project data is sent to a third-party AI service. pro_manage owns identity, authorization, workflows, and the authoritative audit log.
 - **Connectors:** nine pluggable modules (**ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi**), each a container with a stable gRPC contract. Admins swap backends without a core release. New modules are built with the Connector SDK (shared auth, retry, polling, and event plumbing plus a conformance test kit).
 - **Deployment:** on-prem VMs with containers via docker-compose, designed so a later move to Kubernetes is a lift-and-shift rather than a redesign.
 - **Test governance:** UxTS, MDEMG's family of hashed, schema-governed contract specs, adopted as a design principle rather than a test detail: every contract the FSD names (REST shapes, connector gRPC contracts, MDEMG field shapes, policy variables, metric formulas, dashboards and alerts, auth boundaries) gets a spec, a hash, and a CI disposition. UATS, UDTS, and UNTS from Phase 0; UOTS and USTS before the pilot; UBTS, UOBS, UAMS, and a pro_manage-minted UPMTS later. No test step is allowed to soft-fail by accident.
 
 ---
+
+## Getting started (development)
+
+Prerequisites on the workstation: Docker Desktop, Go 1.26, `uv` (Python 3.14), Node 22 with `pnpm` 12, `buf`. For the real MDEMG: `llama-server` on `:8102` and Ollama on `:11434` with `nomic-embed-text` pulled (see `deploy/compose/.env.example`).
+
+```bash
+make env          # create deploy/compose/.env with generated dev keys
+make mdemg-up     # pro_manage's dedicated MDEMG stack (pinned v0.11.0-beta.3)
+make dev          # Postgres, TimescaleDB, Redis, RustFS, Keycloak, Mailpit, pm-core, pm-workers, pm-sidecar, pm-frontend
+make dev-stub     # same stack but against the stub MDEMG, as PR CI runs it
+make test         # Go tests, sidecar tests, frontend type check
+make lint         # go vet, ruff, mypy, buf lint
+make help         # everything else
+```
+
+Services on the host: frontend `:3100`, pm-core `:8080`, pm-workers `:8081`, sidecar `:7070` (HTTP) and `:7071` (gRPC), Keycloak `:8180` (realm `northfield`, users such as `alice.owner` / `northfield-dev`), Mailpit `:8026`, RustFS console `:9101`, dedicated MDEMG `:9998`. The seed company is the fictional Northfield Spirits Co.
+
+Layout: `services/pm-core` (Go: `cmd/pm-core`, `cmd/pm-workers`, `cmd/stub-mdemg`), `services/pm-sidecar` (Python), `apps/pm-frontend` (Next.js), `connectors/`, `proto/`, `deploy/compose/`, `docs/`.
 
 ## Development workflow
 

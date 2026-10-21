@@ -346,7 +346,7 @@ For workflow kinds where formal e-sig is mandatory (CAR ≥ threshold, Change re
 - pm-core stores `signed_envelope_ref` on the stage; polls `GetEnvelopeStatus` + listens for Sigi webhooks (per `§05` DF-01).
 - Sign event: pm-core marks the stage decided, advances or completes the workflow.
 - Decline / voided: pm-core marks the stage rejected or the workflow cancelled; captures the Sigi event reason.
-- The **signed PDF** is downloaded via `Sigi.DownloadSignedArtifact` and stored in MinIO; `AuditEvent` captures the storage key + SHA-256 so the artifact survives independent of Sigi's retention.
+- The **signed PDF** is downloaded via `Sigi.DownloadSignedArtifact` and stored in the object store; `AuditEvent` captures the storage key + SHA-256 so the artifact survives independent of Sigi's retention.
 
 For workflow kinds **without** formal e-sig, the authenticated AuditEvent (session, user, before/after, timestamp) is the sign-off of record.
 

@@ -129,7 +129,7 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 - **pm-workers (Go):** scheduled jobs (metric harvest, exports, nudges, SLA tick), outbox drain to MDEMG and Commsi, long-running imports.
 - **pm-frontend (Next.js, TypeScript):** authenticated SSR+CSR UI; separate hardened `pm-frontend-public` for tokenized dashboard shares.
 - **Modular connector framework:** one gRPC contract per connector type (**ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi**), admin-registered, UDTS-governed. Admins swap backends without a core release. Modules are built on the **Connector SDK** (§15): shared runtime, auth and integration helpers, conformance tests, and a manifest the admin UI reads, so adding a vendor needs no core release.
-- **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metrics), Redis (sessions/cache), MinIO (S3-compatible object storage), all containerized. **MDEMG** stack runs adjacent on an isolated loopback network, with its language model served locally on the same host (no project data goes to a third-party AI service; §06).
+- **Data stores:** Postgres (OLTP source of truth), TimescaleDB (metrics), Redis (sessions/cache), an S3-compatible object store (RustFS in dev), all containerized. **MDEMG** stack runs adjacent on an isolated loopback network, with its language model served locally on the same host (no project data goes to a third-party AI service; §06).
 - **Deployment:** on-prem VMs with containers, docker-compose topology designed for later Kubernetes migration without reshaping services.
 - **Test governance:** **UxTS**, MDEMG's family of hashed, schema-governed contract specs. UATS (REST), UDTS (gRPC), UNTS (hash registry) from Phase 0; UOTS (dashboards, alerts, metric registry) and USTS (auth boundaries, exposure, injection) before the pilot; UBTS, UOBS, UAMS in Phase 2; a pro_manage-minted UPMTS for derived-metric formulas in Phase 3. Companion adjudication registries make every policy variable, connector capability, metric, route, and loss category prove it has a consumer (§12).
 
@@ -147,7 +147,7 @@ pro_manage pins against JSON field shapes rather than specific constraint codes,
 - **Isolate the beta.** MDEMG is beta software. The adapter layer absorbs churn so the core is stable even when MDEMG moves.
 - **Contracts are frozen, hashed, and gated.** Every contract the FSD names gets a UxTS spec with a hash; changing it is an explicit commit that CI sees. Silent drift is the failure mode this design refuses to tolerate, and no test step is allowed to soft-fail by accident (§12).
 - **No inference leaves the building.** The only AI in the loop runs on a host on the company network. That is a design rule, not a deployment option.
-- **Boring where it should be boring.** Go, Postgres, Timescale, Redis, MinIO, docker-compose. Nothing novel in the plumbing.
+- **Boring where it should be boring.** Go, Postgres, Timescale, Redis, an S3 object store, docker-compose. Nothing novel in the plumbing.
 
 ---
 

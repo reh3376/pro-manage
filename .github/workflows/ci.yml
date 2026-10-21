@@ -1,0 +1,115 @@
+# PR CI for pro_manage. Every job is merge-blocking; no test step may carry
+# continue-on-error (FSD §12). The compose smoke runs against the stub MDEMG
+# because CI cannot run the local model; live UATS against the pinned MDEMG
+# is a local pre-merge step (`make test-uats-live`, arriving with slice 0b).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: Go (pm-core, pm-workers, stub-mdemg)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/pm-core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/pm-core/go.mod
+          cache-dependency-path: services/pm-core/go.sum
+      - run: go mod verify
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test -race -count=1 ./...
+
+  python:
+    name: Python (pm-sidecar)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/pm-sidecar
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: services/pm-sidecar/uv.lock
+      - run: uv python install 3.14
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run mypy src
+      - run: uv run pytest -q
+
+  frontend:
+    name: Frontend (pm-frontend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/pm-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/pm-frontend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/pm-frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+  proto:
+    name: Protobuf (buf lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-action@v1
+        with:
+          input: proto
+          lint: true
+          format: false
+          breaking: false
+          push: false
+
+  compose-smoke:
+    name: Compose smoke (stub MDEMG)
+    runs-on: ubuntu-latest
+    needs: [go, python, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start the stack
+        run: |
+          docker compose --env-file deploy/compose/.env.ci \
+            -f deploy/compose/docker-compose.dev.yml --profile stub \
+            up -d --build
+      - name: Smoke
+        env:
+          MDEMG_API_KEY: ci-stub-key
+          SMOKE_TIMEOUT: "240"
+        run: scripts/smoke.sh --stub
+      - name: Logs on failure
+        if: failure()
+        run: |
+          docker compose --env-file deploy/compose/.env.ci \
+            -f deploy/compose/docker-compose.dev.yml --profile stub logs --tail=200
+      - name: Tear down
+        if: always()
+        run: |
+          docker compose --env-file deploy/compose/.env.ci \
+            -f deploy/compose/docker-compose.dev.yml --profile stub down -v

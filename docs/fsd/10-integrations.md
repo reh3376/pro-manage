@@ -285,7 +285,7 @@ Deliver notifications (approval prompts, overdue nudges, digests, alerts, dashbo
 - Dedupe window per `(user, notification_kind, subject_id)`
 
 ### Operational
-- Email size caps → use presigned MinIO links in the body for attachments.
+- Email size caps → use presigned object-store links in the body for attachments.
 - Teams/Slack formatting: adaptive cards with action buttons (deep-link to pro_manage).
 - Failed deliveries are retried with exponential backoff; final failure logs an operational alert.
 
