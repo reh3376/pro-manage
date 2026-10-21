@@ -10,15 +10,15 @@ How to use: fill the **Answer** column (or reply in conversation with the item i
 
 | Id | Question | Options / default | Unblocks | Ref | Answer |
 |---|---|---|---|---|---|
-| OI-01 | Which delivery scenario: **A** owner plus AI collaborator (stages, no dates) or **B** small team (52-week phases)? | A or B; for B, start date and team shape | The clock on everything | roadmap | |
+| OI-01 | Which delivery scenario: **A** owner plus AI collaborator (stages, no dates) or **B** small team (52-week phases)? | A or B; for B, start date and team shape | The clock on everything | roadmap | **A** (2026-10-20); re-assess at end of spine |
 | OI-02 | Which host shape will IT operate for `pm-mdemg-01`: an Apple Silicon host as MDEMG packages it, or a Linux VM with GPU pass-through? Can the server network hold it? | Apple Silicon (least divergence from MDEMG's tested setup) or GPU VM (what IT usually prefers; needs a Phase 0 load test) | Phase 0 exit (measured classify p50/p95); the `§11` classify SLO rows | §06, §11 | |
-| OI-03 | MDEMG version pin and model pin for MVP (`mdemg-llm-v1` Q5_K_M and its manifest SHA, or newer)? | *default:* latest stable MDEMG at ratification; `mdemg-llm-v1` Q5_K_M | Phase 0 dev profile; adapter UATS fixtures; ULTS hash record | §06, roadmap | |
-| OI-04 | Vault technology for secrets? | HashiCorp Vault, cloud KMS, or the company's on-prem equivalent | Phase 0 (`§05`, `§11` secrets) | roadmap | |
+| OI-03 | MDEMG version pin and model pin for MVP (`mdemg-llm-v1` Q5_K_M and its manifest SHA, or newer)? | *default:* latest stable MDEMG at ratification; `mdemg-llm-v1` Q5_K_M | Phase 0 dev profile; adapter UATS fixtures; ULTS hash record | §06, roadmap | **Dev:** `v0.11.0-beta.3` (commit `c1f14f74`), dedicated Compose stack, `apikey` auth (2026-10-20). Model pin and manifest SHA still to record |
+| OI-04 | Vault technology for secrets? | HashiCorp Vault, cloud KMS, or the company's on-prem equivalent | Phase 0 (`§05`, `§11` secrets) | roadmap | **Dev:** `.env` files behind a provider interface (2026-10-20). Production tech still open |
 | OI-05 | (MDEMG maintainer) Does `/v1/jiminy/classify` have a non-LLM fast path for the "no applicable constraint" case? Is there a server-side cap on classify time below 10 s? | Answer from the MDEMG code | Classify budget and pre-classification design | §06 | |
 | OI-06 | (MDEMG maintainer) Does `annotations.roles` round-trip reliably through MDEMG retrieval? | Yes, or build the pm-core side-table fallback from day one | Role-filtered guidance | §06 | |
 | OI-07 | Token budget for the `context` and `agent_output` summaries pm-core sends to MDEMG? | *default:* 2 000 tokens | Adapter payload shaping | §06 | |
 | OI-08 | Company's existing log aggregator and metric platform (reuse vs ship Loki/Prometheus)? | Loki, Splunk, Elastic; Prometheus, Datadog | Phase 0 observability stack | §11 | |
-| OI-09 | UxTS: vendored runner pins and how the CI stack seeds MDEMG fixtures (UATS `setup` is unimplemented upstream)? | *default:* runners at MDEMG's tag at ratification; a fixture-load step before `validate-all` | Phase 0 UxTS scaffold | §12 | |
+| OI-09 | UxTS: vendored runner pins and how the CI stack seeds MDEMG fixtures (UATS `setup` is unimplemented upstream)? | *default:* runners at MDEMG's tag at ratification; a fixture-load step before `validate-all` | Phase 0 UxTS scaffold | §12 | **Vendored at `c1f14f74`; stub MDEMG in PR CI, live UATS locally; fixture-load step** (2026-10-20) |
 
 ## B. Gates the first real CAR (end of the spine, Phase 1)
 
@@ -103,4 +103,8 @@ These are engineering choices the FSD has already defaulted. Listed so they are 
 
 | Id | Answer | Folded into | Date |
 |---|---|---|---|
-| (none yet) | | | |
+| OI-01 | Scenario A | roadmap (Delivery scenarios, open items) | 2026-10-20 |
+| OI-03 (dev part) | MDEMG `v0.11.0-beta.3` at `c1f14f74`, dedicated stack, `apikey` | §06 decisions, §05 local dev | 2026-10-20 |
+| OI-04 (dev part) | `.env` behind a provider interface | §05 decisions | 2026-10-20 |
+| OI-09 | Vendored at `c1f14f74`; stub MDEMG in CI; live UATS locally | §12 decisions | 2026-10-20 |
+| Spine start set (not on the list) | Monorepo here, one PR per slice; this Mac with Docker Desktop; Go 1.26, Python 3.14, Next.js 16, goose, pgx + sqlc; Keycloak dev IdP; infrastructure-first order; Northfield Spirits Co. seed company; `IdPi_OIDC` first | §05 decisions, §06, roadmap | 2026-10-20 |
