@@ -89,6 +89,7 @@ jobs:
           format: false
           breaking: false
           push: false
+          pr_comment: false   # the job has contents:read only; results are in the check, not a comment
 
   compose-smoke:
     name: Compose smoke (stub MDEMG)
