@@ -45,7 +45,7 @@ services:
       retries: 12
 
   tsdb:
-    image: timescale/timescaledb:2.25.1-pg16
+    image: timescale/timescaledb:2.30.2-pg16
     environment:
       POSTGRES_USER: pm
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -95,7 +95,7 @@ services:
       retries: 12
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.4
+    image: quay.io/keycloak/keycloak:26.8
     command: ["start-dev", "--import-realm", "--health-enabled=true"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN_USER:-admin}
@@ -123,7 +123,7 @@ services:
       start_period: 40s
 
   mailpit:
-    image: axllent/mailpit:v1.28
+    image: axllent/mailpit:v1.31
     ports:
       - "127.0.0.1:${PM_MAILPIT_UI_PORT:-8026}:8025"
       - "127.0.0.1:${PM_SMTP_PORT:-1026}:1025"
