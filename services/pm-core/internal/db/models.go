@@ -11,6 +11,48 @@ import (
 	"github.com/google/uuid"
 )
 
+type ApprovalStage struct {
+	StageID               uuid.UUID  `json:"stage_id"`
+	WorkflowID            uuid.UUID  `json:"workflow_id"`
+	StageOrder            int32      `json:"stage_order"`
+	RoleRequired          string     `json:"role_required"`
+	Assignees             []string   `json:"assignees"`
+	SlaMinutes            int32      `json:"sla_minutes"`
+	EnteredAt             *time.Time `json:"entered_at"`
+	StageDueAt            *time.Time `json:"stage_due_at"`
+	CompletedAt           *time.Time `json:"completed_at"`
+	CompletedBy           *string    `json:"completed_by"`
+	Decision              *string    `json:"decision"`
+	Comment               *string    `json:"comment"`
+	GuidanceID            *string    `json:"guidance_id"`
+	ClassificationVerdict *string    `json:"classification_verdict"`
+	FailTier              *string    `json:"fail_tier"`
+}
+
+type ApprovalWorkflow struct {
+	WorkflowID     uuid.UUID       `json:"workflow_id"`
+	TenantID       string          `json:"tenant_id"`
+	ProjectID      *uuid.UUID      `json:"project_id"`
+	Kind           string          `json:"kind"`
+	SubjectType    string          `json:"subject_type"`
+	SubjectID      string          `json:"subject_id"`
+	InitiatedBy    string          `json:"initiated_by"`
+	InitiatedAt    time.Time       `json:"initiated_at"`
+	CurrentStage   int32           `json:"current_stage"`
+	Status         string          `json:"status"`
+	PolicySnapshot json.RawMessage `json:"policy_snapshot"`
+	CompletedAt    *time.Time      `json:"completed_at"`
+	Version        int32           `json:"version"`
+}
+
+type ApproverPool struct {
+	Pool    string     `json:"pool"`
+	UserID  string     `json:"user_id"`
+	SiteID  *uuid.UUID `json:"site_id"`
+	AddedBy string     `json:"added_by"`
+	AddedAt time.Time  `json:"added_at"`
+}
+
 type AuditEvent struct {
 	AuditID               uuid.UUID       `json:"audit_id"`
 	Seq                   int64           `json:"seq"`
@@ -29,6 +71,91 @@ type AuditEvent struct {
 	ClassificationVerdict *string         `json:"classification_verdict"`
 	PrevHash              string          `json:"prev_hash"`
 	SignedHash            string          `json:"signed_hash"`
+}
+
+type BusinessCasePromise struct {
+	PromiseID          uuid.UUID  `json:"promise_id"`
+	TenantID           string     `json:"tenant_id"`
+	ProjectID          uuid.UUID  `json:"project_id"`
+	Kind               string     `json:"kind"`
+	MetricID           string     `json:"metric_id"`
+	LossCategoryID     *string    `json:"loss_category_id"`
+	BaselineValue      *string    `json:"baseline_value"`
+	BaselinePeriod     *string    `json:"baseline_period"`
+	PromisedValue      *string    `json:"promised_value"`
+	PromisedByDate     *time.Time `json:"promised_by_date"`
+	DollarValuePerYear *string    `json:"dollar_value_per_year"`
+	MeasurementBasis   string     `json:"measurement_basis"`
+	Status             string     `json:"status"`
+	CreatedAt          time.Time  `json:"created_at"`
+	CreatedBy          string     `json:"created_by"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+	UpdatedBy          string     `json:"updated_by"`
+	Version            int32      `json:"version"`
+}
+
+type CapitalAuthorization struct {
+	CarID                uuid.UUID  `json:"car_id"`
+	TenantID             string     `json:"tenant_id"`
+	ProjectID            uuid.UUID  `json:"project_id"`
+	Code                 string     `json:"code"`
+	Kind                 string     `json:"kind"`
+	AmountRequested      string     `json:"amount_requested"`
+	Currency             string     `json:"currency"`
+	Basis                string     `json:"basis"`
+	EstimateID           *uuid.UUID `json:"estimate_id"`
+	FelStageAtSubmission *string    `json:"fel_stage_at_submission"`
+	BusinessCase         string     `json:"business_case"`
+	SupersedesCarID      *uuid.UUID `json:"supersedes_car_id"`
+	Status               string     `json:"status"`
+	WorkflowID           *uuid.UUID `json:"workflow_id"`
+	AuthorizedAmount     *string    `json:"authorized_amount"`
+	AuthorizedAt         *time.Time `json:"authorized_at"`
+	ErpBudgetRef         *string    `json:"erp_budget_ref"`
+	SignedArtifactRef    *string    `json:"signed_artifact_ref"`
+	CreatedAt            time.Time  `json:"created_at"`
+	CreatedBy            string     `json:"created_by"`
+	UpdatedAt            time.Time  `json:"updated_at"`
+	UpdatedBy            string     `json:"updated_by"`
+	Version              int32      `json:"version"`
+}
+
+type EstimateArtifact struct {
+	EstimateID            uuid.UUID `json:"estimate_id"`
+	TenantID              string    `json:"tenant_id"`
+	ProjectID             uuid.UUID `json:"project_id"`
+	AaceClass             int16     `json:"aace_class"`
+	AsOf                  time.Time `json:"as_of"`
+	PreparedBy            string    `json:"prepared_by"`
+	ReviewedBy            *string   `json:"reviewed_by"`
+	BasisOfEstimateDocRef *string   `json:"basis_of_estimate_doc_ref"`
+	ScopeDefinitionPct    *string   `json:"scope_definition_pct"`
+	AccuracyRangeLowPct   *string   `json:"accuracy_range_low_pct"`
+	AccuracyRangeHighPct  *string   `json:"accuracy_range_high_pct"`
+	Tic                   string    `json:"tic"`
+	ContingencyAmount     string    `json:"contingency_amount"`
+	ContingencyMethod     *string   `json:"contingency_method"`
+	Currency              string    `json:"currency"`
+	CreatedAt             time.Time `json:"created_at"`
+	CreatedBy             string    `json:"created_by"`
+}
+
+type GuidanceOutcome struct {
+	OutcomeID             uuid.UUID       `json:"outcome_id"`
+	TenantID              string          `json:"tenant_id"`
+	AuditID               uuid.UUID       `json:"audit_id"`
+	ProjectID             *uuid.UUID      `json:"project_id"`
+	UserID                string          `json:"user_id"`
+	ActionType            string          `json:"action_type"`
+	GuidanceIds           []string        `json:"guidance_ids"`
+	GuidanceItemsSnapshot json.RawMessage `json:"guidance_items_snapshot"`
+	ClassificationVerdict *string         `json:"classification_verdict"`
+	ViolatedCodes         []string        `json:"violated_codes"`
+	FailTier              string          `json:"fail_tier"`
+	UserResponse          string          `json:"user_response"`
+	DismissReason         *string         `json:"dismiss_reason"`
+	OverrideAdminID       *string         `json:"override_admin_id"`
+	At                    time.Time       `json:"at"`
 }
 
 type Outbox struct {

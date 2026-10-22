@@ -151,6 +151,14 @@ jobs:
         run: cd services/pm-core && go test -tags integration -count=1 ./pkg/mdemgadapter/
       - name: Outbox end to end (pm-core enqueue -> pm-workers drain -> stub MDEMG)
         run: scripts/outbox_check.sh
+      - name: CAR domain integration tests (chain, tiers, deny, Tier A refusal; Postgres + stub MDEMG)
+        env:
+          TEST_DATABASE_URL: postgres://pm:ci-postgres@127.0.0.1:5440/pm_core?sslmode=disable
+          MDEMG_TEST_URL: http://127.0.0.1:9997
+          MDEMG_TEST_KEY: ci-stub-key
+        run: cd services/pm-core && go test -tags integration -count=1 ./internal/domain/
+      - name: Toy CAR end to end (Phase 0 exit test through the REST edge)
+        run: scripts/car_check.sh
       - name: UATS against the stub MDEMG (MDEMG field-shape pins)
         env:
           MDEMG_API_KEY: ci-stub-key

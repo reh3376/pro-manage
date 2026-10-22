@@ -1,95 +1,17 @@
 {
   "surface": "policy_variables",
-  "description": "Every PolicyVariable key declared in pm-core (policyvar.Define or seed SQL) must be adjudicated here with its consumers (FSD §08, §12). A key with no reader is a knob that does nothing.",
+  "description": "Every PolicyVariable key declared in pm-core (policyvar.Define or seed SQL) must be adjudicated here with its consumers (FSD \u00a708, \u00a712). A key with no reader is a knob that does nothing.",
   "entries": {
-    "car.threshold.finance_approver": {
-      "writers": [
-        "services/pm-core/db/seeds/northfield.sql"
-      ],
-      "readers": [
-        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}",
-        "CAR chain (slice 2)"
-      ],
-      "disposition": "active",
-      "notes": "CAR stage 2 routing (§08)"
-    },
-    "car.threshold.vp_finance": {
+    "baseline.variance.finance_pct": {
       "writers": [
         "services/pm-core/db/seeds/northfield.sql"
       ],
       "readers": [
         "policy.Resolve",
-        "docs/tests/uats/specs/pm-core/policy.uats.json",
-        "CAR chain (slice 2)"
+        "baseline change (layer)"
       ],
       "disposition": "active",
-      "notes": "CAR stage 3 routing; MDEMG Tier A (§06, §08)"
-    },
-    "car.threshold.cfo": {
-      "writers": [
-        "services/pm-core/db/seeds/northfield.sql"
-      ],
-      "readers": [
-        "policy.Resolve",
-        "CAR chain (slice 2)"
-      ],
-      "disposition": "active",
-      "notes": "CAR stage 4 routing"
-    },
-    "car.threshold.ceo": {
-      "writers": [
-        "services/pm-core/db/seeds/northfield.sql"
-      ],
-      "readers": [
-        "policy.Resolve",
-        "CAR chain (slice 2)"
-      ],
-      "disposition": "active",
-      "notes": "CAR stage 5 routing"
-    },
-    "car.threshold.basis": {
-      "writers": [
-        "services/pm-core/db/seeds/northfield.sql"
-      ],
-      "readers": [
-        "policy.Resolve",
-        "CAR chain (slice 2)"
-      ],
-      "disposition": "active",
-      "notes": "What the CAR amount is compared on"
-    },
-    "car.threshold.currency": {
-      "writers": [
-        "services/pm-core/db/seeds/northfield.sql"
-      ],
-      "readers": [
-        "policy.Resolve",
-        "CAR chain (slice 2)"
-      ],
-      "disposition": "active",
-      "notes": "Currency of the thresholds"
-    },
-    "car.supplemental.reapproval_pct": {
-      "writers": [
-        "services/pm-core/db/seeds/northfield.sql"
-      ],
-      "readers": [
-        "policy.Resolve",
-        "CAR chain (slice 2)"
-      ],
-      "disposition": "active",
-      "notes": "Supplemental CAR trigger"
-    },
-    "car.esign.required_above": {
-      "writers": [
-        "services/pm-core/db/seeds/northfield.sql"
-      ],
-      "readers": [
-        "policy.Resolve",
-        "Sigi coupling (slice 3)"
-      ],
-      "disposition": "active",
-      "notes": "DocuSign vs attestation"
+      "notes": "Baseline change stage 2"
     },
     "baseline.variance.reforecast_pct": {
       "writers": [
@@ -102,17 +24,6 @@
       "disposition": "active",
       "notes": "Jiminy warning + re-forecast task"
     },
-    "baseline.variance.finance_pct": {
-      "writers": [
-        "services/pm-core/db/seeds/northfield.sql"
-      ],
-      "readers": [
-        "policy.Resolve",
-        "baseline change (layer)"
-      ],
-      "disposition": "active",
-      "notes": "Baseline change stage 2"
-    },
     "baseline.variance.vp_finance_pct": {
       "writers": [
         "services/pm-core/db/seeds/northfield.sql"
@@ -124,27 +35,138 @@
       "disposition": "active",
       "notes": "Baseline change stage 3; Tier A"
     },
-    "health_review.cadence": {
+    "benefits.window_days": {
       "writers": [
         "services/pm-core/db/seeds/northfield.sql"
       ],
       "readers": [
         "policy.Resolve",
-        "health review (layer)"
+        "Benefits Realization (layer)"
       ],
       "disposition": "active",
-      "notes": "Health review cadence"
+      "notes": "Benefits Realization window"
     },
-    "health_review.high_value_threshold": {
+    "car.esign.required_above": {
       "writers": [
         "services/pm-core/db/seeds/northfield.sql"
       ],
       "readers": [
         "policy.Resolve",
-        "health review (layer)"
+        "Sigi coupling (slice 3)"
       ],
       "disposition": "active",
-      "notes": "Biweekly reviews above this"
+      "notes": "DocuSign vs attestation"
+    },
+    "car.fel_funding.cap_pct": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, snapshot at submission)",
+        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}"
+      ],
+      "disposition": "active",
+      "notes": "FEL-funding CAR cap as % of estimate TIC (\u00a708)"
+    },
+    "car.fel_funding.required_aace_class": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, snapshot at submission)",
+        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}"
+      ],
+      "disposition": "active",
+      "notes": "FEL-funding CAR precondition: estimate class (\u00a708)"
+    },
+    "car.full.required_aace_class": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, snapshot at submission)",
+        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}"
+      ],
+      "disposition": "active",
+      "notes": "Full CAR precondition: estimate class (\u00a708)"
+    },
+    "car.supplemental.reapproval_pct": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "policy.Resolve",
+        "services/pm-core/internal/domain/car_chain.go (BuildCARChain / CARTier, slice 3)"
+      ],
+      "disposition": "active",
+      "notes": "Supplemental CAR trigger"
+    },
+    "car.threshold.basis": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "policy.Resolve",
+        "services/pm-core/internal/domain/car_chain.go (BuildCARChain / CARTier, slice 3)"
+      ],
+      "disposition": "active",
+      "notes": "What the CAR amount is compared on"
+    },
+    "car.threshold.ceo": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "policy.Resolve",
+        "services/pm-core/internal/domain/car_chain.go (BuildCARChain / CARTier, slice 3)"
+      ],
+      "disposition": "active",
+      "notes": "CAR stage 5 routing"
+    },
+    "car.threshold.cfo": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "policy.Resolve",
+        "services/pm-core/internal/domain/car_chain.go (BuildCARChain / CARTier, slice 3)"
+      ],
+      "disposition": "active",
+      "notes": "CAR stage 4 routing"
+    },
+    "car.threshold.currency": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "policy.Resolve",
+        "services/pm-core/internal/domain/car_chain.go (BuildCARChain / CARTier, slice 3)"
+      ],
+      "disposition": "active",
+      "notes": "Currency of the thresholds"
+    },
+    "car.threshold.finance_approver": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}",
+        "services/pm-core/internal/domain/car_chain.go (BuildCARChain / CARTier, slice 3)"
+      ],
+      "disposition": "active",
+      "notes": "CAR stage 2 routing (\u00a708)"
+    },
+    "car.threshold.vp_finance": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "policy.Resolve",
+        "docs/tests/uats/specs/pm-core/policy.uats.json",
+        "services/pm-core/internal/domain/car_chain.go (BuildCARChain / CARTier, slice 3)"
+      ],
+      "disposition": "active",
+      "notes": "CAR stage 3 routing; MDEMG Tier A (\u00a706, \u00a708)"
     },
     "early_mgmt.exit.nameplate_pct": {
       "writers": [
@@ -168,16 +190,27 @@
       "disposition": "active",
       "notes": "Early Management exit criterion"
     },
-    "benefits.window_days": {
+    "health_review.cadence": {
       "writers": [
         "services/pm-core/db/seeds/northfield.sql"
       ],
       "readers": [
         "policy.Resolve",
-        "Benefits Realization (layer)"
+        "health review (layer)"
       ],
       "disposition": "active",
-      "notes": "Benefits Realization window"
+      "notes": "Health review cadence"
+    },
+    "health_review.high_value_threshold": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "policy.Resolve",
+        "health review (layer)"
+      ],
+      "disposition": "active",
+      "notes": "Biweekly reviews above this"
     },
     "mdemg.classify.timeout_ms": {
       "writers": [
@@ -185,10 +218,88 @@
       ],
       "readers": [
         "policy.Resolve",
-        "pkg/mdemgadapter (slice 2)"
+        "pkg/mdemgadapter (slice 2)",
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, slice 3)"
       ],
       "disposition": "active",
-      "notes": "Classify budget (§06)"
+      "notes": "Classify budget (\u00a706)"
+    },
+    "mdemg.tier.approval.car": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, snapshot at submission)",
+        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}"
+      ],
+      "disposition": "active",
+      "notes": "Fail-closed tier for approval.car at or above car.threshold.vp_finance (\u00a706 tier table)"
+    },
+    "mdemg.tier.approval.car.minor": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, snapshot at submission)",
+        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}"
+      ],
+      "disposition": "active",
+      "notes": "Fail-closed tier for approval.car below the threshold and for fel_funding (\u00a706 tier table)"
+    },
+    "sla.car.ceo": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, snapshot at submission)",
+        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}"
+      ],
+      "disposition": "active",
+      "notes": "CAR stage 5 SLA (hours)"
+    },
+    "sla.car.cfo": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, snapshot at submission)",
+        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}"
+      ],
+      "disposition": "active",
+      "notes": "CAR stage 4 SLA (hours)"
+    },
+    "sla.car.finance_approver": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, snapshot at submission)",
+        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}"
+      ],
+      "disposition": "active",
+      "notes": "CAR stage 2 SLA (hours)"
+    },
+    "sla.car.project_owner": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, snapshot at submission)",
+        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}"
+      ],
+      "disposition": "active",
+      "notes": "CAR stage 1 SLA (hours); stage_due_at"
+    },
+    "sla.car.vp_finance": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, snapshot at submission)",
+        "policy.Resolve via GET /api/v1/projects/{id}/policy/{key}"
+      ],
+      "disposition": "active",
+      "notes": "CAR stage 3 SLA (hours)"
     }
   }
 }

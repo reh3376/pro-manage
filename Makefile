@@ -26,7 +26,7 @@ export STUB_MDEMG_URL  ?= http://127.0.0.1:9997
         build test lint smoke smoke-stub ci-local hooks \
         go-build go-test go-lint py-sync py-test py-lint fe-install fe-typecheck fe-build \
         proto proto-lint proto-breaking \
-        uxts test-uats test-udts test-uats-stub test-uats-live test-mdemg-stub test-mdemg-live check-outbox test-outbox-stub test-uxts-hashes uxts-add-hashes \
+        uxts test-uats test-udts test-uats-stub test-uats-live test-mdemg-stub test-mdemg-live check-outbox test-outbox-stub check-car test-car-stub test-uxts-hashes uxts-add-hashes \
         test-unts unts-update verify-inventories check-matrix
 
 help: ## Show this help
@@ -144,7 +144,7 @@ test-udts: ## UDTS gRPC contract specs against the running dev stack (UDTS_TARGE
 	cd $(GO_DIR) && UDTS_TARGET=$(UDTS_TARGET) go test -count=1 -v ./tests/udts/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+contract_test)"
 
 test-mdemg-stub: ## Adapter integration tests against the stub MDEMG in the running stack
-	cd $(GO_DIR) && MDEMG_TEST_URL=$(STUB_MDEMG_URL) MDEMG_TEST_KEY=$${MDEMG_API_KEY:-ci-stub-key} go test -tags integration -count=1 ./pkg/mdemgadapter/
+	cd $(GO_DIR) && MDEMG_TEST_URL=$(STUB_MDEMG_URL) MDEMG_TEST_KEY=$${MDEMG_API_KEY:-$$(grep ^MDEMG_API_KEY= ../../$(COMPOSE_DIR)/.env | cut -d= -f2)} go test -tags integration -count=1 ./pkg/mdemgadapter/
 
 test-mdemg-live: env ## Adapter integration tests against the dedicated MDEMG stack (workstation only)
 	@set -a; source $(COMPOSE_DIR)/.env; set +a; cd $(GO_DIR) && MDEMG_TEST_URL=http://127.0.0.1:$${PM_MDEMG_PORT:-9998} MDEMG_TEST_KEY=$$MDEMG_API_KEY MDEMG_TEST_LIVE=1 go test -tags integration -count=1 -v ./pkg/mdemgadapter/
@@ -153,10 +153,16 @@ check-outbox: ## Prove the outbox path end to end in the running dev stack (need
 	@set -a; source $(COMPOSE_DIR)/.env; set +a; scripts/outbox_check.sh
 
 test-outbox-stub: ## Outbox integration tests against the stack's Postgres and the stub MDEMG
-	cd $(GO_DIR) && TEST_DATABASE_URL=$${TEST_DATABASE_URL:-postgres://pm:$$(grep ^POSTGRES_PASSWORD= ../../$(COMPOSE_DIR)/.env | cut -d= -f2)@127.0.0.1:$${PM_POSTGRES_PORT:-5440}/pm_core?sslmode=disable} MDEMG_TEST_URL=$(STUB_MDEMG_URL) MDEMG_TEST_KEY=$${MDEMG_API_KEY:-ci-stub-key} go test -tags integration -count=1 ./internal/outbox/
+	cd $(GO_DIR) && TEST_DATABASE_URL=$${TEST_DATABASE_URL:-postgres://pm:$$(grep ^POSTGRES_PASSWORD= ../../$(COMPOSE_DIR)/.env | cut -d= -f2)@127.0.0.1:$${PM_POSTGRES_PORT:-5440}/pm_core?sslmode=disable} MDEMG_TEST_URL=$(STUB_MDEMG_URL) MDEMG_TEST_KEY=$${MDEMG_API_KEY:-$$(grep ^MDEMG_API_KEY= ../../$(COMPOSE_DIR)/.env | cut -d= -f2)} go test -tags integration -count=1 ./internal/outbox/
+
+check-car: ## The Phase 0 exit test: toy CAR end to end through the REST edge of the running dev stack (needs the seed)
+	@set -a; source $(COMPOSE_DIR)/.env; set +a; scripts/car_check.sh
+
+test-car-stub: ## CAR domain integration tests (chain, tiers, deny, refusal) against the stack's Postgres and the stub MDEMG
+	cd $(GO_DIR) && TEST_DATABASE_URL=$${TEST_DATABASE_URL:-postgres://pm:$$(grep ^POSTGRES_PASSWORD= ../../$(COMPOSE_DIR)/.env | cut -d= -f2)@127.0.0.1:$${PM_POSTGRES_PORT:-5440}/pm_core?sslmode=disable} MDEMG_TEST_URL=$(STUB_MDEMG_URL) MDEMG_TEST_KEY=$${MDEMG_API_KEY:-$$(grep ^MDEMG_API_KEY= ../../$(COMPOSE_DIR)/.env | cut -d= -f2)} go test -tags integration -count=1 ./internal/domain/
 
 test-uats-stub: ## UATS validate-all against the stub MDEMG (needs `make dev-stub` or the CI stack)
-	MDEMG_API_KEY=$${MDEMG_API_KEY:-ci-stub-key} $(UATS_RUNNER) validate-all --spec-dir docs/tests/uats/specs/stub-mdemg --base-url $(STUB_MDEMG_URL)
+	MDEMG_API_KEY=$${MDEMG_API_KEY:-$$(grep ^MDEMG_API_KEY= $(COMPOSE_DIR)/.env | cut -d= -f2)} $(UATS_RUNNER) validate-all --spec-dir docs/tests/uats/specs/stub-mdemg --base-url $(STUB_MDEMG_URL)
 
 test-uats-live: env ## UATS validate-all against the dedicated MDEMG stack (workstation only; pre-merge for adapter changes)
 	@set -a; source $(COMPOSE_DIR)/.env; set +a; \

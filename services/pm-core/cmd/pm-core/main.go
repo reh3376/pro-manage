@@ -1,9 +1,10 @@
 // pm-core is the Go monolith at the centre of pro_manage (FSD §05).
 //
-// Slice 1a: configuration, secrets, structured logging, migrations (goose,
-// embedded), the audit chain, Site and Project services with audit-in-
-// transaction, policy-variable resolution, and the /api/v1 REST edge behind a
-// development actor header. SSO arrives with IdPi_OIDC.
+// Configuration, secrets, structured logging, migrations (goose, embedded),
+// the audit chain, Site and Project services with audit-in-transaction,
+// policy-variable resolution, the MDEMG adapter and governance gate, the toy
+// CAR workflow, and the /api/v1 REST edge behind a development actor header.
+// SSO arrives with IdPi_OIDC.
 package main
 
 import (
@@ -19,6 +20,7 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/config"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/domain"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/grpcserver"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/secrets"
@@ -72,7 +74,8 @@ func run() error {
 		checks["postgres"] = st.Pool.Ping
 		log.Info("postgres configured", "auto_migrate", cfg.DBAutoMigrate, "dev_actor_header", cfg.DevActorHeader)
 
-		svc := &domain.Service{Store: st, Chain: chain, Tenant: cfg.TenantID}
+		gate := &governance.Gate{OrgID: cfg.GovernanceOrgID, Log: log, Cache: governance.NewPreclassCache(cfg.PreclassifyTTL)}
+		svc := &domain.Service{Store: st, Chain: chain, Tenant: cfg.TenantID, Gate: gate, Log: log}
 		a := &api.API{Log: log, Domain: svc, Chain: chain, DevActorHeader: cfg.DevActorHeader, MDEMGBaseURL: cfg.MDEMGBaseURL}
 		if cfg.MDEMGBaseURL != "" {
 			mc, err := mdemgadapter.New(mdemgadapter.Options{BaseURL: cfg.MDEMGBaseURL, APIKey: cfg.MDEMGAPIKey, ClassifyTimeout: cfg.MDEMGTimeout, UserAgent: "pro-manage/pm-core " + config.Version})
@@ -80,8 +83,9 @@ func run() error {
 				return err
 			}
 			a.MDEMG = mc
+			gate.Client = mc
 			h := mc.Health(ctx)
-			log.Info("mdemg configured", "base_url", cfg.MDEMGBaseURL, "reachable", h.Reachable, "jiminy_enabled", h.JiminyEnabled, "latency_ms", h.LatencyMs)
+			log.Info("mdemg configured", "base_url", cfg.MDEMGBaseURL, "governance_space", mdemgadapter.GovernanceSpace(cfg.GovernanceOrgID), "reachable", h.Reachable, "jiminy_enabled", h.JiminyEnabled, "latency_ms", h.LatencyMs)
 		}
 		a.Mount(mux)
 	}
