@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package pm.core.v1;
+
+// VersionService is the first gRPC contract in the repo. It exists so the
+// buf toolchain, code generation, and the UDTS conformance pattern (FSD §12)
+// are exercised from slice 0; domain services follow in later slices.
+service VersionService {
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
+}
+
+message GetVersionRequest {}
+
+message GetVersionResponse {
+  string service = 1;
+  string version = 2;
+  string git_sha = 3;
+}

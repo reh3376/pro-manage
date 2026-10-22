@@ -1,0 +1,17 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/reh3376/pro-manage/services/pm-core/gen
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: ../services/pm-core/gen
+    opt: paths=source_relative
+  - remote: buf.build/grpc/go
+    out: ../services/pm-core/gen
+    opt: paths=source_relative
+  - remote: buf.build/protocolbuffers/python
+    out: ../services/pm-sidecar/src/pm_sidecar/gen
+  - remote: buf.build/grpc/python
+    out: ../services/pm-sidecar/src/pm_sidecar/gen

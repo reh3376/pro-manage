@@ -65,7 +65,7 @@ The success criteria per phase apply to both; in scenario A they are read as "at
 - Monorepo with Go, Python, TS/Next.js layouts; `/docs/fsd/` already in place.
 - CI pipeline running UATS + UDTS + UNTS + Go/Python/TS unit tests on every PR, with no `continue-on-error` on any test step.
 - **UxTS scaffold:** vendored runner primitives and reference runners pinned to an MDEMG tag; `schema/`, `specs/`, `runners/` directories per framework; `docs/tests/UXTS_FRAMEWORK_MATRIX.md` with a CI disposition per framework; `add-hashes` / `verify-hashes` wired; UNTS registry; the five adjudication registries with their verifiers and the inventory pre-commit hook (`§12`).
-- `docker-compose.dev.yml` spins up Postgres, pm-TSDB, Redis, MinIO, MDEMG dev profile, pm-core, pm-sidecar, pm-workers, pm-frontend.
+- `docker-compose.dev.yml` spins up Postgres, pm-TSDB, Redis, RustFS (S3), Keycloak, Mailpit, and (with `--profile stub`) the stub MDEMG, alongside pm-core, pm-sidecar, pm-workers, pm-frontend.
 - Vault wired for secrets; initial secrets provisioned.
 - `IdPi` module shell + one backend (OIDC generic) authenticating locally against Keycloak-dev; local break-glass admin flow working.
 - `pm-core` edge: auth middleware + ACL plumbing (section-level grants minimum).
@@ -100,7 +100,7 @@ The success criteria per phase apply to both; in scenario A they are read as "at
 - **Budget:** in the ERP-led profile (IFS), baselines, forecasts, EAC, commitments, and actuals are mirrored through `ERPi_IFS`; pro_manage adds AACE class, CAR linkage, contingency drawdown, and variance views. Manual baseline entry and the pro_manage-led baseline-change chain are also built, for the pro_manage-led profile and for projects not yet in IFS.
 - **Schedule:** manual milestone entry + dependencies; completion rule enforcement; (Schedulei imports deferred to Phase 2).
 - **Approvals:** CAR + Baseline change workflows live, with all thresholds and SLAs as policy variables (global, project-type, portfolio, and per-project overrides) and a policy editor; multi-stage routing via eligibility pools; delegation (basic); SLA tick + nudges via Commsi; admin override path; signed-hash audit chain.
-- **Sigi:** DocuSign integration live for CAR ≥ configurable threshold; signed-artifact capture to MinIO.
+- **Sigi:** DocuSign integration live for CAR ≥ configurable threshold; signed-artifact capture to the object store.
 - **IdPi:** `IdPi_OIDC` production-ready (`IdPi_SAML` if the company's IdP needs it; pending owner intel).
 - **Connector SDK extraction (`§15`):** once `IdPi_OIDC` and `ERPi_IFS` both work in production, the shared parts (module server, vault-backed config, OAuth and OIDC helpers, resilient HTTP and OData clients, idempotency, ETags, polling scheduler, mapping layer, manifest, scaffolding CLI) are lifted into the SDK and both modules are re-based on it with no behaviour change (their UDTS specs prove it). `Sigi_DS` and `Commsi_SMTP` are the first modules built on the SDK, in this phase or the next. Python runtime deferred until a Python-only vendor requires it.
 - **Commsi:** SMTP + Teams (or Slack, per company culture) notifications for approvals + overdue nudges.

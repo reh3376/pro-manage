@@ -396,7 +396,7 @@ Mirrored records are read-only in pro_manage except for pro_manage-only attribut
 | **Neo4j (MDEMG)** | Docker | Observations, constraints, outcomes graph, decisions, concepts | pro_manage via `/v1/conversation/observe`; MDEMG internal | pro_manage via `/v1/jiminy/*` |
 | **TimescaleDB (MDEMG)** | Docker | MDEMG metrics and effectiveness telemetry | MDEMG internal | Platform operators (Grafana) |
 | **Redis** (pro_manage) | Docker | Session, cache, rate-limit, warmed-guidance snapshots | Go backend | Go backend |
-| **S3-compatible object store** (MinIO) | Docker (or external bucket) | Document binaries, export artifacts (PDF/PPTX), signed envelopes | Go backend | Go backend; signed URLs to authenticated users |
+| **S3-compatible object store** (RustFS in dev) | Docker (or external bucket) | Document binaries, export artifacts (PDF/PPTX), signed envelopes | Go backend | Go backend; signed URLs to authenticated users |
 | **External systems** (via connector modules) | Off-cluster | Source-of-truth for actuals (ERPi), schedules (Schedulei), docs (Doci), identities (IdPi), signatures (Sigi), notifications (Commsi), raw metrics (Metrici), HSE / MES / OEE-and-loss signals and abnormality tags (HSEi), in-service assets and failure history (CMMSi) | Those systems | pro_manage connectors |
 
 ## Identifiers and versioning

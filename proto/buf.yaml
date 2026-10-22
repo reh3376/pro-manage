@@ -1,0 +1,10 @@
+version: v2
+modules:
+  - path: .
+    name: buf.build/reh3376/pro-manage
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE

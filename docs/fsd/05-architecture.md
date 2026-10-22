@@ -5,8 +5,8 @@
 - **2026-10-13:** Backend: **Go** monolithic core (`pm-core`) plus **Python sidecar** (`pm-sidecar`) for scripting-heavy work (document rendering, spreadsheet I/O, data transforms, derived-metric computation).
 - **2026-10-13:** Frontend: **Next.js (TypeScript/React)**, served as a container alongside the backend.
 - **2026-10-13:** Internal APIs: **gRPC** between services (core ↔ sidecar, core ↔ connector modules, workers ↔ core). External APIs (frontend ↔ core, external stakeholders ↔ core) are **HTTP REST + Server-Sent Events / WebSockets** for live dashboards.
-- **2026-10-20:** **Engineering toolchain for the spine** (owner decisions at the start of development): a **monorepo in this repository** (`services/pm-core`, `services/pm-sidecar`, `services/pm-workers`, `apps/pm-frontend`, `connectors/<Type>i_<CODE>/`, `proto/`, `docs/`); Go 1.26; Python 3.14 via `uv` (every sidecar dependency ships a wheel for it); Node 22 with `pnpm`, Next.js 16, TypeScript 7; Postgres 16 and TimescaleDB 2.25 (pg16); Redis 7; MinIO; `buf` for protobuf; **goose** for SQL migrations embedded in the pm-core binary; **pgx + sqlc** for database access (hand-written SQL, generated typed Go) so row security, audit-in-transaction, and optimistic-concurrency checks stay visible in review. Dev secrets are gitignored `.env` files behind a provider interface; the dev IdP is Keycloak with a seeded realm; the dev MDEMG is a dedicated Compose project (`§06`).
-- **2026-10-13:** All databases run in **Docker containers**: Postgres (OLTP), TimescaleDB (ours, metric readings), Redis (session/cache), MinIO (S3-compatible object store). MDEMG runs its own stack adjacent (its own Neo4j, Timescale, Grafana, neural sidecar).
+- **2026-10-20:** **Engineering toolchain for the spine** (owner decisions at the start of development): a **monorepo in this repository** (`services/pm-core`, `services/pm-sidecar`, `services/pm-workers`, `apps/pm-frontend`, `connectors/<Type>i_<CODE>/`, `proto/`, `docs/`); Go 1.26; Python 3.14 via `uv` (every sidecar dependency ships a wheel for it); Node 22 with `pnpm`, Next.js 16, TypeScript 7; Postgres 16 and TimescaleDB 2.25 (pg16); Redis 7; an S3-compatible object store (RustFS 1.0.3 in dev, since MinIO images are no longer published; any S3 endpoint in production); `buf` for protobuf; **goose** for SQL migrations embedded in the pm-core binary; **pgx + sqlc** for database access (hand-written SQL, generated typed Go) so row security, audit-in-transaction, and optimistic-concurrency checks stay visible in review. Dev secrets are gitignored `.env` files behind a provider interface; the dev IdP is Keycloak with a seeded realm; the dev MDEMG is a dedicated Compose project (`§06`). `pm-workers` and the CI stub MDEMG are separate binaries built from the `pm-core` Go module (`cmd/pm-workers`, `cmd/stub-mdemg`) so shared packages need no second module.
+- **2026-10-13:** All databases run in **Docker containers**: Postgres (OLTP), TimescaleDB (ours, metric readings), Redis (session/cache), an S3-compatible object store (RustFS in dev). MDEMG runs its own stack adjacent (its own Neo4j, Timescale, Grafana, neural sidecar).
 - **2026-10-13:** Hosting footprint: **on-prem VMs with containers inside**, running docker-compose per VM. Compose topology designed to be upgraded to Kubernetes later without reshaping services.
 - **2026-10-13:** **Pluggable connector framework**: each integration module (ERPi, IdPi, Sigi, Schedulei, Doci, Commsi, Metrici, HSEi, CMMSi) is a separate container exposing a gRPC interface defined per-module. pm-core discovers and routes to connectors via an admin-managed registry.
 
@@ -53,7 +53,7 @@
           ┌──────────────────┼────────────────────────────────────────┐
           │                  │                                        │
 ┌─────────▼──────┐   ┌───────▼───────┐   ┌─────────────┐   ┌──────────▼────────┐
-│  pm-sidecar    │   │  pm-workers   │   │   Redis     │   │   MinIO (S3)      │
+│  pm-sidecar    │   │  pm-workers   │   │   Redis     │   │  S3 object store  │
 │  (Python)      │   │  (Go)         │   │  session+   │   │   doc binaries +  │
 │  render + xlsx │   │  schedulers + │   │  cache      │   │   exports         │
 │  derived metr. │   │  outbox drain │   │             │   │                   │
@@ -95,7 +95,7 @@
 | **Postgres** | n/a | OLTP source of truth. | Primary + hot standby; async WAL replica off-box for DR. |
 | **TimescaleDB (ours)** | n/a | Metric readings and loss events. | Primary with a streaming standby; tiered retention. |
 | **Redis** | n/a | Session store, rate-limit counters, warmed-guidance snapshot cache. | Sentinel pair. |
-| **MinIO** | n/a | Object storage for documents, exports, archived signed envelopes. | 4-node erasure-coded, or SAN-backed if the company has standard storage. |
+| **Object store (S3-compatible)** | n/a | Object storage for documents, exports, archived signed envelopes. RustFS in dev; any S3-compatible service in production. | 4-node erasure-coded, or SAN-backed if the company has standard storage. |
 | **MDEMG stack** | Go + Python | Advisory layer. Operates alongside pm-core on an internal Docker network, reachable only from pm-core. Includes its local language model (`llama-server` serving `mdemg-llm-v1` on the host's loopback); nothing it processes leaves the intranet (`§06`). | Follows MDEMG's own deployment guide; the LLM is bound to one host. |
 
 ### gRPC surface (internal)
@@ -279,7 +279,7 @@ pm-core ──► SSE push to subscribed browser sessions
 ### DF-03: Spreadsheet import (UC-10)
 ```
 browser ──► pm-core.Edge (REST POST, multipart xlsx)
-pm-core ──► MinIO (stash raw file)
+pm-core ──► object store (stash raw file)
 pm-core ──► pm-sidecar.SpreadsheetService.ValidateImport (gRPC, stream)
 pm-sidecar ──► returns row-by-row validation
 browser renders validation UI
@@ -296,7 +296,7 @@ browser ──► pm-core.Edge (REST POST)
 pm-core ──► pm-core.Service.Export (gather bound data from postgres + tsdb)
 pm-core ──► pm-sidecar.RenderService.RenderPPTX (gRPC, template + data payload)
 pm-sidecar ──► returns stream of chunks
-pm-core ──► MinIO (store output)
+pm-core ──► object store (store output)
 pm-core ──► browser (presigned URL)
 ```
 

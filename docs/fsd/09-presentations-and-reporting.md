@@ -106,7 +106,7 @@ Asset QR codes resolve to the pro_manage asset page (role-filtered). Offline cap
 ### Scheduling
 
 - Each dashboard can have `ExportSchedule` rows: `kind` ∈ `{pdf, pptx}`, `cadence` (cron or named, e.g. `weekly_fri_1700`), `recipients[]` (user ids, email addresses, Teams channel refs via Commsi), `template_id`, `filter_overrides`, `active`.
-- pm-workers scheduler fires at the cadence; invokes pm-core to assemble bound data; dispatches to pm-sidecar render; stores artifact in MinIO; sends via Commsi.
+- pm-workers scheduler fires at the cadence; invokes pm-core to assemble bound data; dispatches to pm-sidecar render; stores artifact in the object store; sends via Commsi.
 
 ### Templates
 
@@ -118,7 +118,7 @@ Asset QR codes resolve to the pro_manage asset page (role-filtered). Offline cap
 ### Delivery guarantees
 
 - Scheduled runs are idempotent per `(schedule_id, cycle_id)`. Failures retry with exponential backoff and surface in a dashboard-config diagnostics panel.
-- Delivery via `Commsi` honors channel-specific limits (email size caps → store artifact in MinIO, send presigned link + inline summary).
+- Delivery via `Commsi` honors channel-specific limits (email size caps → store artifact in the object store, send presigned link + inline summary).
 
 ## On-demand deck generation
 
@@ -145,7 +145,7 @@ Each is Git-tracked with a demo render under `templates/exports/examples/`.
 
 - Every deck is stamped with the data as-of timestamp per section (sections may draw from caches of different freshnesses).
 - The generated PPTX stores the stamp in each slide footer and in the file metadata.
-- Future retrievals of the same deck produce a *new* file reflecting *then-current* data; the original is preserved in MinIO.
+- Future retrievals of the same deck produce a *new* file reflecting *then-current* data; the original is preserved in the object store.
 
 ## Search
 
@@ -170,4 +170,4 @@ All exports are logged with retrievable requests ("who exported what, when").
 - Decide the charting library pair (frontend and pm-sidecar) that can share one grammar definition; the constraint is identical rendering on both paths, not features.
 - Decide whether live dashboards support anonymous (unauthenticated) tokenized viewing for truly external parties, or whether even tokenized viewers must self-attest identity. Current draft: self-attest (lightest audit still exists).
 - Confirm PDF rendering engine for the sidecar (Chromium headless vs ReportLab/WeasyPrint). Chromium is heavier but handles any CSS; WeasyPrint is lighter but has rendering limits. First instinct: Chromium headless.
-- Decide the default retention for generated export artifacts in MinIO (space-management). First instinct: 90 days for ad-hoc, aligned with retention regime for workflow-attached artifacts.
+- Decide the default retention for generated export artifacts in the object store (space-management). First instinct: 90 days for ad-hoc, aligned with retention regime for workflow-attached artifacts.

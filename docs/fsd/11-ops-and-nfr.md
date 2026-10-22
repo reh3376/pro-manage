@@ -58,7 +58,7 @@ Error budgets drive release-rate decisions: if the user surface burns > 50% of i
 
 - **Postgres**: nightly logical dumps + continuous WAL streaming to an off-box replica. RPO ≤ 15 min via WAL; RTO ≤ 4h for a full restore from logical + WAL replay.
 - **TimescaleDB** (ours): nightly snapshots + daily continuous aggregates as compaction material. Metric data loss tolerable at ≤ 1h window if a disaster strikes mid-day. Backfill from source systems (via Metrici) can recover most lost windows.
-- **MinIO**: multi-node erasure-coded; nightly snapshot copies to secondary tier (optional cold storage). RTO/RPO equivalent to Postgres for signed artifacts bound to AuditEvents.
+- **Object store**: multi-node erasure-coded (or the SAN-backed S3 service IT prefers); nightly snapshot copies to secondary tier (optional cold storage). RTO/RPO equivalent to Postgres for signed artifacts bound to AuditEvents.
 - **MDEMG** (Neo4j + TSDB): follow MDEMG's own backup guidance. Loss of MDEMG does not threaten pro_manage's authoritative state; recovery restores guidance.
 - **Redis**: ephemeral; sessions re-authenticate on recovery. Not backed up.
 - **Vault**: operator-managed per the chosen vault tech; keys sealed/unsealed on restart.
@@ -118,7 +118,7 @@ Error budgets drive release-rate decisions: if the user surface burns > 50% of i
 - **Per-site privacy regimes.** A site's `privacy_regime[]` (for example PIPEDA for a Canadian site, state privacy law elsewhere) determines what personal data the site's users and contributors may be asked for, the retention of their session and audit identifiers, and the notice shown at sign-in. Contractor and supplier contributors' personal data is limited to what federation or guest provisioning requires. Where a regime restricts cross-border processing, Legal confirms before that site goes live; the open item below carries it.
 - External document content is not stored in MDEMG (we send readable summaries, not bodies).
 - Those summaries are processed by a model running on the MDEMG host. No prompt, observation, or guidance is sent to a third-party AI service, in any environment.
-- Document contents are stored in MinIO under a tenant-scoped keyspace; signed URLs are short-lived and audience-bound.
+- Document contents are stored in the object store under a tenant-scoped keyspace; signed URLs are short-lived and audience-bound.
 
 ### Patching
 - OS and runtime patches on a monthly cadence, out-of-band for critical CVEs.
@@ -137,7 +137,7 @@ Error budgets drive release-rate decisions: if the user surface burns > 50% of i
 - Vertical scaling for Postgres primary (within reason); hot standby for failover.
 - Timescale as a single-node footprint with HA pair; shard later if needed.
 - Redis as a Sentinel pair.
-- MinIO scaling: 4+ nodes with erasure coding.
+- Object store scaling: 4+ nodes with erasure coding, or whatever the chosen S3 service provides.
 - MDEMG: follows its own capacity guidance. Its host is sized for the local model: 32 GB memory minimum (64 GB if `mdemg-llm-v2` is planned) on an Apple Silicon host, or a Linux VM with a 24 GB-class GPU passed through (`§06`, "Hardware"). The LLM does not scale horizontally in MVP; if classify queueing appears at 1.5× peak, the remedy is a larger host or a second `llama-server` behind MDEMG, planned as a Phase 4 item.
 - **Scaling drill**: before year-two load appears, run a controlled load test at 1.5× expected peak to confirm headroom; publish a capacity-plan addendum.
 

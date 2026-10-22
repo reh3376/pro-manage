@@ -263,7 +263,7 @@ Query performance:
 
 - **Raw readings:** retained per MetricDefinition `retention_policy` (default 2 years at full resolution).
 - **Continuous aggregates:** per-day, per-week, per-month roll-ups kept at longer retention (7 years day, 10 years month), enough for ISO/SOX historical lookback.
-- **Dropped data:** archived to object storage (MinIO) as parquet before being removed from pm-TSDB. Admin-triggered re-ingestion is possible.
+- **Dropped data:** archived to object storage as parquet before being removed from pm-TSDB. Admin-triggered re-ingestion is possible.
 - **Legal hold:** a project under legal hold has retention frozen; no deletion or downsampling occurs until the hold is released.
 
 ## Baseline captures for governance
