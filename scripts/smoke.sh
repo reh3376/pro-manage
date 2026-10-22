@@ -10,6 +10,7 @@ CORE="http://127.0.0.1:${PM_CORE_PORT:-8080}"
 WORKERS="http://127.0.0.1:${PM_WORKERS_PORT:-8081}"
 SIDECAR="http://127.0.0.1:${PM_SIDECAR_HTTP_PORT:-7070}"
 FRONTEND="http://127.0.0.1:${PM_FRONTEND_PORT:-3100}"
+IDPI="http://127.0.0.1:${PM_IDPI_HTTP_PORT:-7081}"
 STUBURL="http://127.0.0.1:${PM_STUB_MDEMG_PORT:-9997}"
 TIMEOUT="${SMOKE_TIMEOUT:-180}"
 
@@ -31,6 +32,8 @@ wait_for pm-core     "$CORE/readyz"            || fail=1
 wait_for pm-workers  "$WORKERS/healthz"        || fail=1
 wait_for pm-sidecar  "$SIDECAR/healthz"        || fail=1
 wait_for pm-frontend "$FRONTEND/api/healthz"   || fail=1
+wait_for idpi-oidc   "$IDPI/healthz"           || fail=1
+wait_for idpi-oidc   "$IDPI/readyz"            || fail=1   # ready = Keycloak discovery answered
 # pm-core must see its MDEMG (stub or dedicated stack) through the adapter.
 mstat=$(curl -s -m 5 -H 'X-Dev-Actor: smoke' "$CORE/api/v1/mdemg/status" | sed -n 's/.*"reachable":\([a-z]*\).*/\1/p')
 if [[ "$mstat" != "true" ]]; then echo "FAIL  pm-core cannot reach its MDEMG (reachable=$mstat)" >&2; fail=1; else echo "ok    pm-core -> mdemg reachable"; fi

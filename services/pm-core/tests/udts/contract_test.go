@@ -14,10 +14,12 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
@@ -98,7 +100,7 @@ func timeout(s Spec) time.Duration {
 
 func assertStatus(t *testing.T, s Spec, err error) {
 	t.Helper()
-	got := status.Code(err).String()
+	got := schemaCode(err)
 	if got != s.Expected.StatusCode {
 		t.Fatalf("status: want %s, got %s (%v)", s.Expected.StatusCode, got, err)
 	}
@@ -159,5 +161,27 @@ func TestGrpcHealthCheck(t *testing.T) {
 	hasField(t, s, map[string]any{"status": resp.GetStatus().String()})
 	if resp.GetStatus() != healthpb.HealthCheckResponse_SERVING {
 		t.Fatalf("health: want SERVING, got %s", resp.GetStatus())
+	}
+}
+
+// schemaCode renders a gRPC code the way the UDTS schema spells it (OK, INVALID_ARGUMENT, UNAVAILABLE, ...).
+func schemaCode(err error) string {
+	switch status.Code(err) {
+	case codes.OK:
+		return "OK"
+	case codes.InvalidArgument:
+		return "INVALID_ARGUMENT"
+	case codes.NotFound:
+		return "NOT_FOUND"
+	case codes.Internal:
+		return "INTERNAL"
+	case codes.Unavailable:
+		return "UNAVAILABLE"
+	case codes.Unauthenticated:
+		return "UNAUTHENTICATED"
+	case codes.PermissionDenied:
+		return "PERMISSION_DENIED"
+	default:
+		return strings.ToUpper(status.Code(err).String())
 	}
 }

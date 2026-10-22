@@ -12,7 +12,7 @@ pre-commit hook.
 Surfaces and their declaration scanners:
   routes                HTTP routes: Go `mux.HandleFunc("METHOD /path"...)` and Next.js `app/**/route.ts`
   policy_variables      PolicyVariable keys declared in Go (`policyvar.Define("key"`) or migration seeds
-  connector_capabilities Capability names declared in connector manifests (`connectors/*/connector.yaml`)
+  connector_capabilities Capability names declared in connector manifests (`connectors/<type>/<code>/connector.yaml`)
   metric_definitions    Metric ids declared in `services/pm-core/internal/metrics/definitions/*.yaml`
   loss_categories       Loss and project-loss category ids in `services/pm-core/db/seeds/*.sql`
   grpc_methods          `rpc` declarations in `proto/**/*.proto` (key: package.Service/Rpc)
@@ -85,12 +85,13 @@ def scan_policy_variables() -> dict[str, str]:
 
 def scan_connector_capabilities() -> dict[str, str]:
     found: dict[str, str] = {}
-    for p in (ROOT / "connectors").glob("*/connector.yaml"):
+    for p in sorted((ROOT / "connectors").glob("*/connector.yaml")) + sorted((ROOT / "connectors").glob("*/*/connector.yaml")):
         text = _read(p)
         block = re.search(r"^capabilities:\s*\n((?:\s+-\s+.*\n?)+)", text, re.M)
         if block:
             for cap in re.findall(r"-\s+([a-z0-9_]+)", block.group(1)):
-                found[f"{p.parent.name}:{cap}"] = str(p.relative_to(ROOT))
+                module = p.parent.relative_to(ROOT / "connectors").as_posix()  # <type>/<code> (FSD §15 layout)
+                found[f"{module}:{cap}"] = str(p.relative_to(ROOT))
     return found
 
 

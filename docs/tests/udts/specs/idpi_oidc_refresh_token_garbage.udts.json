@@ -1,0 +1,24 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.IdpiService",
+  "method": "RefreshToken",
+  "request": {
+    "refresh_token": "udts-bogus-refresh-token"
+  },
+  "expected": {
+    "status_code": "INVALID_ARGUMENT"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "2cbec93716311023faf83ac1fe7a84ab17308b9ca7b332029ce0c73bfe4a6d53"
+  },
+  "metadata": {
+    "description": "A refresh token the IdP rejects is INVALID_ARGUMENT (invalid_grant).",
+    "tags": [
+      "idpi-oidc",
+      "contract",
+      "idpi",
+      "token"
+    ]
+  }
+}

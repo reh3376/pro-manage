@@ -7,11 +7,14 @@ COMPOSE     := docker compose --env-file $(COMPOSE_DIR)/.env -f $(COMPOSE_DIR)/d
 COMPOSE_CI  := docker compose --env-file $(COMPOSE_DIR)/.env.ci -f $(COMPOSE_DIR)/docker-compose.dev.yml --profile stub
 MDEMG       := docker compose --env-file $(COMPOSE_DIR)/.env -f $(COMPOSE_DIR)/docker-compose.mdemg.yml
 GO_DIR      := services/pm-core
+IDPI_DIR    := connectors/idpi/oidc
+GO_MODULES  := $(GO_DIR) $(IDPI_DIR)
 PY_DIR      := services/pm-sidecar
 FE_DIR      := apps/pm-frontend
 VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 GIT_SHA     ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 export UDTS_TARGET ?= 127.0.0.1:8090
+export UDTS_IDPI_TARGET ?= 127.0.0.1:7080
 
 UXTS_PY     := uv run -q --no-project --with requests --with jsonpath-ng python
 UATS_RUNNER := $(UXTS_PY) docs/tests/uats/runners/uats_runner.py
@@ -26,7 +29,7 @@ export STUB_MDEMG_URL  ?= http://127.0.0.1:9997
         build test lint smoke smoke-stub ci-local hooks \
         go-build go-test go-lint py-sync py-test py-lint fe-install fe-typecheck fe-build \
         proto proto-lint proto-breaking \
-        uxts test-uats test-udts test-uats-stub test-uats-live test-mdemg-stub test-mdemg-live check-outbox test-outbox-stub check-car test-car-stub test-uxts-hashes uxts-add-hashes \
+        uxts test-uats test-udts test-idpi-live test-uats-stub test-uats-live test-mdemg-stub test-mdemg-live check-outbox test-outbox-stub check-car test-car-stub test-uxts-hashes uxts-add-hashes \
         test-unts unts-update verify-inventories check-matrix
 
 help: ## Show this help
@@ -93,14 +96,15 @@ test: go-test py-test fe-typecheck ## Run all unit tests and type checks
 
 lint: go-lint py-lint proto-lint ## Run all linters
 
-go-build: ## Build the Go binaries
+go-build: ## Build the Go binaries (pm-core module and every connector module)
 	cd $(GO_DIR) && go build -ldflags "-X github.com/reh3376/pro-manage/services/pm-core/internal/config.Version=$(VERSION) -X github.com/reh3376/pro-manage/services/pm-core/internal/config.GitSHA=$(GIT_SHA)" ./...
+	cd $(IDPI_DIR) && go build ./...
 
-go-test: ## Go unit tests (race detector on)
-	cd $(GO_DIR) && go test -race -count=1 ./...
+go-test: ## Go unit tests (race detector on) in every Go module
+	@set -e; for m in $(GO_MODULES); do echo "== go test: $$m"; (cd $$m && go test -race -count=1 ./...); done
 
-go-lint: ## go vet (golangci-lint arrives with the first real service code)
-	cd $(GO_DIR) && go vet ./...
+go-lint: ## go vet in every Go module (golangci-lint arrives with the first real service code)
+	@set -e; for m in $(GO_MODULES); do echo "== go vet: $$m"; (cd $$m && go vet ./... && gofmt -l . | (! grep .)); done
 
 py-sync: ## Install the sidecar environment with uv
 	cd $(PY_DIR) && uv sync
@@ -140,8 +144,12 @@ test-uats: ## UATS validate-all for the services against the running dev stack (
 	@set -e; for t in pm-core pm-workers pm-sidecar pm-frontend; do \
 	  echo "== uats: $$t"; $(UATS_RUNNER) validate-all --spec-dir docs/tests/uats/specs/$$t --base-url $$(python3 -c "import os;print(os.environ['PM_'+'$$t'.upper().replace('PM-','').replace('-','_')+'_URL'])"); done
 
-test-udts: ## UDTS gRPC contract specs against the running dev stack (UDTS_TARGET, default 127.0.0.1:8090)
+test-udts: ## UDTS gRPC contract specs against the running dev stack (pm-core at UDTS_TARGET, IdPi_OIDC at UDTS_IDPI_TARGET)
 	cd $(GO_DIR) && UDTS_TARGET=$(UDTS_TARGET) go test -count=1 -v ./tests/udts/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+contract_test)"
+	cd $(IDPI_DIR) && UDTS_IDPI_TARGET=$(UDTS_IDPI_TARGET) go test -count=1 -v ./tests/udts/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+contract_test)"
+
+test-idpi-live: ## IdPi_OIDC integration test against the dev stack's Keycloak (password grant through pm-dev-cli)
+	cd $(IDPI_DIR) && IDPI_TEST_ISSUER=http://127.0.0.1:$${PM_KEYCLOAK_PORT:-8180}/realms/northfield go test -tags integration -count=1 -v ./tests/integration/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+keycloak_test)"
 
 test-mdemg-stub: ## Adapter integration tests against the stub MDEMG in the running stack
 	cd $(GO_DIR) && MDEMG_TEST_URL=$(STUB_MDEMG_URL) MDEMG_TEST_KEY=$${MDEMG_API_KEY:-$$(grep ^MDEMG_API_KEY= ../../$(COMPOSE_DIR)/.env | cut -d= -f2)} go test -tags integration -count=1 ./pkg/mdemgadapter/

@@ -1,7 +1,103 @@
 {
   "surface": "grpc_methods",
-  "description": "Every rpc declared under proto/ must have a UDTS spec and a consumer (FSD §12, §15). Key: 'package.Service/Rpc'.",
+  "description": "Every rpc declared under proto/ must have a UDTS spec and a consumer (FSD \u00a712, \u00a715). Key: 'package.Service/Rpc'.",
   "entries": {
+    "pm.connector.v1.ConnectorService/Capabilities": {
+      "writers": [
+        "connectors/idpi/oidc/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/idpi_oidc_connector_capabilities.udts.json",
+        "connectors/idpi/oidc/tests/udts/contract_test.go",
+        "connectors/idpi/oidc/tests/integration/keycloak_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Manifest echo (\u00a715): module, type, code, contract, adjudicated capabilities."
+    },
+    "pm.connector.v1.ConnectorService/HealthCheck": {
+      "writers": [
+        "connectors/idpi/oidc/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/idpi_oidc_connector_healthcheck.udts.json",
+        "connectors/idpi/oidc/tests/udts/contract_test.go",
+        "connectors/idpi/oidc/tests/integration/keycloak_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Common connector probe (\u00a710): SERVING, DEGRADED (IdP discovery failing), NOT_SERVING; pm-core routes around DEGRADED instances once the registry lands (slice 4b)."
+    },
+    "pm.connector.v1.IdpiService/AuthenticateInteractive": {
+      "writers": [
+        "connectors/idpi/oidc/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/idpi_oidc_authenticate_interactive.udts.json",
+        "connectors/idpi/oidc/tests/udts/contract_test.go",
+        "connectors/idpi/oidc/tests/integration/keycloak_test.go"
+      ],
+      "disposition": "active",
+      "notes": "First leg of the code flow: PKCE authorization URL plus the verifier pm-core keeps in its pending-login record."
+    },
+    "pm.connector.v1.IdpiService/CompleteAuthentication": {
+      "writers": [
+        "connectors/idpi/oidc/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/idpi_oidc_complete_authentication_bad_code.udts.json",
+        "connectors/idpi/oidc/tests/udts/contract_test.go",
+        "connectors/idpi/oidc/tests/integration/keycloak_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Second leg: code exchange, id token verified (issuer, signature, audience or azp, nonce), claims extracted. Happy path covered by the Keycloak integration test only through the error path (no browser in CI); pm-core login (slice 4b) exercises it end to end."
+    },
+    "pm.connector.v1.IdpiService/Logout": {
+      "writers": [
+        "connectors/idpi/oidc/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/idpi_oidc_logout.udts.json",
+        "connectors/idpi/oidc/tests/udts/contract_test.go",
+        "connectors/idpi/oidc/tests/integration/keycloak_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Refresh-token revocation at the IdP plus the RP-initiated end-session URL."
+    },
+    "pm.connector.v1.IdpiService/RefreshToken": {
+      "writers": [
+        "connectors/idpi/oidc/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/idpi_oidc_refresh_token_garbage.udts.json",
+        "connectors/idpi/oidc/tests/udts/contract_test.go",
+        "connectors/idpi/oidc/tests/integration/keycloak_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Refresh grant; INVALID_ARGUMENT on invalid_grant, UNAVAILABLE when the IdP is down."
+    },
+    "pm.connector.v1.IdpiService/ResolveClaimsToRoles": {
+      "writers": [
+        "connectors/idpi/oidc/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/idpi_oidc_resolve_claims_to_roles.udts.json",
+        "connectors/idpi/oidc/tests/udts/contract_test.go",
+        "connectors/idpi/oidc/tests/integration/keycloak_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Pure claims-to-roles mapping (\u00a704) from connectors/idpi/oidc/mapping.yaml: platform roles, pools, attributes."
+    },
+    "pm.connector.v1.IdpiService/ValidateToken": {
+      "writers": [
+        "connectors/idpi/oidc/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/idpi_oidc_validate_token_garbage.udts.json",
+        "connectors/idpi/oidc/tests/udts/contract_test.go",
+        "connectors/idpi/oidc/tests/integration/keycloak_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Signature, issuer, expiry, audience; OK with valid=false for a bad token."
+    },
     "pm.core.v1.VersionService/GetVersion": {
       "writers": [
         "services/pm-core/internal/grpcserver/server.go"

@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package pm.connector.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// IdpiService is the identity connector contract (FSD §04 "IdPi", §10 "IdPi").
+// pm-core owns sessions, users, and grants; the module only talks to the IdP.
+// The interactive login is two RPCs because the authorization-code flow has
+// two legs: AuthenticateInteractive builds the redirect, CompleteAuthentication
+// exchanges the code the IdP sent back. PKCE state (the verifier) travels
+// through pm-core's pending-login record, never through the browser.
+service IdpiService {
+  rpc AuthenticateInteractive(AuthenticateInteractiveRequest) returns (AuthenticateInteractiveResponse);
+  rpc CompleteAuthentication(CompleteAuthenticationRequest) returns (CompleteAuthenticationResponse);
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc ResolveClaimsToRoles(ResolveClaimsToRolesRequest) returns (ResolveClaimsToRolesResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+}
+
+// Claims is the subset of IdP claims pro_manage relies on (§04 claims mapping).
+message Claims {
+  string subject = 1;             // the IdP's stable id (OIDC sub)
+  string email = 2;
+  string display_name = 3;
+  string preferred_username = 4;
+  repeated string groups = 5;     // group memberships as the IdP names them
+  repeated string roles = 6;      // realm or app roles, when the IdP issues them
+  map<string, string> attributes = 7;  // other string claims the mapping may reference (department, site, ...)
+}
+
+message AuthenticateInteractiveRequest {
+  string redirect_uri = 1;        // where the IdP sends the browser back (pm-core's callback)
+  string state = 2;               // pm-core's opaque login id, echoed by the IdP
+  string nonce = 3;               // bound into the id token
+  repeated string scopes = 4;     // extra scopes beyond openid; empty uses the module's default
+}
+
+message AuthenticateInteractiveResponse {
+  string authorization_url = 1;   // send the browser here
+  string state = 2;
+  string code_verifier = 3;       // PKCE verifier pm-core keeps server-side for CompleteAuthentication
+}
+
+message CompleteAuthenticationRequest {
+  string code = 1;
+  string redirect_uri = 2;        // must equal the one in AuthenticateInteractiveRequest
+  string code_verifier = 3;
+  string nonce = 4;               // checked against the id token
+}
+
+message CompleteAuthenticationResponse {
+  string external_id = 1;         // Claims.subject, repeated for convenience
+  Claims claims = 2;
+  string access_token = 3;
+  string refresh_token = 4;
+  string id_token = 5;
+  google.protobuf.Timestamp expires_at = 6;
+}
+
+message ValidateTokenRequest {
+  string token = 1;               // an access or id token issued by the IdP
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  string external_id = 2;
+  Claims claims = 3;
+  google.protobuf.Timestamp expires_at = 4;
+  string error = 5;               // why it is invalid (signature, expiry, issuer, audience)
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;       // rotated when the IdP rotates it, else the input
+  string id_token = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+message ResolveClaimsToRolesRequest {
+  Claims claims = 1;
+}
+
+message ResolveClaimsToRolesResponse {
+  repeated string platform_roles = 1;   // §04 platform roles
+  repeated string pools = 2;            // §04 workflow pools and eligibilities (finance_approver_eligible, vp_finance, ...)
+  map<string, string> attributes = 3;   // mapping-derived attributes (site, department) for pool scoping
+}
+
+message LogoutRequest {
+  string refresh_token = 1;             // revoked at the IdP when given
+  string id_token_hint = 2;             // for the RP-initiated logout URL
+  string post_logout_redirect_uri = 3;
+}
+
+message LogoutResponse {
+  bool revoked = 1;                     // the refresh token was revoked at the IdP
+  string end_session_url = 2;           // send the browser here to end the IdP session (empty when the IdP has none)
+}

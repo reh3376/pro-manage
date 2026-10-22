@@ -1,0 +1,69 @@
+# Claims-to-roles mapping (FSD §04 "Claims-to-role mapping") for the Northfield dev realm.
+# Each rule selects a claim (groups, roles, email, preferred_username, or attributes.<name>),
+# tests it (contains | equals | matches), and assigns platform roles, workflow pools, and
+# attributes. Group paths may carry Keycloak's leading "/"; it is ignored by `contains`.
+# A regex `matches` rule may use its capture groups ($1, $2) in attribute values.
+mappings:
+  # platform roles from groups
+  - claim: groups
+    contains: pro_manage.platform_admins
+    assigns: [platform_admin]
+  - claim: groups
+    contains: pro_manage.policy_owners
+    assigns: [policy_owner]
+  - claim: groups
+    contains: pro_manage.governance_authors
+    assigns: [governance_author]
+  - claim: groups
+    contains: pro_manage.portfolio_executives
+    assigns: [portfolio_executive]
+  - claim: groups
+    contains: pro_manage.finance_approvers
+    assigns: [finance_approver_eligible]
+    pools: [finance_approver_eligible]
+  - claim: groups
+    contains: pro_manage.employees
+    attributes: { employee: "true" }
+  - claim: groups
+    contains: pro_manage.contributors
+    attributes: { external: "true" }
+
+  # platform roles the IdP issues directly as realm roles
+  - claim: roles
+    contains: platform_admin
+    assigns: [platform_admin]
+  - claim: roles
+    contains: policy_owner
+    assigns: [policy_owner]
+  - claim: roles
+    contains: governance_author
+    assigns: [governance_author]
+  - claim: roles
+    contains: compliance_officer
+    assigns: [compliance_officer]
+  - claim: roles
+    contains: portfolio_executive
+    assigns: [portfolio_executive]
+  - claim: roles
+    contains: finance_approver_eligible
+    assigns: [finance_approver_eligible]
+    pools: [finance_approver_eligible]
+
+  # site pools (§04 workflow roles): per-site groups name the site, realm roles do not
+  - claim: groups
+    matches: '^/?site\.([A-Za-z0-9-]+)\.operations_leads$'
+    pools: [site_operations_lead]
+    attributes: { site: "$1" }
+  - claim: groups
+    matches: '^/?site\.([A-Za-z0-9-]+)\.maintenance_leads$'
+    pools: [site_maintenance_lead]
+    attributes: { site: "$1" }
+  - claim: roles
+    contains: site_operations_lead
+    pools: [site_operations_lead]
+  - claim: roles
+    contains: site_maintenance_lead
+    pools: [site_maintenance_lead]
+  - claim: roles
+    contains: pmo_lead
+    pools: [pmo_lead]

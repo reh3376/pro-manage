@@ -1,0 +1,32 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.IdpiService",
+  "method": "ResolveClaimsToRoles",
+  "request": {
+    "claims": {
+      "subject": "udts",
+      "groups": [
+        "/pro_manage.employees",
+        "/pro_manage.finance_approvers",
+        "/site.NF-KY.operations_leads"
+      ]
+    }
+  },
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "platform_roles"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "2cbec93716311023faf83ac1fe7a84ab17308b9ca7b332029ce0c73bfe4a6d53"
+  },
+  "metadata": {
+    "description": "ResolveClaimsToRoles applies the mapping file (FSD \u00a704 claims-to-role mapping) without calling the IdP: the dev mapping yields finance_approver_eligible, the finance pool, the KY operations pool, and site=NF-KY.",
+    "tags": [
+      "idpi-oidc",
+      "contract",
+      "idpi",
+      "roles"
+    ]
+  }
+}

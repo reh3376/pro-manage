@@ -1,0 +1,30 @@
+# Module manifest (FSD §15 "Module manifest"). pm-core reads this at registration;
+# the capabilities are adjudicated in docs/inventories/connector_capabilities_inventory.json.
+module: IdPi_OIDC
+type: IdPi
+code: OIDC
+version: 0.1.0
+contract: pm.connector.v1.IdpiService >= 1.0, < 2.0
+runtime: go
+image: pm-idpi-oidc
+capabilities:
+  - interactive_login
+  - pkce
+  - token_validation
+  - token_refresh
+  - claims_to_roles
+  - logout
+config_schema:
+  issuer:              { type: url, required: true }       # OIDC issuer; discovery at <issuer>/.well-known/openid-configuration
+  client_id:           { type: string, required: true }
+  scopes:              { type: string, default: "openid profile email" }
+  groups_claim:        { type: string, default: groups }
+  roles_claim:         { type: string, default: realm_access.roles }
+  accepted_audiences:  { type: list, default: [] }         # beyond client_id; "azp" is always accepted
+  mapping_file:        { type: path, default: /etc/idpi/mapping.yaml }  # claims-to-roles mapping (§04)
+  jwks_cache_ttl:      { type: duration, default: 1h }     # go-oidc refreshes on kid miss as well
+secrets:
+  - OIDC_CLIENT_SECRET   # empty for a public client (PKCE only)
+egress:
+  - "<issuer host>:443"
+inbound: []

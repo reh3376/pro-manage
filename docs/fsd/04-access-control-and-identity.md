@@ -10,6 +10,8 @@
 - **2026-10-13:** Project **Owner** always has read + write on their own project. Grants cannot DENY an Owner on their own project. If finer-grained control is needed, assign a different person as Owner.
 - **2026-10-13:** Session identity for pro_manage ↔ MDEMG is keyed as `user_id:project_id` so MDEMG escalation and trust accumulate per (user, project) rather than per HTTP request.
 
+- **2026-10-22:** **`IdPi_OIDC` exists as a module (slice 4a).** `connectors/idpi/oidc/` implements `pm.connector.v1.IdpiService` against the dev Keycloak realm: discovery with a backchannel rewrite (the dev IdP advertises its browser-facing issuer), PKCE code flow in two RPCs (`AuthenticateInteractive`, `CompleteAuthentication`), JWKS verification with audience-or-`azp` acceptance, refresh, revocation plus end-session URL, and the claims-to-roles mapping of this section as a YAML rule file (`mapping.yaml`: groups and realm roles to platform roles, workflow pools, and a `site` attribute). pm-core's login routes, users, sessions, and the pool fill from claims are slice 4b; break-glass admin and SCIM stay open (OI-19, OI-20).
+
 ## Identity
 
 ### IdPi: the SSO abstraction

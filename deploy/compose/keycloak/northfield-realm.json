@@ -14,15 +14,15 @@
     "realm": [
       {
         "name": "platform_admin",
-        "description": "Operates the platform; no blanket project read (FSD §04)"
+        "description": "Operates the platform; no blanket project read (FSD \u00a704)"
       },
       {
         "name": "policy_owner",
-        "description": "Sets policy variables (FSD §08)"
+        "description": "Sets policy variables (FSD \u00a708)"
       },
       {
         "name": "governance_author",
-        "description": "Authors Jiminy constraints (FSD §06)"
+        "description": "Authors Jiminy constraints (FSD \u00a706)"
       },
       {
         "name": "compliance_officer",
@@ -193,13 +193,24 @@
   "clientScopes": [
     {
       "name": "pro_manage",
-      "description": "Claims pro_manage relies on: username, email, name, realm roles, groups (self-contained; a partial realm import does not create Keycloak's built-in scopes).",
+      "description": "Claims pro_manage relies on: sub (Keycloak 26 omits it from access tokens unless mapped), username, email, name, realm roles, groups (self-contained; a partial realm import does not create Keycloak's built-in scopes).",
       "protocol": "openid-connect",
       "attributes": {
         "include.in.token.scope": "false",
         "display.on.consent.screen": "false"
       },
       "protocolMappers": [
+        {
+          "name": "subject",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-sub-mapper",
+          "consentRequired": false,
+          "config": {
+            "access.token.claim": "true",
+            "introspection.token.claim": "true",
+            "lightweight.claim": "false"
+          }
+        },
         {
           "name": "username",
           "protocol": "openid-connect",

@@ -1,0 +1,23 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.ConnectorService",
+  "method": "HealthCheck",
+  "request": {},
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "status"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "b9b449c0bb0d2ba6926562bdfa7fca73daa7f902ba4ad3370f15a68499b6bc7c"
+  },
+  "metadata": {
+    "description": "Every connector answers HealthCheck; IdPi_OIDC reports SERVING when the IdP's discovery document answers, DEGRADED otherwise. proto_sha256 pins proto/pm/connector/v1/connector.proto.",
+    "tags": [
+      "idpi-oidc",
+      "contract",
+      "connector",
+      "health"
+    ]
+  }
+}
