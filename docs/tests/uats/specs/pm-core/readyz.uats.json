@@ -1,0 +1,52 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core readyz",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "health",
+      "postgres"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "Dependency readiness: Postgres answers. Requires DATABASE_URL in the target environment (the compose stack sets it).",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "9c35bd7db3df8b7b16cd99708698ab203c978a8dcb21ccfaa0ee0d442898387b"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/readyz"
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "status ready",
+        "path": "$.status",
+        "op": "equals",
+        "expected": "ready"
+      },
+      {
+        "name": "service",
+        "path": "$.service",
+        "op": "equals",
+        "expected": "pm-core"
+      },
+      {
+        "name": "postgres check passes",
+        "path": "$.checks.postgres",
+        "op": "equals",
+        "expected": "ok"
+      }
+    ]
+  }
+}

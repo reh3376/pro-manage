@@ -1,0 +1,80 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-sidecar healthz",
+    "base_url": "${PM_SIDECAR_URL:-http://127.0.0.1:7070}",
+    "service": "pm-sidecar",
+    "tags": [
+      "pm-sidecar",
+      "health"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "2f6ddc6833cfe54ac428c1c01e41840bd365ee84cbf4007e2fb612ee71359912"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/healthz"
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "status ok",
+        "path": "$.status",
+        "op": "equals",
+        "expected": "ok"
+      },
+      {
+        "name": "service name",
+        "path": "$.service",
+        "op": "equals",
+        "expected": "pm-sidecar"
+      },
+      {
+        "name": "version is string",
+        "path": "$.version",
+        "op": "type_is",
+        "expected": "string"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "readyz_same_shape",
+      "request": {
+        "path": "/readyz"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "ok",
+            "path": "$.status",
+            "op": "equals",
+            "expected": "ok"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown_path_404",
+      "request": {
+        "path": "/nope"
+      },
+      "expected": {
+        "status": 404,
+        "body_assertions": []
+      }
+    }
+  ]
+}

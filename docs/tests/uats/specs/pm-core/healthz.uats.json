@@ -1,0 +1,73 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core healthz",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "health"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "Process liveness. Field shape is the contract every probe and the frontend status page rely on.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "117edd045556941fa0427690385bce1ab54dd657e70e0a8bae5266d8828aa0ee"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/healthz"
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "status ok",
+        "path": "$.status",
+        "op": "equals",
+        "expected": "ok"
+      },
+      {
+        "name": "service name",
+        "path": "$.service",
+        "op": "equals",
+        "expected": "pm-core"
+      },
+      {
+        "name": "version is string",
+        "path": "$.version",
+        "op": "type_is",
+        "expected": "string"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "method_not_allowed_post",
+      "request": {
+        "method": "POST"
+      },
+      "expected": {
+        "status": 405,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "unknown_path_404",
+      "request": {
+        "path": "/nope"
+      },
+      "expected": {
+        "status": 404,
+        "body_assertions": []
+      }
+    }
+  ]
+}

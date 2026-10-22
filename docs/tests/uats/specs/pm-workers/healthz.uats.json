@@ -1,0 +1,70 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-workers healthz",
+    "base_url": "${PM_WORKERS_URL:-http://127.0.0.1:8081}",
+    "service": "pm-workers",
+    "tags": [
+      "pm-workers",
+      "health"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "32a9ed284c1c71db207057740a5fefe91b656e3e7709b047b45eea87b0ad7f98"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/healthz"
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "status ok",
+        "path": "$.status",
+        "op": "equals",
+        "expected": "ok"
+      },
+      {
+        "name": "service name",
+        "path": "$.service",
+        "op": "equals",
+        "expected": "pm-workers"
+      },
+      {
+        "name": "version is string",
+        "path": "$.version",
+        "op": "type_is",
+        "expected": "string"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "readyz_reports_ready",
+      "request": {
+        "path": "/readyz"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "ready",
+            "path": "$.status",
+            "op": "equals",
+            "expected": "ready"
+          }
+        ]
+      }
+    }
+  ]
+}

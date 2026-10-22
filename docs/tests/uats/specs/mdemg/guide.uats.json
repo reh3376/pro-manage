@@ -1,0 +1,148 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "mdemg jiminy guide",
+    "base_url": "${MDEMG_BASE_URL:-http://127.0.0.1:9998}",
+    "service": "mdemg",
+    "tags": [
+      "mdemg",
+      "live",
+      "jiminy",
+      "guide",
+      "embedding_required"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "The field shapes pm-core's adapter depends on (\u00a706). Needs the local LLM and embeddings; run from the workstation.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 60000,
+    "sha256": "af034cd5b91c8a6717d81271340e0e22f05e787538b510eec014b3628a512c4f"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/v1/jiminy/guide",
+    "headers": {
+      "X-API-Key": "${MDEMG_API_KEY}",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "space_id": "pm-uats.governance",
+      "context": "UATS contract probe: user reviewing a CAR approval form",
+      "session_id": "uats:pm-uats",
+      "max_items": 5
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "data object",
+        "path": "$.data",
+        "op": "type_is",
+        "expected": "object"
+      },
+      {
+        "name": "guidance array",
+        "path": "$.data.guidance",
+        "op": "type_is",
+        "expected": "array"
+      },
+      {
+        "name": "guidance_id string",
+        "path": "$.data.guidance_id",
+        "op": "type_is",
+        "expected": "string"
+      },
+      {
+        "name": "prompt_augmentation string",
+        "path": "$.data.prompt_augmentation",
+        "op": "type_is",
+        "expected": "string"
+      },
+      {
+        "name": "confidence number",
+        "path": "$.data.confidence",
+        "op": "type_is",
+        "expected": "number"
+      },
+      {
+        "name": "rationale string",
+        "path": "$.data.rationale",
+        "op": "type_is",
+        "expected": "string"
+      },
+      {
+        "name": "source_counts object",
+        "path": "$.data.source_counts",
+        "op": "type_is",
+        "expected": "object"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "missing_space_id_400",
+      "request": {
+        "body": {
+          "space_id": ""
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body_assertions": [
+          {
+            "name": "error",
+            "path": "$.error",
+            "op": "exists"
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing_context_400",
+      "request": {
+        "body": {
+          "context": ""
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body_assertions": [
+          {
+            "name": "error",
+            "path": "$.error",
+            "op": "exists"
+          }
+        ]
+      }
+    },
+    {
+      "name": "method_not_allowed_get",
+      "request": {
+        "method": "GET"
+      },
+      "expected": {
+        "status": 405,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "missing_api_key_401",
+      "request": {
+        "headers": {
+          "X-API-Key": ""
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": []
+      }
+    }
+  ]
+}

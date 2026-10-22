@@ -1,0 +1,51 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-frontend api healthz",
+    "base_url": "${PM_FRONTEND_URL:-http://127.0.0.1:3100}",
+    "service": "pm-frontend",
+    "tags": [
+      "pm-frontend",
+      "health"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "5eea2e911624ef6dd68fc3bf11d6d2ce8191d8f7917902f5b52b07e18735f988"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/healthz"
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "status ok",
+        "path": "$.status",
+        "op": "equals",
+        "expected": "ok"
+      },
+      {
+        "name": "service name",
+        "path": "$.service",
+        "op": "equals",
+        "expected": "pm-frontend"
+      },
+      {
+        "name": "version is string",
+        "path": "$.version",
+        "op": "type_is",
+        "expected": "string"
+      }
+    ]
+  }
+}

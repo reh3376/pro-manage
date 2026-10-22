@@ -11,10 +11,21 @@ PY_DIR      := services/pm-sidecar
 FE_DIR      := apps/pm-frontend
 VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
+UXTS_PY     := uv run -q --no-project --with requests --with jsonpath-ng python
+UATS_RUNNER := $(UXTS_PY) docs/tests/uats/runners/uats_runner.py
+# Service URLs the UATS specs default to; override to point at another stack.
+export PM_CORE_URL     ?= http://127.0.0.1:8080
+export PM_WORKERS_URL  ?= http://127.0.0.1:8081
+export PM_SIDECAR_URL  ?= http://127.0.0.1:7070
+export PM_FRONTEND_URL ?= http://127.0.0.1:3100
+export STUB_MDEMG_URL  ?= http://127.0.0.1:9997
+
 .PHONY: help env dev dev-stub dev-down dev-logs mdemg-up mdemg-down mdemg-logs \
-        build test lint smoke smoke-stub ci-local \
+        build test lint smoke smoke-stub ci-local hooks \
         go-build go-test go-lint py-sync py-test py-lint fe-install fe-typecheck fe-build \
-        proto proto-lint proto-breaking
+        proto proto-lint proto-breaking \
+        uxts test-uats test-uats-stub test-uats-live test-uxts-hashes uxts-add-hashes \
+        test-unts unts-update verify-inventories check-matrix
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -101,5 +112,44 @@ proto-lint: ## Lint protos
 proto-breaking: ## Check protos for breaking changes against main
 	cd proto && buf breaking --against '.git#branch=main,subdir=proto'
 
-ci-local: lint test ## What PR CI runs, minus the compose smoke
+ci-local: lint test uxts ## What PR CI runs, minus the compose smoke and live UATS
 	@echo "ci-local: ok"
+
+# ---------------------------------------------------------------- UxTS (FSD §12)
+
+uxts: test-uxts-hashes test-unts verify-inventories check-matrix ## Static UxTS gates (what the uxts CI job runs)
+
+test-uats: ## UATS validate-all for the services against the running dev stack (set *_URL to retarget)
+	@set -e; for t in pm-core pm-workers pm-sidecar pm-frontend; do \
+	  echo "== uats: $$t"; $(UATS_RUNNER) validate-all --spec-dir docs/tests/uats/specs/$$t --base-url $$(python3 -c "import os;print(os.environ['PM_'+'$$t'.upper().replace('PM-','').replace('-','_')+'_URL'])"); done
+
+test-uats-stub: ## UATS validate-all against the stub MDEMG (needs `make dev-stub` or the CI stack)
+	MDEMG_API_KEY=$${MDEMG_API_KEY:-ci-stub-key} $(UATS_RUNNER) validate-all --spec-dir docs/tests/uats/specs/stub-mdemg --base-url $(STUB_MDEMG_URL)
+
+test-uats-live: env ## UATS validate-all against the dedicated MDEMG stack (workstation only; pre-merge for adapter changes)
+	@set -a; source $(COMPOSE_DIR)/.env; set +a; \
+	  $(UATS_RUNNER) validate-all --spec-dir docs/tests/uats/specs/mdemg --base-url http://127.0.0.1:$${PM_MDEMG_PORT:-9998} --timeout 90
+
+test-uxts-hashes: ## Verify config.sha256 on every UxTS spec (merge-blocking)
+	$(UATS_RUNNER) verify-hashes --spec-dir docs/tests/uats/specs --pattern "**/*.uats.json"
+
+uxts-add-hashes: ## Re-pin config.sha256 after editing specs (commit the result in the same PR)
+	$(UATS_RUNNER) add-hashes --spec-dir docs/tests/uats/specs --pattern "**/*.uats.json"
+	@$(MAKE) --no-print-directory unts-update
+
+test-unts: ## UNTS: governed artifacts match the registry (merge-blocking)
+	python3 scripts/unts.py verify
+
+unts-update: ## UNTS: recompute the registry after a reviewed change
+	python3 scripts/unts.py update
+
+verify-inventories: ## Adjudication registries: every declaration has an entry (merge-blocking)
+	python3 scripts/verify_inventories.py
+
+check-matrix: ## Framework matrix currency (fails when 30+ days behind the newest spec)
+	python3 scripts/check_matrix_currency.py
+
+hooks: ## Install the pre-commit gate (inventories, UNTS, spec hashes, gofmt)
+	git config core.hooksPath scripts/hooks
+	chmod +x scripts/hooks/*
+	@echo "hooks installed (git config core.hooksPath scripts/hooks)"

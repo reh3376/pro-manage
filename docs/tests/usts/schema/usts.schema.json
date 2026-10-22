@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mdemg.dev/schemas/usts/v1.0.0",
+  "title": "USTS - Universal Security Test Specification",
+  "description": "Schema for defining security tests in MDEMG",
+  "type": "object",
+  "required": ["usts_version", "test", "assertions"],
+  "properties": {
+    "usts_version": {
+      "type": "string",
+      "description": "Version of the USTS schema",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "test": {
+      "type": "object",
+      "required": ["name", "category", "endpoint"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique identifier for this test"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what this test validates"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["authentication", "authorization", "injection", "rate_limiting", "data_exposure", "headers"],
+          "description": "Security category being tested"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low"],
+          "default": "medium"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "API endpoint to test"
+        },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+          "default": "POST"
+        }
+      }
+    },
+    "requests": {
+      "type": "array",
+      "description": "Test requests to execute",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "payload": {
+            "type": "object"
+          },
+          "payload_file": {
+            "type": "string",
+            "description": "Path to payload file"
+          },
+          "expected_status": {
+            "type": "integer"
+          },
+          "expected_status_range": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    },
+    "assertions": {
+      "type": "object",
+      "description": "Assertions that must be true for the test to pass",
+      "properties": {
+        "status_code": {
+          "type": "integer"
+        },
+        "status_in": {
+          "type": "array",
+          "items": { "type": "integer" }
+        },
+        "body_not_contains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Strings that must NOT appear in response body"
+        },
+        "body_contains": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "headers_present": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "headers_not_present": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "response_time_ms_max": {
+          "type": "number"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "owasp": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "OWASP Top 10 categories"
+        },
+        "cwe": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "CWE identifiers"
+        },
+        "references": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

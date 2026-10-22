@@ -1,0 +1,74 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "mdemg jiminy classify",
+    "base_url": "${MDEMG_BASE_URL:-http://127.0.0.1:9998}",
+    "service": "mdemg",
+    "tags": [
+      "mdemg",
+      "live",
+      "jiminy",
+      "classify"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 60000,
+    "sha256": "b02e4a6c6dcf32146eda13ffb6e64cc625299d24dd0fab6ebef357d0b52ed015"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/v1/jiminy/classify",
+    "headers": {
+      "X-API-Key": "${MDEMG_API_KEY}",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "space_id": "pm-uats.governance",
+      "session_id": "uats:pm-uats",
+      "tool_name": "approval.car",
+      "agent_output": "UATS contract probe: approve a small CAR within the owner's authority"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "verdict pass|deny",
+        "path": "$.data.verdict",
+        "op": "one_of",
+        "expected": [
+          "pass",
+          "deny"
+        ]
+      },
+      {
+        "name": "confidence number",
+        "path": "$.data.confidence",
+        "op": "type_is",
+        "expected": "number"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "missing_api_key_401",
+      "request": {
+        "headers": {
+          "X-API-Key": ""
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": []
+      }
+    }
+  ]
+}

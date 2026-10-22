@@ -1,0 +1,5 @@
+{
+  "surface": "policy_variables",
+  "description": "Every PolicyVariable key declared in pm-core (policyvar.Define or seed SQL) must be adjudicated here with its consumers (FSD \u00a708, \u00a712). A key with no reader is a knob that does nothing.",
+  "entries": {}
+}

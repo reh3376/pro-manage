@@ -1,0 +1,113 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "mdemg jiminy warm and latest",
+    "base_url": "${MDEMG_BASE_URL:-http://127.0.0.1:9998}",
+    "service": "mdemg",
+    "tags": [
+      "mdemg",
+      "live",
+      "jiminy",
+      "warm"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 30000,
+    "sha256": "3955428ff87883081a10b8bbfadb223685d05ebf0ee02f5060e3179d9accc498"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/v1/jiminy/warm",
+    "headers": {
+      "X-API-Key": "${MDEMG_API_KEY}",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "space_id": "pm-uats.governance",
+      "context_hint": "UATS contract probe",
+      "session_id": "uats:pm-uats"
+    }
+  },
+  "expected": {
+    "status": 202,
+    "body_assertions": [
+      {
+        "name": "status",
+        "path": "$.status",
+        "op": "one_of",
+        "expected": [
+          "warming",
+          "debounced"
+        ]
+      },
+      {
+        "name": "age_ms",
+        "path": "$.age_ms",
+        "op": "type_is",
+        "expected": "number"
+      },
+      {
+        "name": "debounce_ms",
+        "path": "$.debounce_ms",
+        "op": "type_is",
+        "expected": "number"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "latest_shape",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jiminy/latest",
+        "query": {
+          "space_id": "pm-uats.governance"
+        },
+        "body": null
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "warm bool",
+            "path": "$.warm",
+            "op": "type_is",
+            "expected": "boolean"
+          },
+          {
+            "name": "stale bool",
+            "path": "$.stale",
+            "op": "type_is",
+            "expected": "boolean"
+          },
+          {
+            "name": "age_ms",
+            "path": "$.age_ms",
+            "op": "type_is",
+            "expected": "number"
+          }
+        ]
+      }
+    },
+    {
+      "name": "warm_missing_space_id_400",
+      "request": {
+        "body": {
+          "space_id": ""
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body_assertions": []
+      }
+    }
+  ]
+}

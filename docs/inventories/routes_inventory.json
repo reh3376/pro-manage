@@ -1,0 +1,104 @@
+{
+  "surface": "routes",
+  "description": "Every HTTP route shipped by pro_manage services must be adjudicated here (FSD §12, DORMANT-CENSUS pattern). Key: '<binary> <METHOD> <path>'.",
+  "entries": {
+    "pm-core GET /healthz": {
+      "writers": ["services/pm-core/cmd/pm-core/main.go"],
+      "readers": ["compose healthcheck", "scripts/smoke.sh", "docs/tests/uats/specs/pm-core/healthz.uats.json", "apps/pm-frontend/app/page.tsx"],
+      "disposition": "active",
+      "notes": "Process liveness."
+    },
+    "pm-core GET /readyz": {
+      "writers": ["services/pm-core/cmd/pm-core/main.go"],
+      "readers": ["scripts/smoke.sh", "docs/tests/uats/specs/pm-core/readyz.uats.json"],
+      "disposition": "active",
+      "notes": "Dependency readiness; pings Postgres when DATABASE_URL is set."
+    },
+    "pm-core GET /version": {
+      "writers": ["services/pm-core/cmd/pm-core/main.go"],
+      "readers": ["docs/tests/uats/specs/pm-core/version.uats.json"],
+      "disposition": "active",
+      "notes": "Build version for operators and the frontend footer (later)."
+    },
+    "pm-workers GET /healthz": {
+      "writers": ["services/pm-core/cmd/pm-workers/main.go"],
+      "readers": ["scripts/smoke.sh", "docs/tests/uats/specs/pm-workers/healthz.uats.json", "apps/pm-frontend/app/page.tsx"],
+      "disposition": "active",
+      "notes": "Process liveness."
+    },
+    "pm-workers GET /readyz": {
+      "writers": ["services/pm-core/cmd/pm-workers/main.go"],
+      "readers": ["docs/tests/uats/specs/pm-workers/healthz.uats.json"],
+      "disposition": "active",
+      "notes": "No dependencies yet; reports ready."
+    },
+    "stub-mdemg GET /healthz": {
+      "writers": ["services/pm-core/cmd/stub-mdemg/main.go"],
+      "readers": ["scripts/smoke.sh", "docs/tests/uats/specs/stub-mdemg/healthz.uats.json"],
+      "disposition": "internal",
+      "notes": "CI stand-in for MDEMG; mirrors MDEMG's /healthz."
+    },
+    "stub-mdemg GET /v1/jiminy/healthz": {
+      "writers": ["services/pm-core/cmd/stub-mdemg/main.go"],
+      "readers": ["docs/tests/uats/specs/stub-mdemg/healthz.uats.json"],
+      "disposition": "internal",
+      "notes": "Mirrors MDEMG's jiminy healthz: {status, enabled}."
+    },
+    "stub-mdemg POST /v1/jiminy/warm": {
+      "writers": ["services/pm-core/cmd/stub-mdemg/main.go"],
+      "readers": ["docs/tests/uats/specs/stub-mdemg/warm_latest.uats.json"],
+      "disposition": "internal",
+      "notes": "Mirrors MDEMG warm: 202 {status, age_ms, debounce_ms}."
+    },
+    "stub-mdemg GET /v1/jiminy/latest": {
+      "writers": ["services/pm-core/cmd/stub-mdemg/main.go"],
+      "readers": ["docs/tests/uats/specs/stub-mdemg/warm_latest.uats.json"],
+      "disposition": "internal",
+      "notes": "Mirrors MDEMG latest: {warm, status, data, age_ms, compute_ms, stale}."
+    },
+    "stub-mdemg POST /v1/jiminy/guide": {
+      "writers": ["services/pm-core/cmd/stub-mdemg/main.go"],
+      "readers": ["docs/tests/uats/specs/stub-mdemg/guide.uats.json"],
+      "disposition": "internal",
+      "notes": "Mirrors MDEMG guide: {data: {guidance_id, guidance[], prompt_augmentation, confidence, rationale, source_counts}}."
+    },
+    "stub-mdemg POST /v1/jiminy/classify": {
+      "writers": ["services/pm-core/cmd/stub-mdemg/main.go"],
+      "readers": ["scripts/smoke.sh", "docs/tests/uats/specs/stub-mdemg/classify.uats.json"],
+      "disposition": "internal",
+      "notes": "Mirrors MDEMG classify: {data: {verdict pass|deny, ...}}; 'stub:deny' in the payload denies."
+    },
+    "stub-mdemg POST /v1/jiminy/feedback": {
+      "writers": ["services/pm-core/cmd/stub-mdemg/main.go"],
+      "readers": ["docs/tests/uats/specs/stub-mdemg/feedback_observe.uats.json"],
+      "disposition": "internal",
+      "notes": "Mirrors MDEMG feedback: 400 without guidance_id, else 200 {guidance_id, results, applied}."
+    },
+    "stub-mdemg POST /v1/conversation/observe": {
+      "writers": ["services/pm-core/cmd/stub-mdemg/main.go"],
+      "readers": ["docs/tests/uats/specs/stub-mdemg/feedback_observe.uats.json"],
+      "disposition": "internal",
+      "notes": "Mirrors MDEMG observe: 200 {obs_id, node_id, surprise_score, surprise_factors, summary}."
+    },
+    "pm-frontend GET /api/healthz": {
+      "writers": ["apps/pm-frontend/app/api/healthz/route.ts"],
+      "readers": ["scripts/smoke.sh", "docs/tests/uats/specs/pm-frontend/healthz.uats.json"],
+      "disposition": "active",
+      "notes": "Frontend liveness."
+    },
+    "pm-sidecar GET /healthz": {
+      "source": "manual",
+      "writers": ["services/pm-sidecar/src/pm_sidecar/main.py"],
+      "readers": ["scripts/smoke.sh", "docs/tests/uats/specs/pm-sidecar/healthz.uats.json", "apps/pm-frontend/app/page.tsx"],
+      "disposition": "active",
+      "notes": "Python route; declared manually because the scanner reads Go and Next.js only."
+    },
+    "pm-sidecar GET /readyz": {
+      "source": "manual",
+      "writers": ["services/pm-sidecar/src/pm_sidecar/main.py"],
+      "readers": ["docs/tests/uats/specs/pm-sidecar/healthz.uats.json"],
+      "disposition": "active",
+      "notes": "Same handler as /healthz until the sidecar has dependencies."
+    }
+  }
+}

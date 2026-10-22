@@ -1,0 +1,44 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core version",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "low"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "d5db84866f6d534816fa86f3bf4df8ef0a262e331bbbdfe9383bfba55aca6465"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/version"
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "service",
+        "path": "$.service",
+        "op": "equals",
+        "expected": "pm-core"
+      },
+      {
+        "name": "version string",
+        "path": "$.version",
+        "op": "type_is",
+        "expected": "string"
+      }
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "surface": "loss_categories",
+  "description": "Every loss and project-loss category seeded in pm-core must be priceable and reportable (FSD \u00a703, \u00a714, \u00a712).",
+  "entries": {}
+}
