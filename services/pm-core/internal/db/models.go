@@ -31,6 +31,22 @@ type AuditEvent struct {
 	SignedHash            string          `json:"signed_hash"`
 }
 
+type Outbox struct {
+	OutboxID      uuid.UUID       `json:"outbox_id"`
+	TenantID      string          `json:"tenant_id"`
+	Kind          string          `json:"kind"`
+	Payload       json.RawMessage `json:"payload"`
+	SourceRef     string          `json:"source_ref"`
+	Status        string          `json:"status"`
+	Attempts      int32           `json:"attempts"`
+	NextAttemptAt time.Time       `json:"next_attempt_at"`
+	LastError     *string         `json:"last_error"`
+	LockedBy      *string         `json:"locked_by"`
+	LockedAt      *time.Time      `json:"locked_at"`
+	DeliveredAt   *time.Time      `json:"delivered_at"`
+	CreatedAt     time.Time       `json:"created_at"`
+}
+
 type PolicyValue struct {
 	ValueID       uuid.UUID       `json:"value_id"`
 	VariableKey   string          `json:"variable_key"`

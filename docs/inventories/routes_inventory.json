@@ -24,6 +24,17 @@
       "disposition": "active",
       "notes": "Reachability and Jiminy state of the configured MDEMG via pkg/mdemgadapter; 503 when unreachable."
     },
+    "pm-core GET /api/v1/outbox/stats": {
+      "writers": [
+        "services/pm-core/internal/api/outbox.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/outbox.uats.json",
+        "scripts/outbox_check.sh"
+      ],
+      "disposition": "active",
+      "notes": "Outbox depth by kind and status (ops dashboard 'outbox depth', FSD §11)."
+    },
     "pm-core GET /api/v1/policy-variables": {
       "writers": [
         "services/pm-core/internal/api/api.go"
@@ -129,6 +140,16 @@
       "disposition": "active",
       "notes": "Build version for operators and the frontend footer (later)."
     },
+    "pm-core POST /api/v1/outbox/requeue-failed": {
+      "writers": [
+        "services/pm-core/internal/api/outbox.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/outbox.uats.json"
+      ],
+      "disposition": "active",
+      "notes": "Operator action: dead-lettered rows back to pending; optional ?kind= filter."
+    },
     "pm-core POST /api/v1/projects": {
       "writers": [
         "services/pm-core/internal/api/api.go"
@@ -207,6 +228,16 @@
       ],
       "disposition": "active",
       "notes": "No dependencies yet; reports ready."
+    },
+    "pm-workers GET /stats": {
+      "writers": [
+        "services/pm-core/cmd/pm-workers/main.go"
+      ],
+      "readers": [
+        "scripts/outbox_check.sh"
+      ],
+      "disposition": "active",
+      "notes": "Drainer counters since start (delivered, retried, failed) and the tick."
     },
     "stub-mdemg GET /healthz": {
       "writers": [

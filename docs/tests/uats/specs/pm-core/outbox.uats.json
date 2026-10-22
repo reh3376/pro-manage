@@ -1,0 +1,96 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core outbox",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "api",
+      "outbox"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "Outbox stats (per kind/status rows plus totals) and the operator requeue of dead-lettered rows (FSD \u00a705 DF-01, \u00a706 Delivery).",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "medium"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "6330b3ec804689bc00f1211f848d868f26c9b3f393eea2a19e5b4e147684965f"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/outbox/stats",
+    "headers": {
+      "X-Dev-Actor": "alice.owner"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "rows array",
+        "path": "$.rows",
+        "op": "type_is",
+        "expected": "array"
+      },
+      {
+        "name": "pending number",
+        "path": "$.pending",
+        "op": "type_is",
+        "expected": "number"
+      },
+      {
+        "name": "delivered number",
+        "path": "$.delivered",
+        "op": "type_is",
+        "expected": "number"
+      },
+      {
+        "name": "failed number",
+        "path": "$.failed",
+        "op": "type_is",
+        "expected": "number"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "missing_dev_actor_401",
+      "request": {
+        "headers": {
+          "X-Dev-Actor": ""
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "requeue_failed_none",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/outbox/requeue-failed",
+        "query": {
+          "kind": "mdemg.feedback"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "requeued count",
+            "path": "$.requeued",
+            "op": "type_is",
+            "expected": "number"
+          }
+        ]
+      }
+    }
+  ]
+}

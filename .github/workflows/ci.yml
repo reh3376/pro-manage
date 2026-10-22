@@ -130,6 +130,12 @@ jobs:
         env:
           TEST_DATABASE_URL: postgres://pm:ci-postgres@127.0.0.1:5440/pm_core?sslmode=disable
         run: cd services/pm-core && go test -tags integration -count=1 ./internal/store/
+      - name: Go outbox integration tests (Postgres + stub MDEMG)
+        env:
+          TEST_DATABASE_URL: postgres://pm:ci-postgres@127.0.0.1:5440/pm_core?sslmode=disable
+          MDEMG_TEST_URL: http://127.0.0.1:9997
+          MDEMG_TEST_KEY: ci-stub-key
+        run: cd services/pm-core && go test -tags integration -count=1 ./internal/outbox/
       - name: Seed Northfield dev data
         run: docker compose --env-file deploy/compose/.env.ci -f deploy/compose/docker-compose.dev.yml exec -T postgres psql -v ON_ERROR_STOP=1 -U pm -d pm_core < services/pm-core/db/seeds/northfield.sql
       - name: UATS against the running services
@@ -143,6 +149,8 @@ jobs:
           MDEMG_TEST_URL: http://127.0.0.1:9997
           MDEMG_TEST_KEY: ci-stub-key
         run: cd services/pm-core && go test -tags integration -count=1 ./pkg/mdemgadapter/
+      - name: Outbox end to end (pm-core enqueue -> pm-workers drain -> stub MDEMG)
+        run: scripts/outbox_check.sh
       - name: UATS against the stub MDEMG (MDEMG field-shape pins)
         env:
           MDEMG_API_KEY: ci-stub-key

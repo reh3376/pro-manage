@@ -53,23 +53,27 @@ type Config struct {
 	MDEMGTimeout time.Duration
 
 	// Workers
-	WorkerTick time.Duration
+	WorkerTick        time.Duration
+	OutboxMaxAttempts int           // dead-letter after this many failed deliveries
+	OutboxBaseBackoff time.Duration // first retry delay; doubles per attempt, capped at 10 min
 }
 
 // Load resolves configuration for the named service.
 func Load(ctx context.Context, service string, sp secrets.Provider) (Config, error) {
 	cfg := Config{
-		ServiceName:    service,
-		ListenAddr:     envOr("PM_"+upper(service)+"_LISTEN_ADDR", defaultAddr(service)),
-		LogFormat:      envOr("PM_LOG_FORMAT", "json"),
-		MDEMGBaseURL:   strings.TrimRight(envOr("MDEMG_BASE_URL", "http://127.0.0.1:9998"), "/"),
-		MDEMGTimeout:   durationOr("MDEMG_TIMEOUT", 10*time.Second),
-		WorkerTick:     durationOr("PM_WORKERS_TICK", 30*time.Second),
-		GRPCAddr:       envOr("PM_CORE_GRPC_ADDR", ":8090"),
-		GRPCReflection: boolOr("PM_CORE_GRPC_REFLECTION", false),
-		DBAutoMigrate:  boolOr("PM_DB_AUTO_MIGRATE", false),
-		DevActorHeader: boolOr("PM_DEV_ACTOR_HEADER", false),
-		TenantID:       envOr("PM_TENANT_ID", "default"),
+		ServiceName:       service,
+		ListenAddr:        envOr("PM_"+upper(service)+"_LISTEN_ADDR", defaultAddr(service)),
+		LogFormat:         envOr("PM_LOG_FORMAT", "json"),
+		MDEMGBaseURL:      strings.TrimRight(envOr("MDEMG_BASE_URL", "http://127.0.0.1:9998"), "/"),
+		MDEMGTimeout:      durationOr("MDEMG_TIMEOUT", 10*time.Second),
+		WorkerTick:        durationOr("PM_WORKERS_TICK", 30*time.Second),
+		OutboxMaxAttempts: intOr("PM_OUTBOX_MAX_ATTEMPTS", 10),
+		OutboxBaseBackoff: durationOr("PM_OUTBOX_BASE_BACKOFF", 5*time.Second),
+		GRPCAddr:          envOr("PM_CORE_GRPC_ADDR", ":8090"),
+		GRPCReflection:    boolOr("PM_CORE_GRPC_REFLECTION", false),
+		DBAutoMigrate:     boolOr("PM_DB_AUTO_MIGRATE", false),
+		DevActorHeader:    boolOr("PM_DEV_ACTOR_HEADER", false),
+		TenantID:          envOr("PM_TENANT_ID", "default"),
 	}
 
 	switch strings.ToLower(envOr("PM_LOG_LEVEL", "info")) {
@@ -94,6 +98,16 @@ func Load(ctx context.Context, service string, sp secrets.Provider) (Config, err
 		return cfg, err
 	}
 	return cfg, nil
+}
+
+func intOr(key string, def int) int {
+	if v := os.Getenv(key); v != "" {
+		var n int
+		if _, err := fmt.Sscanf(v, "%d", &n); err == nil {
+			return n
+		}
+	}
+	return def
 }
 
 func boolOr(key string, def bool) bool {

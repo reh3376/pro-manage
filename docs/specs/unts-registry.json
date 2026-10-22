@@ -32,8 +32,12 @@
       "recorded_at": "2026-10-22T14:15:38Z"
     },
     "docs/inventories/routes_inventory.json": {
-      "sha256": "486d1a493ad9c5c55dac652c9909e7e6d934df20c2f7bb2902ca8ea96e4c2ad0",
+      "sha256": "c743782122b8c58b306f7f69396fa2a00b47ec42181d2a62d584656056e80ede",
       "history": [
+        {
+          "sha256": "486d1a493ad9c5c55dac652c9909e7e6d934df20c2f7bb2902ca8ea96e4c2ad0",
+          "recorded_at": "2026-10-22T15:37:21Z"
+        },
         {
           "sha256": "2b38a8d1bf8a5ab235a48a249984beb373db06ad25b1e2f52cd8c9b1fcee9c9d",
           "recorded_at": "2026-10-22T14:15:38Z"
@@ -41,13 +45,9 @@
         {
           "sha256": "ff488c30862e8f961c5cfe02905eb3e2baaa7d405944c34c06ad9a777fb7c7fc",
           "recorded_at": "2026-10-22T13:31:05Z"
-        },
-        {
-          "sha256": "bc7adadefd5e3e6ebcc30502a9329c71d8694313fcb0ccf4545686a6c06d7e92",
-          "recorded_at": "2026-10-22T13:29:40Z"
         }
       ],
-      "recorded_at": "2026-10-22T15:37:21Z"
+      "recorded_at": "2026-10-22T17:31:24Z"
     },
     "docs/tests/uats/runners/uats_runner.py": {
       "sha256": "2ae714b57d7ec2692389aabbdc9208d47981c1aaa95ecfbceebea8ea07c945fb",
@@ -98,6 +98,11 @@
       "sha256": "c5789d1d65ce5f6979f677dff17a416b6cbb6f93c6b83e348d7f395d84f03712",
       "history": [],
       "recorded_at": "2026-10-22T15:37:21Z"
+    },
+    "docs/tests/uats/specs/pm-core/outbox.uats.json": {
+      "sha256": "325c9f494815c3fa0c1b752708bfd8221f6350580879841e79923a3628403cdf",
+      "history": [],
+      "recorded_at": "2026-10-22T17:31:24Z"
     },
     "docs/tests/uats/specs/pm-core/policy.uats.json": {
       "sha256": "56f95a4962123909a74ed162f99f42b787eb89754af051a20d2212b4509baf69",
@@ -225,6 +230,6 @@
       "recorded_at": "2026-10-22T13:29:40Z"
     }
   },
-  "updated_at": "2026-10-22T15:37:21Z",
-  "count": 39
+  "updated_at": "2026-10-22T17:31:24Z",
+  "count": 40
 }
