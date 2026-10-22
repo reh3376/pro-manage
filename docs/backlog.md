@@ -43,6 +43,22 @@ Move the `pm-core` client secret out of the realm JSON into an env substitution 
 
 Replace the health-only sidecar with `pm.sidecar.v1.RenderService` stubs once the first export exists; UDTS spec with it.
 
+### B-06 Pre-classification cache to Redis
+
+The spine's `governance.PreclassCache` is in-process (scoped to user and project, 10-minute TTL, keyed by `sha256(action_kind, payload, policy_snapshot)` as `§06` specifies). Move it to the stack's Redis before pm-core runs more than one replica, so a verdict pre-classified on one instance is honoured by the one that takes the submit.
+
+### B-07 CAR chain: FX conversion and business-day SLA clocks
+
+The toy compares the routing amount in the CAR's currency against thresholds resolved for the project (the seed's site override expresses the Ontario threshold in CAD); `§08` wants conversion at `fx.rate.<from>.<to>` on submission with the rate in the snapshot. Stage SLAs run on the wall clock; `§08` wants business days of the site calendar. Both land with `ERPi_IFS` (rates) and the site calendar.
+
+### B-08 SLA tick, nudges, and the empty-pool pause
+
+`stage_due_at` is recorded and the inbox flags overdue stages, but nothing nudges yet. pm-workers gets the SLA tick (`§08`), Commsi_SMTP sends the nudge, and an empty approver pool pauses the workflow with a visible blocker instead of failing the submit as a precondition.
+
+### B-09 Approver pools from IdP claims; admin override of a Tier A refusal
+
+`approver_pools` is a global table filled by the seed and `POST /api/v1/approver-pools`; `IdPi_OIDC` claims mapping (groups to pools, `§04`) replaces the manual rows. The admin override that `§06` offers after a Tier A refusal (`overridden_by_admin`, `blocked_false_positive` feedback) is not exposed until the ACL layer can tell who is an admin.
+
 ## Done
 
 | Id | Item | Closed in |

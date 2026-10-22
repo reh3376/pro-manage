@@ -1,0 +1,479 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core capital authorization (toy CAR)",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "api",
+      "car",
+      "governance"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "The CAR surface against the Northfield seed: the approved history CAR, the seeded draft whose submit is a repeatable precondition failure, guide on open with the chain and tier preview, estimate and promise validation, decide on a non-in-flight CAR, inbox, unknown ids. The state-changing happy path runs in scripts/car_check.sh because UATS variants are independent requests.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 15000,
+    "sha256": "d58305952fe02247919d9bacaabdff6c5ec7420c2ba5e5e050e5579bb738812b"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/cars/01900000-0000-7000-8000-00000000e001",
+    "headers": {
+      "X-Dev-Actor": "alice.owner",
+      "Content-Type": "application/json"
+    }
+  },
+  "variables": {
+    "run": {
+      "generator": "uuid"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "seeded approved CAR",
+        "path": "$.car.code",
+        "op": "equals",
+        "expected": "CR-2401"
+      },
+      {
+        "name": "approved",
+        "path": "$.car.status",
+        "op": "equals",
+        "expected": "approved"
+      },
+      {
+        "name": "authorized amount string",
+        "path": "$.car.authorized_amount",
+        "op": "equals",
+        "expected": "1850000.00"
+      },
+      {
+        "name": "estimate joined",
+        "path": "$.estimate.aace_class",
+        "op": "equals",
+        "expected": 3
+      },
+      {
+        "name": "cumulative authorized",
+        "path": "$.cumulative_authorized",
+        "op": "equals",
+        "expected": "1850000.00"
+      },
+      {
+        "name": "stages array",
+        "path": "$.stages",
+        "op": "type_is",
+        "expected": "array"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "missing_dev_actor_401",
+      "request": {
+        "headers": {
+          "X-Dev-Actor": ""
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "unknown_car_404",
+      "request": {
+        "path": "/api/v1/cars/01900000-0000-7000-8000-0000000000ff"
+      },
+      "expected": {
+        "status": 404,
+        "body_assertions": [
+          {
+            "name": "not found",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "not_found"
+          }
+        ]
+      }
+    },
+    {
+      "name": "list_project_cars",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b002/cars"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "line 3 has its CAR",
+            "path": "$.items[0].code",
+            "op": "equals",
+            "expected": "CR-2401"
+          }
+        ]
+      }
+    },
+    {
+      "name": "guidance_on_open_draft",
+      "request": {
+        "path": "/api/v1/cars/01900000-0000-7000-8000-00000000e002/guidance"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "guidance available (stub or live)",
+            "path": "$.guidance.available",
+            "op": "equals",
+            "expected": true
+          },
+          {
+            "name": "items array",
+            "path": "$.guidance.items",
+            "op": "type_is",
+            "expected": "array"
+          },
+          {
+            "name": "fel funding is the minor tier",
+            "path": "$.preview.tier",
+            "op": "equals",
+            "expected": "B"
+          },
+          {
+            "name": "two stages under the VP threshold",
+            "path": "$.preview.chain",
+            "op": "length",
+            "expected": 2
+          },
+          {
+            "name": "routing amount",
+            "path": "$.preview.routing_amount",
+            "op": "equals",
+            "expected": "30000.00"
+          },
+          {
+            "name": "policy snapshot carries the VP threshold",
+            "path": "$.preview.policy.threshold_vp_finance",
+            "op": "equals",
+            "expected": "5000000.00"
+          },
+          {
+            "name": "session id is user:project",
+            "path": "$.session_id",
+            "op": "equals",
+            "expected": "alice.owner:01900000-0000-7000-8000-00000000b003"
+          }
+        ]
+      }
+    },
+    {
+      "name": "submit_without_estimate_422",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/cars/01900000-0000-7000-8000-00000000e002/submit",
+        "body": {}
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": [
+          {
+            "name": "precondition failed",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "precondition_failed"
+          },
+          {
+            "name": "names the estimate",
+            "path": "$.error.message",
+            "op": "contains",
+            "expected": "estimate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "preclassify_without_estimate_422",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/cars/01900000-0000-7000-8000-00000000e002/preclassify",
+        "body": {}
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "submit_approved_car_409",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/cars/01900000-0000-7000-8000-00000000e001/submit",
+        "body": {}
+      },
+      "expected": {
+        "status": 409,
+        "body_assertions": [
+          {
+            "name": "invalid state",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "invalid_state"
+          }
+        ]
+      }
+    },
+    {
+      "name": "decide_draft_409",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/cars/01900000-0000-7000-8000-00000000e002/decide",
+        "body": {
+          "decision": "approve"
+        }
+      },
+      "expected": {
+        "status": 409,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "decide_bad_decision_422",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/cars/01900000-0000-7000-8000-00000000e002/decide",
+        "body": {
+          "decision": "maybe"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": [
+          {
+            "name": "validation",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "validation_failed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "create_estimate_201",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b003/estimates",
+        "body": {
+          "aace_class": 4,
+          "as_of": "2026-10-15",
+          "tic": "640000.00",
+          "accuracy_range_low_pct": "-20",
+          "accuracy_range_high_pct": "30"
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body_assertions": [
+          {
+            "name": "class",
+            "path": "$.aace_class",
+            "op": "equals",
+            "expected": 4
+          },
+          {
+            "name": "currency from project",
+            "path": "$.currency",
+            "op": "equals",
+            "expected": "USD"
+          },
+          {
+            "name": "prepared_by defaults to actor",
+            "path": "$.prepared_by",
+            "op": "equals",
+            "expected": "alice.owner"
+          },
+          {
+            "name": "contingency defaults to zero",
+            "path": "$.contingency_amount",
+            "op": "one_of",
+            "expected": [
+              "0",
+              "0.00"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "create_estimate_bad_class_422",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b003/estimates",
+        "body": {
+          "aace_class": 7,
+          "as_of": "2026-10-15",
+          "tic": "640000.00"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "committed_promise_needs_basis_422",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b003/promises",
+        "body": {
+          "kind": "loss_recovery",
+          "status": "committed"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": [
+          {
+            "name": "validation",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "validation_failed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "proposed_promise_201",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b003/promises",
+        "body": {
+          "kind": "loss_recovery",
+          "metric_id": "boiler_trips_per_year",
+          "measurement_basis": "CMMS trip log"
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body_assertions": [
+          {
+            "name": "proposed by default",
+            "path": "$.status",
+            "op": "equals",
+            "expected": "proposed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "draft_car_201",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b003/cars",
+        "body": {
+          "code": "CR-UATS-{{run}}",
+          "kind": "fel_funding",
+          "amount_requested": "25000.00",
+          "business_case": "UATS draft"
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body_assertions": [
+          {
+            "name": "draft",
+            "path": "$.car.status",
+            "op": "equals",
+            "expected": "draft"
+          },
+          {
+            "name": "currency from project",
+            "path": "$.car.currency",
+            "op": "equals",
+            "expected": "USD"
+          },
+          {
+            "name": "basis default",
+            "path": "$.car.basis",
+            "op": "equals",
+            "expected": "tic"
+          },
+          {
+            "name": "no workflow yet",
+            "path": "$.workflow",
+            "op": "not_exists"
+          }
+        ]
+      }
+    },
+    {
+      "name": "supplemental_needs_supersedes_422",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b002/cars",
+        "body": {
+          "kind": "supplemental",
+          "amount_requested": "100000.00",
+          "business_case": "x"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "inbox_empty_or_list",
+      "request": {
+        "path": "/api/v1/inbox",
+        "headers": {
+          "X-Dev-Actor": "nobody.uats"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "items array",
+            "path": "$.items",
+            "op": "type_is",
+            "expected": "array"
+          },
+          {
+            "name": "nothing for an unknown user",
+            "path": "$.items",
+            "op": "length",
+            "expected": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "guidance_outcomes_list",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b003/guidance-outcomes"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "items array",
+            "path": "$.items",
+            "op": "type_is",
+            "expected": "array"
+          }
+        ]
+      }
+    }
+  ]
+}

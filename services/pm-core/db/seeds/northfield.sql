@@ -33,8 +33,38 @@ INSERT INTO policy_variables (key, type, unit, description, global_default, allo
   ('early_mgmt.exit.nameplate_pct', 'percent', 'pct', 'Startup curve exit criterion: sustained share of nameplate', '95', '{"min":50,"max":100}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
   ('early_mgmt.exit.sustain_days', 'integer', 'days', 'Startup curve exit criterion: days sustained', '14', '{"min":1,"max":90}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
   ('benefits.window_days', 'integer', 'days', 'Benefits Realization window', '365', '{"min":90,"max":730}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
-  ('mdemg.classify.timeout_ms', 'integer', 'ms', 'Per-call budget for /jiminy/classify; a timeout counts as unreachable for the tier', '10000', '{"min":1000,"max":60000}', '{}', 'platform_admin', 'seed', 'seed')
+  ('mdemg.classify.timeout_ms', 'integer', 'ms', 'Per-call budget for /jiminy/classify; a timeout counts as unreachable for the tier', '10000', '{"min":1000,"max":60000}', '{}', 'platform_admin', 'seed', 'seed'),
+  ('car.fel_funding.required_aace_class', 'integer', 'class', 'Minimum estimate class behind a FEL-funding CAR (5 = Class 5 or better)', '5', '{"min":1,"max":5}', '{project_type,portfolio,site}', 'policy_owner', 'seed', 'seed'),
+  ('car.fel_funding.cap_pct', 'percent', 'pct', 'FEL-funding CAR cap as a share of the current estimate TIC', '5', '{"min":0,"max":100}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
+  ('car.full.required_aace_class', 'integer', 'class', 'Minimum estimate class behind the full CAR (3 = Class 3 or better)', '3', '{"min":1,"max":5}', '{project_type,portfolio,site}', 'policy_owner', 'seed', 'seed'),
+  ('sla.car.project_owner', 'duration', 'hours', 'CAR stage 1 (project owner) SLA', '24', '{"min":1,"max":720}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
+  ('sla.car.finance_approver', 'duration', 'hours', 'CAR stage 2 (finance approver) SLA', '48', '{"min":1,"max":720}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
+  ('sla.car.vp_finance', 'duration', 'hours', 'CAR stage 3 (VP Finance) SLA', '72', '{"min":1,"max":720}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
+  ('sla.car.cfo', 'duration', 'hours', 'CAR stage 4 (CFO) SLA', '72', '{"min":1,"max":720}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
+  ('sla.car.ceo', 'duration', 'hours', 'CAR stage 5 (CEO) SLA', '168', '{"min":1,"max":720}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
+  ('mdemg.tier.approval.car', 'enum', NULL, 'Fail-closed tier for approval.car when the routing amount reaches car.threshold.vp_finance (full and supplemental)', '"A"', '{"values":["A","B","C"]}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
+  ('mdemg.tier.approval.car.minor', 'enum', NULL, 'Fail-closed tier for approval.car below the VP Finance threshold and for every FEL-funding CAR', '"B"', '{"values":["A","B","C"]}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed')
 ON CONFLICT (key) DO NOTHING;
+
+-- Approver pools (FSD §04 workflow roles) for the Keycloak dev users until IdPi claims mapping fills them.
+INSERT INTO approver_pools (pool, user_id, site_id, added_by) VALUES
+  ('finance_approver_eligible', 'bob.finance', NULL, 'seed'),
+  ('vp_finance', 'evan.exec', NULL, 'seed'),
+  ('cfo', 'evan.exec', NULL, 'seed'),
+  ('ceo', 'evan.exec', NULL, 'seed')
+ON CONFLICT (pool, user_id) DO NOTHING;
+
+-- CAR history for the dev data: Line 3 (P-NF-KY-12) is in Execute under an approved full CAR;
+-- Boiler 2 (P-NF-KY-15) has a FEL-funding draft with no estimate behind it, so its submit is
+-- a repeatable 422 for the UATS spec (state never changes).
+INSERT INTO estimate_artifacts (estimate_id, project_id, aace_class, as_of, prepared_by, reviewed_by, basis_of_estimate_doc_ref, scope_definition_pct, accuracy_range_low_pct, accuracy_range_high_pct, tic, contingency_amount, contingency_method, currency, created_by) VALUES
+  ('01900000-0000-7000-8000-00000000d001', '01900000-0000-7000-8000-00000000b002', 3, '2026-03-20', 'hana.epcm', 'alice.owner', 'DOC-NF-KY-12-BOE-R2', 72.00, -15.00, 20.00, 1750000.00, 100000.00, 'risk_based_p50', 'USD', 'seed')
+ON CONFLICT (estimate_id) DO NOTHING;
+
+INSERT INTO capital_authorizations (car_id, project_id, code, kind, amount_requested, currency, basis, estimate_id, fel_stage_at_submission, business_case, status, authorized_amount, authorized_at, created_by, updated_by) VALUES
+  ('01900000-0000-7000-8000-00000000e001', '01900000-0000-7000-8000-00000000b002', 'CR-2401', 'full', 1850000.00, 'USD', 'tic', '01900000-0000-7000-8000-00000000d001', 'fel3', 'Line 3 changeover reduction: 410 h/yr of changeover loss priced at $1.1M/yr; payback 1.7 years.', 'approved', 1850000.00, '2026-04-02 15:00:00+00', 'seed', 'seed'),
+  ('01900000-0000-7000-8000-00000000e002', '01900000-0000-7000-8000-00000000b003', 'CR-2455', 'fel_funding', 30000.00, 'USD', 'tic', NULL, NULL, 'FEL2 study for the Boiler 2 burner replacement.', 'draft', NULL, NULL, 'seed', 'seed')
+ON CONFLICT (tenant_id, code) DO NOTHING;
 
 -- A site-scoped override so the resolver has something to resolve in dev:
 -- the Ontario site expresses its VP Finance threshold in CAD.

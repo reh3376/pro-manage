@@ -1,6 +1,6 @@
 {
   "surface": "routes",
-  "description": "Every HTTP route shipped by pro_manage services must be adjudicated here (FSD §12, DORMANT-CENSUS pattern). Key: '<binary> <METHOD> <path>'.",
+  "description": "Every HTTP route shipped by pro_manage services must be adjudicated here (FSD \u00a712, DORMANT-CENSUS pattern). Key: '<binary> <METHOD> <path>'.",
   "entries": {
     "pm-core GET /api/v1/audit/verify": {
       "writers": [
@@ -11,7 +11,43 @@
         "services/pm-core/internal/store/integration_test.go"
       ],
       "disposition": "active",
-      "notes": "Recomputes the tenant's audit hash chain; 409 when broken. The nightly verification job (FSD §08) will call this."
+      "notes": "Recomputes the tenant's audit hash chain; 409 when broken. The nightly verification job (FSD \u00a708) will call this."
+    },
+    "pm-core GET /api/v1/cars/{car_id}": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "CAR view: CAR, estimate, workflow, stages, cumulative authorized."
+    },
+    "pm-core GET /api/v1/cars/{car_id}/guidance": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Guide on open (\u00a706 GUIDE: warm both spaces, read latest, merge) plus the chain/tier preview; never fails on MDEMG trouble."
+    },
+    "pm-core GET /api/v1/inbox": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Open stages assigned to the actor, soonest due first, with overdue flag."
     },
     "pm-core GET /api/v1/mdemg/status": {
       "writers": [
@@ -33,7 +69,7 @@
         "scripts/outbox_check.sh"
       ],
       "disposition": "active",
-      "notes": "Outbox depth by kind and status (ops dashboard 'outbox depth', FSD §11)."
+      "notes": "Outbox depth by kind and status (ops dashboard 'outbox depth', FSD \u00a711)."
     },
     "pm-core GET /api/v1/policy-variables": {
       "writers": [
@@ -75,6 +111,30 @@
       "disposition": "active",
       "notes": "Newest AuditEvents for a project (UC-12 retrieval, first cut)."
     },
+    "pm-core GET /api/v1/projects/{project_id}/cars": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "CARs of a project, newest first."
+    },
+    "pm-core GET /api/v1/projects/{project_id}/guidance-outcomes": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "GuidanceOutcome rows (what users saw and did at governed actions, \u00a706 audit coupling)."
+    },
     "pm-core GET /api/v1/projects/{project_id}/policy/{key}": {
       "writers": [
         "services/pm-core/internal/api/api.go"
@@ -84,7 +144,19 @@
         "services/pm-core/internal/store/integration_test.go"
       ],
       "disposition": "active",
-      "notes": "Effective policy value for the project (FSD §08 resolution order)."
+      "notes": "Effective policy value for the project (FSD \u00a708 resolution order)."
+    },
+    "pm-core GET /api/v1/projects/{project_id}/promises": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "BusinessCasePromises of a project."
     },
     "pm-core GET /api/v1/sites": {
       "writers": [
@@ -94,7 +166,7 @@
         "docs/tests/uats/specs/pm-core/sites.uats.json"
       ],
       "disposition": "active",
-      "notes": "List sites for the tenant (FSD §03 Site)."
+      "notes": "List sites for the tenant (FSD \u00a703 Site)."
     },
     "pm-core GET /api/v1/sites/{site_id}": {
       "writers": [
@@ -140,6 +212,54 @@
       "disposition": "active",
       "notes": "Build version for operators and the frontend footer (later)."
     },
+    "pm-core POST /api/v1/approver-pools": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Dev/admin path to add a pool member until IdPi claims mapping fills pools (\u00a704); audited."
+    },
+    "pm-core POST /api/v1/cars/{car_id}/decide": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Stage decision by an assignee (approve | reject); advances, approves (authorizes the amount) or rejects; audited."
+    },
+    "pm-core POST /api/v1/cars/{car_id}/preclassify": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Pre-classification of the settled form (\u00a706): runs classify and caches the verdict by sha256(action_kind, payload, policy_snapshot)."
+    },
+    "pm-core POST /api/v1/cars/{car_id}/submit": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "The governed action approval.car (\u00a706 CLASSIFY under the tier; \u00a708 chain and policy snapshot). 200 in flight, 409 governance_denied, 503 governance_unavailable (Tier A), 422 precondition_failed."
+    },
     "pm-core POST /api/v1/outbox/requeue-failed": {
       "writers": [
         "services/pm-core/internal/api/outbox.go"
@@ -160,6 +280,42 @@
       ],
       "disposition": "active",
       "notes": "Create a project at Initiate; AuditEvent project.create in the same transaction."
+    },
+    "pm-core POST /api/v1/projects/{project_id}/cars": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Draft CapitalAuthorization (fel_funding | full | supplemental); code auto CR-n; audited."
+    },
+    "pm-core POST /api/v1/projects/{project_id}/estimates": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "EstimateArtifact behind a CAR (\u00a703): AACE class, as-of, TIC, contingency, basis-of-estimate document; audited."
+    },
+    "pm-core POST /api/v1/projects/{project_id}/promises": {
+      "writers": [
+        "services/pm-core/internal/api/car.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/car.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/domain/car_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "BusinessCasePromise; committed requires metric, baseline, period, promised value, measurement basis (\u00a703); audited."
     },
     "pm-core POST /api/v1/sites": {
       "writers": [

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/db"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/outbox"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
@@ -27,6 +29,17 @@ var (
 	ErrNotFound   = errors.New("not found")
 	ErrConflict   = errors.New("already exists")
 	ErrValidation = errors.New("validation")
+	// ErrPrecondition: a deterministic rule of the FSD blocks the action (FEL stage,
+	// estimate class, promises, policy load). 422 with code precondition_failed.
+	ErrPrecondition = errors.New("precondition")
+	// ErrInvalidState: the subject is not in a state that allows the action. 409.
+	ErrInvalidState = errors.New("invalid state")
+	// ErrForbidden: the actor is not eligible for the action (not an assignee). 403.
+	ErrForbidden = errors.New("forbidden")
+	// ErrGovernanceDenied: MDEMG classified the submission as deny. 409 with the codes.
+	ErrGovernanceDenied = errors.New("governance denied")
+	// ErrGovernanceUnavailable: Tier A and MDEMG unreachable. 503.
+	ErrGovernanceUnavailable = errors.New("governance unavailable")
 )
 
 // Actor is who performs a mutation, as resolved by the API layer.
@@ -41,6 +54,24 @@ type Service struct {
 	Store  *store.Store
 	Chain  *audit.Chain
 	Tenant string
+	// Gate is the MDEMG governance gate (§06). Nil means not configured: Tier A
+	// governed actions refuse, Tier B proceed with a recorded warning.
+	Gate *governance.Gate
+	Log  *slog.Logger
+}
+
+func (s *Service) gate() *governance.Gate {
+	if s.Gate != nil {
+		return s.Gate
+	}
+	return &governance.Gate{OrgID: "unconfigured", Log: s.logger()}
+}
+
+func (s *Service) logger() *slog.Logger {
+	if s.Log != nil {
+		return s.Log
+	}
+	return slog.Default()
 }
 
 var codeRe = regexp.MustCompile(`^[A-Z0-9][A-Z0-9._-]{1,63}$`)

@@ -7,9 +7,8 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
 
-// mountMDEMG registers the MDEMG dependency endpoints. Status is the only one
-// in slice 2a; governed-action endpoints (guide on open, classify on submit)
-// arrive with the toy CAR workflow.
+// mountMDEMG registers the MDEMG dependency endpoints. The governed-action
+// endpoints (guide on open, classify on submit) live with the CAR in car.go.
 func (a *API) mountMDEMG(mux *http.ServeMux, wrap func(http.HandlerFunc) http.Handler) {
 	mux.Handle("GET /api/v1/mdemg/status", wrap(a.mdemgStatus))
 }

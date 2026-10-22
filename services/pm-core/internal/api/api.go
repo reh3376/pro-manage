@@ -54,6 +54,7 @@ func (a *API) Mount(mux *http.ServeMux) {
 	mux.Handle("GET /api/v1/audit/verify", wrap(a.verifyAudit))
 	a.mountMDEMG(mux, wrap)
 	a.mountOutbox(mux, wrap)
+	a.mountCAR(mux, wrap)
 }
 
 // ---------------------------------------------------------------- middleware
@@ -123,6 +124,12 @@ func (a *API) fail(w http.ResponseWriter, r *http.Request, err error) {
 		writeError(w, http.StatusNotFound, "not_found", err.Error())
 	case errors.Is(err, domain.ErrConflict):
 		writeError(w, http.StatusConflict, "conflict", err.Error())
+	case errors.Is(err, domain.ErrPrecondition):
+		writeError(w, http.StatusUnprocessableEntity, "precondition_failed", err.Error())
+	case errors.Is(err, domain.ErrInvalidState):
+		writeError(w, http.StatusConflict, "invalid_state", err.Error())
+	case errors.Is(err, domain.ErrForbidden):
+		writeError(w, http.StatusForbidden, "forbidden", err.Error())
 	default:
 		a.Log.Error("request failed", "path", r.URL.Path, "request_id", requestIDFrom(r.Context()), "err", err)
 		writeError(w, http.StatusInternalServerError, "internal", "internal error; see request_id in logs")

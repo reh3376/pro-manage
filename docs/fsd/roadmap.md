@@ -79,7 +79,7 @@ The success criteria per phase apply to both; in scenario A they are read as "at
 
 ### Success criteria
 - A new developer can `make dev` and have the full stack running inside 30 minutes.
-- A CAR approval from a seeded test user runs end-to-end: form render → `/jiminy/guide` renders a card → submit → `/jiminy/classify` round-trip → DB-written AuditEvent + GuidanceOutcome → `/jiminy/feedback` outbox dispatched.
+- A CAR approval from a seeded test user runs end-to-end: form render → `/jiminy/guide` renders a card → submit → `/jiminy/classify` round-trip → DB-written AuditEvent + GuidanceOutcome → `/jiminy/feedback` outbox dispatched. **Met 2026-10-22 against the stub MDEMG** (`scripts/car_check.sh`, run in CI; slice 3): guide on open via warm + latest on both spaces, pre-classified verdict honoured on submit, the `§08` chain built from the policy snapshot with approver pools, every stage decision audited, feedback and observe drained by pm-workers. Still to run against the live MDEMG (backlog B-02).
 - CI green on every PR.
 
 ### Dependencies

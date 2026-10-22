@@ -2,13 +2,13 @@
 
 Purpose: the canonical map of each UxTS framework pro_manage runs to its schema, specs, runner, CI disposition, and status (FSD §12). If this file and a section of the FSD disagree, this file wins for the operational state and the FSD is corrected.
 
-Last verified: 2026-10-22 (slice 0b). Runners vendored from MDEMG `c1f14f74` (`v0.11.0-beta.3`), see `VENDORED.md`. `scripts/check_matrix_currency.py` fails CI when this date is more than 30 days older than the newest spec.
+Last verified: 2026-10-22 (slice 3). Runners vendored from MDEMG `c1f14f74` (`v0.11.0-beta.3`), see `VENDORED.md`. `scripts/check_matrix_currency.py` fails CI when this date is more than 30 days older than the newest spec.
 
 ## 1) Framework inventory
 
 | Framework | Name | Status | Specs | CI disposition |
 |---|---|---|---|---|
-| UATS | Universal API Test Specification | **active** | 12 service specs (pm-core 9: health, readiness, version, sites, projects, policy, audit chain, mdemg status, outbox; pm-workers 1, pm-sidecar 1, pm-frontend 1), 5 stub-mdemg specs, 5 live mdemg specs | **merge-blocking**: `verify-hashes` on every PR; `validate-all` for the service and stub-mdemg sets inside the compose smoke job. Live mdemg set is **live-gated**: `make test-uats-live` on the workstation before merging anything that touches `pkg/mdemgadapter` |
+| UATS | Universal API Test Specification | **active** | 13 service specs (pm-core 10: health, readiness, version, sites, projects, policy, audit chain, mdemg status, outbox, CAR; pm-workers 1, pm-sidecar 1, pm-frontend 1), 5 stub-mdemg specs, 5 live mdemg specs | **merge-blocking**: `verify-hashes` on every PR; `validate-all` for the service and stub-mdemg sets inside the compose smoke job. Live mdemg set is **live-gated**: `make test-uats-live` on the workstation before merging anything that touches `pkg/mdemgadapter` |
 | UDTS | Universal DevSpace Test Specification | **active** | 2 (`pm.core.v1.VersionService/GetVersion` with `proto_sha256` pinned; `grpc.health.v1.Health/Check`) | **merge-blocking**: Go contract tests in `services/pm-core/tests/udts` run inside the compose smoke job against pm-core's gRPC port; the proto hash check runs offline in every `go test` |
 | UNTS | Universal Hash Test Specification | **active** | registry (`docs/specs/unts-registry.json`) | **merge-blocking**: `scripts/unts.py verify` on every PR |
 | UOTS | Universal Observability Test Specification | vendored, no specs | 0 | merge-blocking from Phase 1 (dashboards, alert rules, metric registry) |
@@ -47,6 +47,7 @@ Inherited from MDEMG for the vendored runners (UATS hard-fails on `setup`, `tear
 
 1. UDTS: active with the first served RPC (slice 1b). gRPC methods are adjudicated in `docs/inventories/grpc_methods_inventory.json` (scanner over `proto/**/*.proto`).
 1a. Go integration tests (`services/pm-core/internal/store`, build tag `integration`) run inside the compose smoke job against the stack's Postgres: migrations, audit chain and append-only triggers, Site/Project creation with audit-in-transaction, policy resolution. They use their own tenant (`it-test`) so their chain never mixes with the stack's `default` tenant.
+1b. The CAR domain integration tests (`services/pm-core/internal/domain`, tag `integration`, tenant `it-car`) run the governed action against the stack's Postgres and the stub MDEMG: the happy path through four stages, the deny path, the Tier A refusal and Tier B warning with MDEMG down, and the `§08` preconditions. `scripts/car_check.sh` repeats the happy path through the REST edge (the roadmap's Phase 0 exit test). The CAR UATS spec covers the read and validation surface only, because UATS variants are independent requests and the submit changes state.
 2. UOTS and USTS: runners vendored, spec directories empty; gated from Phase 1 per the FSD.
 3. The live MDEMG UATS set has not been run in CI by design (no model there). It must pass on the workstation before a PR that changes the adapter is merged; the PR description states the run date.
 4. The `requests` and `jsonpath-ng` runtime dependencies are supplied ad hoc by `uv run --with`; if a fourth framework arrives, give `docs/tests` its own `pyproject.toml`.

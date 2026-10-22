@@ -51,6 +51,10 @@ type Config struct {
 	MDEMGBaseURL string
 	MDEMGAPIKey  string
 	MDEMGTimeout time.Duration
+	// GovernanceOrgID names the governance space, org.<id>.governance (FSD §06; roadmap: org.pm_dev.governance in dev).
+	GovernanceOrgID string
+	// PreclassifyTTL is how long a settled form's verdict stays valid (§06 default 10 minutes).
+	PreclassifyTTL time.Duration
 
 	// Workers
 	WorkerTick        time.Duration
@@ -66,6 +70,8 @@ func Load(ctx context.Context, service string, sp secrets.Provider) (Config, err
 		LogFormat:         envOr("PM_LOG_FORMAT", "json"),
 		MDEMGBaseURL:      strings.TrimRight(envOr("MDEMG_BASE_URL", "http://127.0.0.1:9998"), "/"),
 		MDEMGTimeout:      durationOr("MDEMG_TIMEOUT", 10*time.Second),
+		GovernanceOrgID:   envOr("PM_GOVERNANCE_ORG_ID", "pm_dev"),
+		PreclassifyTTL:    durationOr("PM_PRECLASSIFY_TTL", 10*time.Minute),
 		WorkerTick:        durationOr("PM_WORKERS_TICK", 30*time.Second),
 		OutboxMaxAttempts: intOr("PM_OUTBOX_MAX_ATTEMPTS", 10),
 		OutboxBaseBackoff: durationOr("PM_OUTBOX_BASE_BACKOFF", 5*time.Second),
