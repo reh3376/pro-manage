@@ -1,0 +1,52 @@
+# Keeps the pinned toolchain and actions current (backlog B-01).
+# Grouped weekly so the owner reviews one PR per ecosystem, not one per package.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      actions: { patterns: ["*"] }
+    commit-message: { prefix: "ci" }
+
+  - package-ecosystem: gomod
+    directory: /services/pm-core
+    schedule: { interval: weekly, day: monday }
+    groups:
+      go: { patterns: ["*"] }
+    commit-message: { prefix: "deps(go)" }
+
+  - package-ecosystem: uv
+    directory: /services/pm-sidecar
+    schedule: { interval: weekly, day: monday }
+    groups:
+      python: { patterns: ["*"] }
+    commit-message: { prefix: "deps(py)" }
+
+  - package-ecosystem: npm
+    directory: /apps/pm-frontend
+    schedule: { interval: weekly, day: monday }
+    groups:
+      frontend: { patterns: ["*"] }
+    commit-message: { prefix: "deps(fe)" }
+
+  - package-ecosystem: docker
+    directories:
+      - /services/pm-core
+      - /services/pm-sidecar
+      - /apps/pm-frontend
+    schedule: { interval: weekly, day: monday }
+    groups:
+      images: { patterns: ["*"] }
+    commit-message: { prefix: "deps(docker)" }
+
+  - package-ecosystem: docker-compose
+    directory: /deploy/compose
+    schedule: { interval: weekly, day: monday }
+    ignore:
+      # Pinned deliberately: the MDEMG images follow the version pin in FSD §06, not Dependabot.
+      - dependency-name: "ghcr.io/reh3376/mdemg"
+      - dependency-name: "ghcr.io/reh3376/mdemg-neural-sidecar"
+    groups:
+      compose: { patterns: ["*"] }
+    commit-message: { prefix: "deps(compose)" }
