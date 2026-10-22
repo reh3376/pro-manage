@@ -1,5 +1,6 @@
 # PR CI for pro_manage. Every job is merge-blocking; no test step may carry
-# continue-on-error (FSD §12). The compose smoke runs against the stub MDEMG
+# continue-on-error (FSD §12). Third-party actions are pinned to commit SHAs
+# (backlog B-01); Dependabot keeps the pins current. The compose smoke runs against the stub MDEMG
 # because CI cannot run the local model; live UATS against the pinned MDEMG
 # is a local pre-merge step (`make test-uats-live`, arriving with slice 0b).
 name: ci
@@ -27,8 +28,8 @@ jobs:
       run:
         working-directory: services/pm-core
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: services/pm-core/go.mod
           cache-dependency-path: services/pm-core/go.sum
@@ -44,8 +45,8 @@ jobs:
       run:
         working-directory: services/pm-sidecar
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
           cache-dependency-glob: services/pm-sidecar/uv.lock
@@ -62,11 +63,11 @@ jobs:
       run:
         working-directory: apps/pm-frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: apps/pm-frontend/package.json
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: pnpm
@@ -81,8 +82,8 @@ jobs:
     name: Protobuf (buf lint)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: bufbuild/buf-action@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: bufbuild/buf-action@85aebf73123b5c15fd5528aaecbf9129cddf7fa7 # v1.6.0
         with:
           input: proto
           lint: true
@@ -95,10 +96,10 @@ jobs:
     name: UxTS gates (spec hashes, UNTS, inventories, matrix)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0   # matrix currency uses git commit dates
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - run: make test-uxts-hashes
       - run: make test-unts
       - run: make verify-inventories
@@ -109,8 +110,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [go, python, frontend]
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - name: Build and start the stack
         run: |
           docker compose --env-file deploy/compose/.env.ci \
@@ -121,7 +122,7 @@ jobs:
           MDEMG_API_KEY: ci-stub-key
           SMOKE_TIMEOUT: "240"
         run: scripts/smoke.sh --stub
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: services/pm-core/go.mod
           cache-dependency-path: services/pm-core/go.sum

@@ -23,6 +23,8 @@ Done when:
 
 Items 1, 2, 6, and 8 are repository settings an admin applies (the owner, or Claude via `gh api` with the owner's explicit go-ahead); 3, 4, 5, and 7 are files in a PR.
 
+**Status 2026-10-22:** the file-side items landed (PR after #24): every third-party action in `ci.yml`, `auto-pr.yml`, and `codeql.yml` is pinned to a commit SHA with its version in a comment; `.github/dependabot.yml` covers GitHub Actions, Go modules, uv, npm, Docker base images, and the compose files (MDEMG images excluded, they follow the FSD §06 pin); `.github/workflows/codeql.yml` analyzes Go, JavaScript/TypeScript, Python, and Actions; `SECURITY.md` points at private vulnerability reporting; `.github/CODEOWNERS` names the owner; `deploy/compose/README.md` states that the dev credentials are throwaway. **Still open, admin-side (waiting for the owner's go):** branch protection on `main` (item 1), `pro-dev01` deletion block (2), secret-scanning validity checks and non-provider patterns (6), merge-method restriction (8), and making `codeql` a required check once it runs clean.
+
 ### B-02 Run the live MDEMG UATS set once the dedicated stack is up
 
 `make mdemg-up` then `make test-uats-live`; record the date in the framework matrix. Pre-merge requirement for any adapter change thereafter.
