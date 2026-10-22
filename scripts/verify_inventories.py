@@ -15,6 +15,7 @@ Surfaces and their declaration scanners:
   connector_capabilities Capability names declared in connector manifests (`connectors/*/connector.yaml`)
   metric_definitions    Metric ids declared in `services/pm-core/internal/metrics/definitions/*.yaml`
   loss_categories       Loss and project-loss category ids in `services/pm-core/db/seeds/*.sql`
+  grpc_methods          `rpc` declarations in `proto/**/*.proto` (key: package.Service/Rpc)
 
 Scanners for surfaces that have no declarations yet return an empty set; the
 verifier then only checks that the inventory has no scanned entries pointing at
@@ -110,8 +111,22 @@ def scan_loss_categories() -> dict[str, str]:
     return found
 
 
+def scan_grpc_methods() -> dict[str, str]:
+    """Every rpc declared in proto/ (key: '<package>.<Service>/<Rpc>')."""
+    found: dict[str, str] = {}
+    for p in (ROOT / "proto").rglob("*.proto"):
+        text = _read(p)
+        pkg = re.search(r"^\s*package\s+([\w.]+)\s*;", text, re.M)
+        pkg_name = pkg.group(1) if pkg else "?"
+        for svc in re.finditer(r"service\s+(\w+)\s*\{(.*?)\n\}", text, re.S):
+            for rpc in re.findall(r"\brpc\s+(\w+)\s*\(", svc.group(2)):
+                found[f"{pkg_name}.{svc.group(1)}/{rpc}"] = str(p.relative_to(ROOT))
+    return found
+
+
 SURFACES = {
     "routes": scan_routes,
+    "grpc_methods": scan_grpc_methods,
     "policy_variables": scan_policy_variables,
     "connector_capabilities": scan_connector_capabilities,
     "metric_definitions": scan_metric_definitions,

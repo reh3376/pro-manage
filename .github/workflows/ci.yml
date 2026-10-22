@@ -134,6 +134,10 @@ jobs:
         run: docker compose --env-file deploy/compose/.env.ci -f deploy/compose/docker-compose.dev.yml exec -T postgres psql -v ON_ERROR_STOP=1 -U pm -d pm_core < services/pm-core/db/seeds/northfield.sql
       - name: UATS against the running services
         run: make test-uats
+      - name: UDTS gRPC contracts against pm-core
+        env:
+          UDTS_TARGET: 127.0.0.1:8090
+        run: cd services/pm-core && go test -count=1 ./tests/udts/
       - name: UATS against the stub MDEMG (MDEMG field-shape pins)
         env:
           MDEMG_API_KEY: ci-stub-key

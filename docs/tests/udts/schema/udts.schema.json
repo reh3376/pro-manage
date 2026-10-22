@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mdemg.dev/schemas/udts/v1.0.0",
+  "title": "Universal DevSpace Test Specification (UDTS)",
+  "description": "Spec-driven gRPC contract tests with optional proto hash verification",
+  "type": "object",
+  "required": ["udts_version", "service", "method", "expected"],
+
+  "properties": {
+    "udts_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "UDTS schema version (semver)"
+    },
+    "service": {
+      "type": "string",
+      "description": "Fully qualified gRPC service name (e.g. mdemg.transfer.v1.SpaceTransfer)"
+    },
+    "method": {
+      "type": "string",
+      "description": "RPC method name (e.g. ListSpaces, Export, Import)"
+    },
+    "request": {
+      "type": "object",
+      "description": "Request message as JSON; empty {} for no-arg unary"
+    },
+    "expected": {
+      "type": "object",
+      "required": ["status_code"],
+      "properties": {
+        "status_code": {
+          "type": "string",
+          "enum": ["OK", "INVALID_ARGUMENT", "NOT_FOUND", "INTERNAL", "UNAVAILABLE"],
+          "description": "Expected gRPC status code"
+        },
+        "response_has_field": {
+          "type": "string",
+          "description": "JSONPath or field name that must exist in response (e.g. spaces)"
+        },
+        "stream_chunk_count_min": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "For server streaming: minimum number of chunks expected"
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "timeout_ms": { "type": "integer", "minimum": 100 },
+        "proto_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

@@ -25,6 +25,7 @@ x-pm-env: &pm-env
   PM_DB_AUTO_MIGRATE: ${PM_DB_AUTO_MIGRATE:-true}
   PM_DEV_ACTOR_HEADER: ${PM_DEV_ACTOR_HEADER:-true}
   AUDIT_CHAIN_KEY: ${AUDIT_CHAIN_KEY:?set AUDIT_CHAIN_KEY in deploy/compose/.env (openssl rand -hex 32)}
+  PM_CORE_GRPC_REFLECTION: ${PM_CORE_GRPC_REFLECTION:-true}
 
 services:
   postgres:
@@ -158,6 +159,7 @@ services:
       <<: *pm-env
     ports:
       - "127.0.0.1:${PM_CORE_PORT:-8080}:8080"
+      - "127.0.0.1:${PM_CORE_GRPC_PORT:-8090}:8090"
     depends_on:
       postgres:
         condition: service_healthy
