@@ -22,6 +22,9 @@ x-pm-env: &pm-env
   OIDC_ISSUER: http://keycloak:8080/realms/northfield
   SMTP_HOST: mailpit
   SMTP_PORT: "1025"
+  PM_DB_AUTO_MIGRATE: ${PM_DB_AUTO_MIGRATE:-true}
+  PM_DEV_ACTOR_HEADER: ${PM_DEV_ACTOR_HEADER:-true}
+  AUDIT_CHAIN_KEY: ${AUDIT_CHAIN_KEY:?set AUDIT_CHAIN_KEY in deploy/compose/.env (openssl rand -hex 32)}
 
 services:
   postgres:

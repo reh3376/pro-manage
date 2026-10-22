@@ -27,9 +27,19 @@ type Config struct {
 	LogLevel    slog.Level
 	LogFormat   string // json | text
 
-	// DatabaseURL is the Postgres DSN for pm-core's OLTP store. Optional in
-	// slice 0 so the skeleton runs without a database; required from slice 1.
+	// DatabaseURL is the Postgres DSN for pm-core's OLTP store. When unset the
+	// binary serves health endpoints only (slice 0 behaviour).
 	DatabaseURL string
+	// DBAutoMigrate applies embedded goose migrations at startup (dev and CI;
+	// production runs `pm-core migrate` as a release step later).
+	DBAutoMigrate bool
+	// AuditChainKey signs the AuditEvent chain (secret, >= 32 bytes).
+	AuditChainKey string
+	// TenantID is constant for a single-company install (FSD §03).
+	TenantID string
+	// DevActorHeader accepts X-Dev-Actor as the acting user. Development only;
+	// off, every /api/v1 call is 401 until IdPi_OIDC lands.
+	DevActorHeader bool
 
 	// MDEMG connection. BaseURL is non-secret; APIKey is a secret.
 	MDEMGBaseURL string
@@ -43,12 +53,15 @@ type Config struct {
 // Load resolves configuration for the named service.
 func Load(ctx context.Context, service string, sp secrets.Provider) (Config, error) {
 	cfg := Config{
-		ServiceName:  service,
-		ListenAddr:   envOr("PM_"+upper(service)+"_LISTEN_ADDR", defaultAddr(service)),
-		LogFormat:    envOr("PM_LOG_FORMAT", "json"),
-		MDEMGBaseURL: strings.TrimRight(envOr("MDEMG_BASE_URL", "http://127.0.0.1:9998"), "/"),
-		MDEMGTimeout: durationOr("MDEMG_TIMEOUT", 10*time.Second),
-		WorkerTick:   durationOr("PM_WORKERS_TICK", 30*time.Second),
+		ServiceName:    service,
+		ListenAddr:     envOr("PM_"+upper(service)+"_LISTEN_ADDR", defaultAddr(service)),
+		LogFormat:      envOr("PM_LOG_FORMAT", "json"),
+		MDEMGBaseURL:   strings.TrimRight(envOr("MDEMG_BASE_URL", "http://127.0.0.1:9998"), "/"),
+		MDEMGTimeout:   durationOr("MDEMG_TIMEOUT", 10*time.Second),
+		WorkerTick:     durationOr("PM_WORKERS_TICK", 30*time.Second),
+		DBAutoMigrate:  boolOr("PM_DB_AUTO_MIGRATE", false),
+		DevActorHeader: boolOr("PM_DEV_ACTOR_HEADER", false),
+		TenantID:       envOr("PM_TENANT_ID", "default"),
 	}
 
 	switch strings.ToLower(envOr("PM_LOG_LEVEL", "info")) {
@@ -69,7 +82,20 @@ func Load(ctx context.Context, service string, sp secrets.Provider) (Config, err
 	if cfg.MDEMGAPIKey, err = optionalSecret(ctx, sp, "MDEMG_API_KEY"); err != nil {
 		return cfg, err
 	}
+	if cfg.AuditChainKey, err = optionalSecret(ctx, sp, "AUDIT_CHAIN_KEY"); err != nil {
+		return cfg, err
+	}
 	return cfg, nil
+}
+
+func boolOr(key string, def bool) bool {
+	switch strings.ToLower(os.Getenv(key)) {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	}
+	return def
 }
 
 // Logger builds the process logger from the config.

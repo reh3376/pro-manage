@@ -1,21 +1,25 @@
 // pm-core is the Go monolith at the centre of pro_manage (FSD §05).
 //
-// Slice 0 ships the skeleton: configuration, secrets, structured logging,
-// /healthz, /readyz (Postgres ping when DATABASE_URL is set), /version, and
-// graceful shutdown. Domain services arrive in later slices.
+// Slice 1a: configuration, secrets, structured logging, migrations (goose,
+// embedded), the audit chain, Site and Project services with audit-in-
+// transaction, policy-variable resolution, and the /api/v1 REST edge behind a
+// development actor header. SSO arrives with IdPi_OIDC.
 package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
+	"github.com/reh3376/pro-manage/services/pm-core/internal/api"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/config"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/domain"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/secrets"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
 )
 
 func main() {
@@ -38,20 +42,36 @@ func run() error {
 	}
 	log := cfg.Logger()
 
+	mux := http.NewServeMux()
 	checks := map[string]httpx.ReadyFunc{}
-	if cfg.DatabaseURL != "" {
-		pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
-		if err != nil {
-			return fmt.Errorf("postgres pool: %w", err)
-		}
-		defer pool.Close()
-		checks["postgres"] = pool.Ping
-		log.Info("postgres configured")
+
+	if cfg.DatabaseURL == "" {
+		log.Warn("DATABASE_URL not set; serving health endpoints only")
 	} else {
-		log.Warn("DATABASE_URL not set; running without a database (slice 0 only)")
+		if cfg.AuditChainKey == "" {
+			return errors.New("AUDIT_CHAIN_KEY is required when DATABASE_URL is set (FSD §08 audit chain)")
+		}
+		chain, err := audit.NewChain([]byte(cfg.AuditChainKey))
+		if err != nil {
+			return err
+		}
+		if cfg.DBAutoMigrate {
+			if err := store.Migrate(ctx, log, cfg.DatabaseURL); err != nil {
+				return err
+			}
+		}
+		st, err := store.Open(ctx, cfg.DatabaseURL)
+		if err != nil {
+			return err
+		}
+		defer st.Close()
+		checks["postgres"] = st.Pool.Ping
+		log.Info("postgres configured", "auto_migrate", cfg.DBAutoMigrate, "dev_actor_header", cfg.DevActorHeader)
+
+		svc := &domain.Service{Store: st, Chain: chain, Tenant: cfg.TenantID}
+		(&api.API{Log: log, Domain: svc, Chain: chain, DevActorHeader: cfg.DevActorHeader}).Mount(mux)
 	}
 
-	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", httpx.Health("pm-core", config.Version))
 	mux.HandleFunc("GET /readyz", httpx.Ready("pm-core", checks))
 	mux.HandleFunc("GET /version", func(w http.ResponseWriter, _ *http.Request) {

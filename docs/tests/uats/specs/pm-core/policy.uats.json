@@ -1,0 +1,162 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core policy variables and resolution",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "api",
+      "policy"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "Policy variable catalogue and effective-value resolution (project > site > portfolio > project_type > global > default). Requires the Northfield seed, which sets a site override for NF-ON.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "1e1618a607ca4f84da4be89679d3ddf61eab1af6ae005ef6cf479af0552d9242"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/policy-variables",
+    "headers": {
+      "X-Dev-Actor": "alice.owner",
+      "Content-Type": "application/json"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "items array",
+        "path": "$.items",
+        "op": "type_is",
+        "expected": "array"
+      },
+      {
+        "name": "starter variables seeded",
+        "path": "$.items",
+        "op": "length_greater_than",
+        "expected": 15
+      },
+      {
+        "name": "first key is string",
+        "path": "$.items[0].key",
+        "op": "type_is",
+        "expected": "string"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "missing_dev_actor_401",
+      "request": {
+        "headers": {
+          "X-Dev-Actor": ""
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": [
+          {
+            "name": "error code",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "unauthenticated"
+          }
+        ]
+      }
+    },
+    {
+      "name": "resolve_site_override_on",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b004/policy/car.threshold.vp_finance"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "site scope wins",
+            "path": "$.scope_kind",
+            "op": "equals",
+            "expected": "site"
+          },
+          {
+            "name": "CAD value",
+            "path": "$.value",
+            "op": "equals",
+            "expected": 6750000
+          },
+          {
+            "name": "set_by",
+            "path": "$.set_by",
+            "op": "equals",
+            "expected": "dana.policy"
+          }
+        ]
+      }
+    },
+    {
+      "name": "resolve_default_ky",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/policy/car.threshold.vp_finance"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "default scope",
+            "path": "$.scope_kind",
+            "op": "equals",
+            "expected": "default"
+          },
+          {
+            "name": "USD default",
+            "path": "$.value",
+            "op": "equals",
+            "expected": 5000000
+          },
+          {
+            "name": "type money",
+            "path": "$.type",
+            "op": "equals",
+            "expected": "money"
+          }
+        ]
+      }
+    },
+    {
+      "name": "resolve_unknown_key_404",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/policy/no.such.key"
+      },
+      "expected": {
+        "status": 404,
+        "body_assertions": [
+          {
+            "name": "not_found",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "not_found"
+          }
+        ]
+      }
+    },
+    {
+      "name": "resolve_unknown_project_404",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-0000000000ff/policy/car.threshold.vp_finance"
+      },
+      "expected": {
+        "status": 404,
+        "body_assertions": []
+      }
+    }
+  ]
+}

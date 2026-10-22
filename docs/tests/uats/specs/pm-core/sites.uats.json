@@ -1,0 +1,269 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core sites",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "api",
+      "sites"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "Site list, create (with normalization, conflict, validation), get. Requires the Northfield seed.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "7faed678ec6d2e7f5676b4b53ca2b2599774bcbf7274ed3c81586087a579304b"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/sites",
+    "headers": {
+      "X-Dev-Actor": "alice.owner",
+      "Content-Type": "application/json"
+    }
+  },
+  "variables": {
+    "run": {
+      "generator": "uuid"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "items array",
+        "path": "$.items",
+        "op": "type_is",
+        "expected": "array"
+      },
+      {
+        "name": "seeded sites present",
+        "path": "$.items",
+        "op": "length_greater_than",
+        "expected": 1
+      },
+      {
+        "name": "first has code",
+        "path": "$.items[0].code",
+        "op": "type_is",
+        "expected": "string"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "missing_dev_actor_401",
+      "request": {
+        "headers": {
+          "X-Dev-Actor": ""
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": [
+          {
+            "name": "error code",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "unauthenticated"
+          }
+        ]
+      }
+    },
+    {
+      "name": "create_site_201",
+      "request": {
+        "method": "POST",
+        "body": {
+          "code": "UATS-{{run}}",
+          "name": "UATS site",
+          "country": "us",
+          "time_zone": "America/Denver",
+          "currency": "usd"
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body_assertions": [
+          {
+            "name": "site_id",
+            "path": "$.site_id",
+            "op": "type_is",
+            "expected": "string"
+          },
+          {
+            "name": "code uppercased",
+            "path": "$.code",
+            "op": "matches",
+            "expected": "^UATS-"
+          },
+          {
+            "name": "country normalized",
+            "path": "$.country",
+            "op": "equals",
+            "expected": "US"
+          },
+          {
+            "name": "default unit system",
+            "path": "$.unit_system",
+            "op": "equals",
+            "expected": "imperial"
+          },
+          {
+            "name": "version 1",
+            "path": "$.version",
+            "op": "equals",
+            "expected": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate_code_409",
+      "request": {
+        "method": "POST",
+        "body": {
+          "code": "NF-KY",
+          "name": "duplicate of the seeded Kentucky site",
+          "country": "US",
+          "time_zone": "UTC",
+          "currency": "USD"
+        }
+      },
+      "expected": {
+        "status": 409,
+        "body_assertions": [
+          {
+            "name": "conflict",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "conflict"
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing_name_422",
+      "request": {
+        "method": "POST",
+        "body": {
+          "code": "UATS-X{{run}}",
+          "name": "",
+          "country": "US",
+          "time_zone": "UTC",
+          "currency": "USD"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": [
+          {
+            "name": "validation",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "validation_failed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "bad_time_zone_422",
+      "request": {
+        "method": "POST",
+        "body": {
+          "code": "UATS-Y{{run}}",
+          "name": "tz",
+          "country": "US",
+          "time_zone": "Mars/Olympus",
+          "currency": "USD"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "unknown_field_422",
+      "request": {
+        "method": "POST",
+        "body": {
+          "code": "UATS-Z{{run}}",
+          "name": "x",
+          "country": "US",
+          "time_zone": "UTC",
+          "currency": "USD",
+          "bogus": 1
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "get_seeded_site",
+      "request": {
+        "path": "/api/v1/sites/01900000-0000-7000-8000-00000000a001"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "code",
+            "path": "$.code",
+            "op": "equals",
+            "expected": "NF-KY"
+          },
+          {
+            "name": "currency",
+            "path": "$.currency",
+            "op": "equals",
+            "expected": "USD"
+          },
+          {
+            "name": "time zone",
+            "path": "$.time_zone",
+            "op": "equals",
+            "expected": "America/New_York"
+          }
+        ]
+      }
+    },
+    {
+      "name": "get_unknown_site_404",
+      "request": {
+        "path": "/api/v1/sites/01900000-0000-7000-8000-0000000000ff"
+      },
+      "expected": {
+        "status": 404,
+        "body_assertions": [
+          {
+            "name": "not_found",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "not_found"
+          }
+        ]
+      }
+    },
+    {
+      "name": "get_bad_uuid_422",
+      "request": {
+        "path": "/api/v1/sites/not-a-uuid"
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": []
+      }
+    }
+  ]
+}
