@@ -31,6 +31,9 @@ wait_for pm-core     "$CORE/readyz"            || fail=1
 wait_for pm-workers  "$WORKERS/healthz"        || fail=1
 wait_for pm-sidecar  "$SIDECAR/healthz"        || fail=1
 wait_for pm-frontend "$FRONTEND/api/healthz"   || fail=1
+# pm-core must see its MDEMG (stub or dedicated stack) through the adapter.
+mstat=$(curl -s -m 5 -H 'X-Dev-Actor: smoke' "$CORE/api/v1/mdemg/status" | sed -n 's/.*"reachable":\([a-z]*\).*/\1/p')
+if [[ "$mstat" != "true" ]]; then echo "FAIL  pm-core cannot reach its MDEMG (reachable=$mstat)" >&2; fail=1; else echo "ok    pm-core -> mdemg reachable"; fi
 if (( STUB )); then
   wait_for stub-mdemg "$STUBURL/healthz"       || fail=1
   # The stub must refuse an unauthenticated classify and accept a keyed one.

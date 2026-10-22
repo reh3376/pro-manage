@@ -23,6 +23,7 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/secrets"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
+	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
 
 func main() {
@@ -72,7 +73,17 @@ func run() error {
 		log.Info("postgres configured", "auto_migrate", cfg.DBAutoMigrate, "dev_actor_header", cfg.DevActorHeader)
 
 		svc := &domain.Service{Store: st, Chain: chain, Tenant: cfg.TenantID}
-		(&api.API{Log: log, Domain: svc, Chain: chain, DevActorHeader: cfg.DevActorHeader}).Mount(mux)
+		a := &api.API{Log: log, Domain: svc, Chain: chain, DevActorHeader: cfg.DevActorHeader, MDEMGBaseURL: cfg.MDEMGBaseURL}
+		if cfg.MDEMGBaseURL != "" {
+			mc, err := mdemgadapter.New(mdemgadapter.Options{BaseURL: cfg.MDEMGBaseURL, APIKey: cfg.MDEMGAPIKey, ClassifyTimeout: cfg.MDEMGTimeout, UserAgent: "pro-manage/pm-core " + config.Version})
+			if err != nil {
+				return err
+			}
+			a.MDEMG = mc
+			h := mc.Health(ctx)
+			log.Info("mdemg configured", "base_url", cfg.MDEMGBaseURL, "reachable", h.Reachable, "jiminy_enabled", h.JiminyEnabled, "latency_ms", h.LatencyMs)
+		}
+		a.Mount(mux)
 	}
 
 	mux.HandleFunc("GET /healthz", httpx.Health("pm-core", config.Version))

@@ -138,6 +138,11 @@ jobs:
         env:
           UDTS_TARGET: 127.0.0.1:8090
         run: cd services/pm-core && go test -count=1 ./tests/udts/
+      - name: MDEMG adapter integration tests (against the stub)
+        env:
+          MDEMG_TEST_URL: http://127.0.0.1:9997
+          MDEMG_TEST_KEY: ci-stub-key
+        run: cd services/pm-core && go test -tags integration -count=1 ./pkg/mdemgadapter/
       - name: UATS against the stub MDEMG (MDEMG field-shape pins)
         env:
           MDEMG_API_KEY: ci-stub-key
