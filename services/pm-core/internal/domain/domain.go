@@ -17,7 +17,9 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/db"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/outbox"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
+	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
 
 // Sentinel errors the API maps to HTTP statuses.
@@ -300,11 +302,24 @@ func (s *Service) CreateProject(ctx context.Context, actor Actor, in CreateProje
 			}
 			return fmt.Errorf("create project: %w", err)
 		}
-		_, err = s.Chain.Append(ctx, q, audit.Event{
+		ev, err := s.Chain.Append(ctx, q, audit.Event{
 			TenantID: s.Tenant, ProjectID: &pid, ActorUserID: actor.UserID, ActionType: "project.create", SubjectType: "project",
 			SubjectID: pid.String(), After: project, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		// FSD §06 OBSERVE: project events go to the project space through the outbox,
+		// in this transaction, keyed on the audit id so delivery is idempotent.
+		return outbox.Enqueue(ctx, q, s.Tenant, outbox.KindMDEMGObserve, ev.AuditID.String(), mdemgadapter.ObserveRequest{
+			SpaceID:        mdemgadapter.ProjectSpace(pid.String()),
+			SessionID:      actor.UserID + ":" + pid.String(),
+			Content:        fmt.Sprintf("Project %s (%s) created at site %s by %s: %s, type %s, FEL stage %s.", project.Code, project.Name, site.Code, actor.UserID, project.LifecycleState, project.ProjectType, project.FelStage),
+			ObsType:        "decision",
+			Tags:           []string{"project", "created", "type:" + project.ProjectType, "site:" + site.Code},
+			StructuredData: map[string]any{"project_id": pid.String(), "code": project.Code, "site_id": site.SiteID.String(), "project_type": project.ProjectType, "lifecycle_state": project.LifecycleState},
+			SourceRef:      ev.AuditID.String(),
+		})
 	})
 	return project, err
 }

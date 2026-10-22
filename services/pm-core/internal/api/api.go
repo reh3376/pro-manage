@@ -53,6 +53,7 @@ func (a *API) Mount(mux *http.ServeMux) {
 	mux.Handle("GET /api/v1/policy-variables", wrap(a.listPolicyVariables))
 	mux.Handle("GET /api/v1/audit/verify", wrap(a.verifyAudit))
 	a.mountMDEMG(mux, wrap)
+	a.mountOutbox(mux, wrap)
 }
 
 // ---------------------------------------------------------------- middleware
