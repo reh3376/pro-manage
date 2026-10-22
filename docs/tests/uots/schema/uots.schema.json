@@ -1,0 +1,223 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mdemg.dev/schemas/uots/v1.0.0",
+  "title": "Universal Observability Test Specification (UOTS)",
+  "description": "Spec-driven observability validation for metrics, dashboards, and alert rules",
+  "type": "object",
+  "required": ["uots_version", "observability", "expected"],
+
+  "properties": {
+    "uots_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "UOTS schema version (semver)"
+    },
+
+    "observability": {
+      "type": "object",
+      "description": "Observability target identification",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable name for this observability check"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["prometheus_metrics", "grafana_dashboard", "alert_rules", "log_format", "trace_propagation"],
+          "description": "Type of observability artifact being tested"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Categorization tags"
+        }
+      }
+    },
+
+    "target": {
+      "type": "object",
+      "description": "Target endpoint or file to validate",
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "description": "HTTP path for metrics endpoints (e.g. /v1/metrics/snapshot)"
+        },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST"],
+          "default": "GET"
+        },
+        "file": {
+          "type": "string",
+          "description": "Relative path to artifact file (dashboard JSON, alert rules YAML)"
+        }
+      }
+    },
+
+    "expected": {
+      "type": "object",
+      "description": "Expected observability artifacts",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "description": "Expected Prometheus metrics",
+          "items": { "$ref": "#/$defs/MetricAssertion" }
+        },
+        "dashboard": {
+          "$ref": "#/$defs/DashboardAssertion"
+        },
+        "alerts": {
+          "type": "array",
+          "description": "Expected alert rules",
+          "items": { "$ref": "#/$defs/AlertAssertion" }
+        }
+      }
+    },
+
+    "config": {
+      "type": "object",
+      "properties": {
+        "timeout_ms": { "type": "integer", "minimum": 100, "default": 5000 },
+        "base_url": {
+          "type": "string",
+          "description": "Base URL for endpoint checks. Use ${ENV_VAR} syntax."
+        }
+      }
+    },
+
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "author": { "type": "string" },
+        "created": { "type": "string", "format": "date" },
+        "updated": { "type": "string", "format": "date" },
+        "description": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "active", "deprecated"],
+          "default": "active"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "variants": {
+      "type": "array",
+      "description": "Test variations",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "target": { "type": "object" },
+          "expected": { "type": "object" }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "MetricAssertion": {
+      "type": "object",
+      "description": "Assertion about a Prometheus metric",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full metric name (e.g. mdemg_neo4j_graph_nodes)"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["counter", "gauge", "histogram", "summary"],
+          "description": "Expected Prometheus metric type"
+        },
+        "labels": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Expected label names present on the metric"
+        },
+        "help_contains": {
+          "type": "string",
+          "description": "Substring expected in HELP text"
+        },
+        "value_range": {
+          "type": "object",
+          "properties": {
+            "min": { "type": "number" },
+            "max": { "type": "number" }
+          },
+          "description": "Expected value range (for gauges)"
+        },
+        "exists": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the metric must exist in output"
+        }
+      }
+    },
+
+    "DashboardAssertion": {
+      "type": "object",
+      "description": "Assertion about a Grafana dashboard JSON file",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Expected dashboard UID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Expected dashboard title"
+        },
+        "panel_count_min": {
+          "type": "integer",
+          "description": "Minimum number of panels"
+        },
+        "required_panel_titles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Panel titles that must exist"
+        },
+        "required_queries": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "PromQL expressions that must appear in at least one panel"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Required dashboard tags"
+        }
+      }
+    },
+
+    "AlertAssertion": {
+      "type": "object",
+      "description": "Assertion about a Prometheus alert rule",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Alert rule name (e.g. MDEMGLowGraphHealth)"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["info", "warning", "critical"],
+          "description": "Expected severity label"
+        },
+        "expr_contains": {
+          "type": "string",
+          "description": "Substring expected in alert expression"
+        },
+        "for_duration": {
+          "type": "string",
+          "description": "Expected 'for' duration (e.g. '10m')"
+        }
+      }
+    }
+  }
+}

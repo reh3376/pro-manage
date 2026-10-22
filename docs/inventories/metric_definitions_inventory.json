@@ -1,0 +1,5 @@
+{
+  "surface": "metric_definitions",
+  "description": "Every metric id declared in pm-core's metric definitions must have at least one dashboard, workflow, or promise that reads it (FSD \u00a707, \u00a712).",
+  "entries": {}
+}

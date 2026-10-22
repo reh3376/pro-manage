@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# pro_manage pre-commit gate (install once with `make hooks`).
+# Mirrors the merge-blocking CI checks that are cheap enough to run on every commit:
+#   - adjudication inventories (every declared route etc. has an entry)
+#   - UNTS registry matches the governed artifacts
+#   - UxTS spec hashes verify
+#   - gofmt on staged Go files
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+fail=0
+python3 scripts/verify_inventories.py || fail=1
+python3 scripts/unts.py verify || fail=1
+for fw in uats; do
+  uv run -q --no-project --with requests --with jsonpath-ng \
+    python docs/tests/$fw/runners/${fw}_runner.py verify-hashes --spec-dir docs/tests/$fw/specs --pattern "**/*.$fw.json" >/dev/null || { echo "$fw: spec hash mismatch (run make uxts-add-hashes)"; fail=1; }
+done
+staged_go=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$' || true)
+if [[ -n "$staged_go" ]]; then
+  unformatted=$(gofmt -l $staged_go || true)
+  if [[ -n "$unformatted" ]]; then echo "gofmt needed: $unformatted"; fail=1; fi
+fi
+if (( fail )); then
+  echo "pre-commit: blocked. Fix the above (or, deliberately, commit with --no-verify and explain in the PR)."
+  exit 1
+fi

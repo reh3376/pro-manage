@@ -1,0 +1,119 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "stub-mdemg jiminy classify",
+    "base_url": "${STUB_MDEMG_URL:-http://127.0.0.1:9997}",
+    "service": "stub-mdemg",
+    "tags": [
+      "mdemg",
+      "stub",
+      "jiminy",
+      "classify"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "Classify verdicts are pass|deny under {data}, as in MDEMG; 'stub:deny' in the payload triggers the canned denial.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "95960cbc7ef94901e7dee10b7af934d3d671adedc502ece663787cee6da09f18"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/v1/jiminy/classify",
+    "headers": {
+      "X-API-Key": "${MDEMG_API_KEY:-ci-stub-key}",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "space_id": "org.northfield.governance",
+      "session_id": "alice:P-NF-KY-7",
+      "tool_name": "approval.car",
+      "agent_output": "approve CAR CR-1 for $400,000"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "verdict pass",
+        "path": "$.data.verdict",
+        "op": "equals",
+        "expected": "pass"
+      },
+      {
+        "name": "confidence number",
+        "path": "$.data.confidence",
+        "op": "type_is",
+        "expected": "number"
+      },
+      {
+        "name": "violated_codes absent on pass (omitempty, as MDEMG)",
+        "path": "$.data.violated_codes",
+        "op": "not_exists"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "canned_deny",
+      "request": {
+        "body": {
+          "agent_output": "approve CAR CR-2 for $8,400,000 stub:deny"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "verdict deny",
+            "path": "$.data.verdict",
+            "op": "equals",
+            "expected": "deny"
+          },
+          {
+            "name": "violated code",
+            "path": "$.data.violated_codes[0]",
+            "op": "equals",
+            "expected": "stub-deny"
+          },
+          {
+            "name": "denial reason",
+            "path": "$.data.denial_reason",
+            "op": "type_is",
+            "expected": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing_space_id_400",
+      "request": {
+        "body": {
+          "space_id": ""
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "missing_api_key_401",
+      "request": {
+        "headers": {
+          "X-API-Key": ""
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "surface": "connector_capabilities",
+  "description": "Every capability a connector manifest can declare (connectors/*/connector.yaml) must have a pm-core consumer that routes on it (FSD \u00a715, \u00a712).",
+  "entries": {}
+}

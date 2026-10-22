@@ -1,0 +1,194 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "stub-mdemg jiminy guide",
+    "base_url": "${STUB_MDEMG_URL:-http://127.0.0.1:9997}",
+    "service": "stub-mdemg",
+    "tags": [
+      "mdemg",
+      "stub",
+      "jiminy",
+      "guide"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "Guide field shapes per MDEMG jiminy.GuideResponse under the {data} envelope; the stub returns one card for governance spaces.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "f8c5032a7ecfade917fbf3a7514a3473768af5def75ef6a004cae8e45ba00778"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/v1/jiminy/guide",
+    "headers": {
+      "X-API-Key": "${MDEMG_API_KEY:-ci-stub-key}",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "space_id": "org.northfield.governance",
+      "context": "User alice is reviewing CAR CR-1 for $8.4M on project P-NF-KY-7",
+      "session_id": "alice:P-NF-KY-7",
+      "max_items": 20
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "data object",
+        "path": "$.data",
+        "op": "type_is",
+        "expected": "object"
+      },
+      {
+        "name": "guidance array",
+        "path": "$.data.guidance",
+        "op": "type_is",
+        "expected": "array"
+      },
+      {
+        "name": "guidance_id string",
+        "path": "$.data.guidance_id",
+        "op": "type_is",
+        "expected": "string"
+      },
+      {
+        "name": "prompt_augmentation string",
+        "path": "$.data.prompt_augmentation",
+        "op": "type_is",
+        "expected": "string"
+      },
+      {
+        "name": "confidence number",
+        "path": "$.data.confidence",
+        "op": "type_is",
+        "expected": "number"
+      },
+      {
+        "name": "rationale string",
+        "path": "$.data.rationale",
+        "op": "type_is",
+        "expected": "string"
+      },
+      {
+        "name": "source_counts object",
+        "path": "$.data.source_counts",
+        "op": "type_is",
+        "expected": "object"
+      },
+      {
+        "name": "one governance card",
+        "path": "$.data.guidance",
+        "op": "length",
+        "expected": 1
+      },
+      {
+        "name": "card constraint_code",
+        "path": "$.data.guidance[0].constraint_code",
+        "op": "type_is",
+        "expected": "string"
+      },
+      {
+        "name": "card tier is number",
+        "path": "$.data.guidance[0].tier",
+        "op": "type_is",
+        "expected": "number"
+      },
+      {
+        "name": "card priority",
+        "path": "$.data.guidance[0].priority",
+        "op": "one_of",
+        "expected": [
+          "high",
+          "medium",
+          "low"
+        ]
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "project_space_empty_guidance",
+      "request": {
+        "body": {
+          "space_id": "proj_nf_ky_7"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "empty guidance",
+            "path": "$.data.guidance",
+            "op": "length",
+            "expected": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing_space_id_400",
+      "request": {
+        "body": {
+          "space_id": ""
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body_assertions": [
+          {
+            "name": "error",
+            "path": "$.error",
+            "op": "exists"
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing_context_400",
+      "request": {
+        "body": {
+          "context": ""
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body_assertions": [
+          {
+            "name": "error",
+            "path": "$.error",
+            "op": "exists"
+          }
+        ]
+      }
+    },
+    {
+      "name": "method_not_allowed_get",
+      "request": {
+        "method": "GET"
+      },
+      "expected": {
+        "status": 405,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "missing_api_key_401",
+      "request": {
+        "headers": {
+          "X-API-Key": ""
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": []
+      }
+    }
+  ]
+}

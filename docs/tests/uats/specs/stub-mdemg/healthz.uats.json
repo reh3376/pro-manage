@@ -1,0 +1,75 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "stub-mdemg healthz",
+    "base_url": "${STUB_MDEMG_URL:-http://127.0.0.1:9997}",
+    "service": "stub-mdemg",
+    "tags": [
+      "mdemg",
+      "stub",
+      "health"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "b5343288621750af871886f6b1b65e4755bebc0bce613b543ad31a36d6e9909a"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/healthz"
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "status ok",
+        "path": "$.status",
+        "op": "equals",
+        "expected": "ok"
+      },
+      {
+        "name": "service",
+        "path": "$.service",
+        "op": "equals",
+        "expected": "stub-mdemg"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "jiminy_healthz",
+      "request": {
+        "path": "/v1/jiminy/healthz",
+        "headers": {
+          "X-API-Key": "${MDEMG_API_KEY:-ci-stub-key}",
+          "Content-Type": "application/json"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "status string",
+            "path": "$.status",
+            "op": "type_is",
+            "expected": "string"
+          },
+          {
+            "name": "enabled bool",
+            "path": "$.enabled",
+            "op": "type_is",
+            "expected": "boolean"
+          }
+        ]
+      }
+    }
+  ]
+}

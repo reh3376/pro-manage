@@ -1,0 +1,94 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "mdemg jiminy feedback validation and conversation observe",
+    "base_url": "${MDEMG_BASE_URL:-http://127.0.0.1:9998}",
+    "service": "mdemg",
+    "tags": [
+      "mdemg",
+      "live",
+      "jiminy",
+      "feedback",
+      "observe",
+      "embedding_required"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "Feedback rejects an empty guidance_id (MDEMG's own contract); observe returns the obs_id/node_id shape the outbox dispatcher records.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 60000,
+    "sha256": "27a3c8304777d8271f1d3ea287bc18b04da0c7743dff17131dfd80766e2bffee"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/v1/jiminy/feedback",
+    "headers": {
+      "X-API-Key": "${MDEMG_API_KEY}",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "guidance_id": "",
+      "action_summary": "UATS contract probe",
+      "space_id": "pm-uats.governance"
+    }
+  },
+  "expected": {
+    "status": 400,
+    "body_assertions": [
+      {
+        "name": "error on empty guidance_id",
+        "path": "$.error",
+        "op": "exists"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "observe_learning",
+      "request": {
+        "path": "/v1/conversation/observe",
+        "body": {
+          "space_id": "pm-uats.governance",
+          "session_id": "uats:pm-uats",
+          "content": "UATS contract probe observation (pro_manage dev stack)",
+          "obs_type": "learning"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "obs_id",
+            "path": "$.obs_id",
+            "op": "type_is",
+            "expected": "string"
+          },
+          {
+            "name": "node_id",
+            "path": "$.node_id",
+            "op": "type_is",
+            "expected": "string"
+          },
+          {
+            "name": "surprise_score",
+            "path": "$.surprise_score",
+            "op": "type_is",
+            "expected": "number"
+          },
+          {
+            "name": "summary",
+            "path": "$.summary",
+            "op": "type_is",
+            "expected": "string"
+          }
+        ]
+      }
+    }
+  ]
+}

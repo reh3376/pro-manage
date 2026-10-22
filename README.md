@@ -74,6 +74,9 @@ make dev          # Postgres, TimescaleDB, Redis, RustFS, Keycloak, Mailpit, pm-
 make dev-stub     # same stack but against the stub MDEMG, as PR CI runs it
 make test         # Go tests, sidecar tests, frontend type check
 make lint         # go vet, ruff, mypy, buf lint
+make uxts         # UxTS gates: spec hashes, UNTS registry, adjudication inventories, matrix currency
+make test-uats    # UATS contract specs against the running dev stack (and test-uats-stub, test-uats-live)
+make hooks        # install the pre-commit gate (same checks as CI, before every commit)
 make help         # everything else
 ```
 

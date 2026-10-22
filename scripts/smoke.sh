@@ -34,9 +34,9 @@ wait_for pm-frontend "$FRONTEND/api/healthz"   || fail=1
 if (( STUB )); then
   wait_for stub-mdemg "$STUBURL/healthz"       || fail=1
   # The stub must refuse an unauthenticated classify and accept a keyed one.
-  code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$STUBURL/v1/jiminy/classify" -d '{}')
+  code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$STUBURL/v1/jiminy/classify" -d '{"space_id":"smoke"}')
   if [[ "$code" != "401" ]]; then echo "FAIL  stub-mdemg accepted an unauthenticated classify (HTTP $code)" >&2; fail=1; else echo "ok    stub-mdemg rejects missing key"; fi
-  verdict=$(curl -fsS -X POST "$STUBURL/v1/jiminy/classify" -H "X-API-Key: ${MDEMG_API_KEY:-ci-stub-key}" -d '{"agent_output":"stub:deny"}' | sed -n 's/.*"verdict":"\([a-z]*\)".*/\1/p')
+  verdict=$(curl -fsS -X POST "$STUBURL/v1/jiminy/classify" -H "X-API-Key: ${MDEMG_API_KEY:-ci-stub-key}" -d '{"space_id":"smoke","session_id":"smoke","agent_output":"stub:deny"}' | sed -n 's/.*"verdict":"\([a-z]*\)".*/\1/p')
   if [[ "$verdict" != "deny" ]]; then echo "FAIL  stub-mdemg canned deny not returned (got '$verdict')" >&2; fail=1; else echo "ok    stub-mdemg canned deny"; fi
 fi
 

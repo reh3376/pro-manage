@@ -1,0 +1,611 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mdemg.dev/schemas/uats/v1.0.0",
+  "title": "Universal API Test Schema (UATS)",
+  "description": "Language-agnostic test specification for API endpoint validation with integrity verification",
+  "type": "object",
+  "required": ["uats_version", "api", "request", "expected"],
+
+  "properties": {
+    "uats_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "UATS schema version (semver)"
+    },
+
+    "api": {
+      "type": "object",
+      "description": "API identification",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Endpoint or operation name"
+        },
+        "version": {
+          "type": "string",
+          "description": "API version (e.g., v1, 2024-01)"
+        },
+        "base_url": {
+          "type": "string",
+          "description": "Base URL for the API. Use ${ENV_VAR} syntax (e.g., ${MDEMG_BASE_URL}) for environment variable resolution at runtime. Overridden by --base-url CLI flag when present."
+        },
+        "service": {
+          "type": "string",
+          "description": "Service or microservice name"
+        },
+        "operation_id": {
+          "type": "string",
+          "description": "OpenAPI operationId if applicable"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Categorization tags"
+        }
+      }
+    },
+
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "author": { "type": "string" },
+        "created": { "type": "string", "format": "date" },
+        "updated": { "type": "string", "format": "date" },
+        "description": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "active", "deprecated", "disabled"],
+          "default": "active"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low"],
+          "default": "medium"
+        },
+        "test_type": {
+          "type": "string",
+          "enum": ["contract", "integration", "smoke", "regression", "load", "security"],
+          "default": "contract"
+        },
+        "requires": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Other UATS specs that must pass first"
+        }
+      }
+    },
+
+    "config": {
+      "type": "object",
+      "description": "Validation behavior configuration",
+      "properties": {
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 30000
+        },
+        "response_time_max_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Fail if response exceeds this"
+        },
+        "retry_count": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "retry_delay_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 1000
+        },
+        "strict_headers": {
+          "type": "boolean",
+          "default": false,
+          "description": "Fail if response has unexpected headers"
+        },
+        "strict_body": {
+          "type": "boolean",
+          "default": false,
+          "description": "Fail if response has unexpected fields"
+        },
+        "ignore_fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "JSONPaths to ignore (e.g., $.timestamp, $.request_id)"
+        },
+        "ignore_headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Headers to ignore in validation"
+        },
+        "validate_schema": {
+          "type": "boolean",
+          "default": true
+        },
+        "validate_values": {
+          "type": "boolean",
+          "default": false,
+          "description": "Check exact values, not just types"
+        },
+        "follow_redirects": {
+          "type": "boolean",
+          "default": false
+        },
+        "verify_ssl": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+
+    "auth": {
+      "type": "object",
+      "description": "Authentication configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["none", "bearer", "basic", "api_key", "oauth2", "custom"],
+          "default": "none"
+        },
+        "bearer": {
+          "type": "object",
+          "properties": {
+            "token": { "type": "string", "description": "Token value or ${ENV_VAR}" },
+            "prefix": { "type": "string", "default": "Bearer" }
+          }
+        },
+        "basic": {
+          "type": "object",
+          "properties": {
+            "username": { "type": "string" },
+            "password": { "type": "string" }
+          }
+        },
+        "api_key": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string", "description": "Header or query param name" },
+            "value": { "type": "string" },
+            "in": { "type": "string", "enum": ["header", "query"], "default": "header" }
+          }
+        },
+        "oauth2": {
+          "type": "object",
+          "properties": {
+            "token_url": { "type": "string", "format": "uri" },
+            "client_id": { "type": "string" },
+            "client_secret": { "type": "string" },
+            "scope": { "type": "string" },
+            "grant_type": { "type": "string", "default": "client_credentials" }
+          }
+        },
+        "custom": {
+          "type": "object",
+          "properties": {
+            "headers": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "variables": {
+      "type": "object",
+      "description": "Variables for request/response templating",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "number" },
+          { "type": "boolean" },
+          {
+            "type": "object",
+            "properties": {
+              "env": { "type": "string", "description": "Environment variable name" },
+              "default": { "type": "string" },
+              "generator": {
+                "type": "string",
+                "enum": ["uuid", "timestamp", "timestamp_ms", "random_int", "random_string"]
+              }
+            }
+          }
+        ]
+      }
+    },
+
+    "request": {
+      "type": "object",
+      "description": "HTTP request definition",
+      "required": ["method", "path"],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+        },
+        "path": {
+          "type": "string",
+          "description": "Endpoint path with optional {param} placeholders"
+        },
+        "path_params": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Values for {param} in path"
+        },
+        "query": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Query string parameters"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "body": {
+          "description": "Request body (object, array, or string)"
+        },
+        "body_file": {
+          "type": "object",
+          "properties": {
+            "path": { "type": "string" },
+            "sha256": { "type": "string" }
+          },
+          "required": ["path"]
+        },
+        "content_type": {
+          "type": "string",
+          "default": "application/json"
+        },
+        "sha256": {
+          "type": "string",
+          "description": "Hash of canonical request for integrity check"
+        }
+      }
+    },
+
+    "setup": {
+      "type": "array",
+      "description": "Steps to run before the main request",
+      "items": { "$ref": "#/$defs/Step" }
+    },
+
+    "teardown": {
+      "type": "array",
+      "description": "Steps to run after the main request",
+      "items": { "$ref": "#/$defs/Step" }
+    },
+
+    "expected": {
+      "type": "object",
+      "description": "Expected response",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "oneOf": [
+            { "type": "integer", "minimum": 100, "maximum": 599 },
+            {
+              "type": "array",
+              "items": { "type": "integer" },
+              "description": "Multiple acceptable status codes"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "min": { "type": "integer" },
+                "max": { "type": "integer" }
+              },
+              "description": "Status code range"
+            }
+          ]
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/$defs/Matcher" }
+            ]
+          }
+        },
+        "body": {
+          "description": "Expected body (exact match after ignore_fields applied)"
+        },
+        "body_file": {
+          "type": "object",
+          "properties": {
+            "path": { "type": "string" },
+            "sha256": { "type": "string" }
+          },
+          "required": ["path"]
+        },
+        "body_schema": {
+          "type": "object",
+          "description": "JSON Schema for response body"
+        },
+        "body_assertions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/BodyAssertion" },
+          "description": "Fine-grained body validations"
+        },
+        "response_time": {
+          "type": "object",
+          "properties": {
+            "max_ms": { "type": "integer" },
+            "p95_ms": { "type": "integer" },
+            "p99_ms": { "type": "integer" }
+          }
+        },
+        "sha256": {
+          "type": "string",
+          "description": "Hash of canonical expected response for regression lock"
+        }
+      }
+    },
+
+    "captures": {
+      "type": "object",
+      "description": "Values to extract from response",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "enum": ["body", "header", "status", "response_time"],
+            "default": "body"
+          },
+          "path": {
+            "type": "string",
+            "description": "JSONPath (for body) or header name"
+          },
+          "regex": {
+            "type": "string",
+            "description": "Regex with capture group"
+          }
+        },
+        "required": ["path"]
+      }
+    },
+
+    "variants": {
+      "type": "array",
+      "description": "Test variations with different inputs/outputs",
+      "items": { "$ref": "#/$defs/Variant" }
+    },
+
+    "chain": {
+      "type": "array",
+      "description": "Sequence of dependent requests",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "spec": { "type": "string", "description": "Path to another .uats.json" },
+          "inline": { "$ref": "#" },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "Matcher": {
+      "type": "object",
+      "description": "Flexible value matcher",
+      "properties": {
+        "equals": { "description": "Exact match" },
+        "not_equals": { "description": "Must not equal" },
+        "contains": { "type": "string" },
+        "not_contains": { "type": "string" },
+        "starts_with": { "type": "string" },
+        "ends_with": { "type": "string" },
+        "regex": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "integer", "boolean", "array", "object", "null"]
+        },
+        "in": { "type": "array", "description": "Value in list" },
+        "not_in": { "type": "array" },
+        "range": {
+          "type": "object",
+          "properties": {
+            "min": { "type": "number" },
+            "max": { "type": "number" }
+          }
+        },
+        "length": {
+          "type": "object",
+          "properties": {
+            "min": { "type": "integer" },
+            "max": { "type": "integer" },
+            "equals": { "type": "integer" }
+          }
+        },
+        "exists": { "type": "boolean" }
+      }
+    },
+
+    "CanonicalBodyAssertion": {
+      "type": "object",
+      "description": "Canonical assertion dialect (UxXTS portable grammar).",
+      "required": ["path", "op"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "JSONPath (e.g., $.data.user.id)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable assertion name"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "equals",
+            "not_equals",
+            "contains",
+            "not_contains",
+            "matches",
+            "type_is",
+            "greater_than",
+            "less_than",
+            "greater_than_or_equal",
+            "less_than_or_equal",
+            "exists",
+            "not_exists",
+            "one_of",
+            "length",
+            "length_greater_than",
+            "length_less_than",
+            "items_all_match",
+            "schema_match"
+          ]
+        },
+        "expected": {},
+        "message": { "type": "string" },
+        "optional": { "type": "boolean", "default": false },
+        "capture_as": { "type": "string", "description": "Save value to variable" }
+      },
+      "additionalProperties": false
+    },
+
+    "LegacyBodyAssertion": {
+      "type": "object",
+      "description": "Legacy matcher dialect. Retained for backward compatibility while migrating to canonical op/expected grammar.",
+      "required": ["path"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "JSONPath (e.g., $.data.user.id)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable assertion name"
+        },
+        "equals": { "description": "Expected value" },
+        "not_equals": {},
+        "contains": { "type": "string" },
+        "not_contains": { "type": "string" },
+        "regex": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "integer", "boolean", "array", "object", "null"]
+        },
+        "in": { "type": "array" },
+        "range": {
+          "type": "object",
+          "properties": {
+            "min": { "type": "number" },
+            "max": { "type": "number" }
+          }
+        },
+        "length": {
+          "type": "object",
+          "properties": {
+            "min": { "type": "integer" },
+            "max": { "type": "integer" },
+            "equals": { "type": "integer" }
+          }
+        },
+        "exists": { "type": "boolean" },
+        "schema": { "type": "object", "description": "JSON Schema for this path" },
+        "schema_match": { "type": "object", "description": "JSON Schema for this path" },
+        "items_all_match": { "type": "object", "description": "Nested matcher for each array item" },
+        "message": { "type": "string" },
+        "optional": { "type": "boolean", "default": false },
+        "capture_as": { "type": "string", "description": "Save value to variable" }
+      },
+      "anyOf": [
+        { "required": ["equals"] },
+        { "required": ["not_equals"] },
+        { "required": ["contains"] },
+        { "required": ["not_contains"] },
+        { "required": ["regex"] },
+        { "required": ["type"] },
+        { "required": ["in"] },
+        { "required": ["range"] },
+        { "required": ["length"] },
+        { "required": ["exists"] },
+        { "required": ["schema"] },
+        { "required": ["schema_match"] },
+        { "required": ["items_all_match"] }
+      ],
+      "additionalProperties": false
+    },
+
+    "BodyAssertion": {
+      "oneOf": [
+        { "$ref": "#/$defs/CanonicalBodyAssertion" },
+        { "$ref": "#/$defs/LegacyBodyAssertion" }
+      ]
+    },
+
+    "Step": {
+      "type": "object",
+      "description": "Setup or teardown step",
+      "properties": {
+        "name": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["request", "sql", "command", "wait", "set"]
+        },
+        "spec": { "type": "string", "description": "Path to another .uats.json" },
+        "request": {
+          "type": "object",
+          "properties": {
+            "method": { "type": "string" },
+            "path": { "type": "string" },
+            "body": {}
+          }
+        },
+        "sql": { "type": "string" },
+        "command": { "type": "string" },
+        "wait_ms": { "type": "integer" },
+        "set": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "capture": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "from": { "type": "string" },
+              "path": { "type": "string" }
+            }
+          }
+        },
+        "condition": {
+          "type": "string",
+          "description": "Only run if condition evaluates true"
+        }
+      }
+    },
+
+    "Variant": {
+      "type": "object",
+      "description": "Test variant with input/output overrides",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "skip": { "type": "boolean", "default": false },
+        "skip_reason": { "type": "string" },
+        "variables": { "type": "object" },
+        "request": {
+          "type": "object",
+          "description": "Overrides for request"
+        },
+        "expected": {
+          "type": "object",
+          "description": "Overrides for expected response"
+        }
+      }
+    }
+  }
+}

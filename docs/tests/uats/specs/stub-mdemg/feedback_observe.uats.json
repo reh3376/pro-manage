@@ -1,0 +1,140 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "stub-mdemg jiminy feedback and conversation observe",
+    "base_url": "${STUB_MDEMG_URL:-http://127.0.0.1:9997}",
+    "service": "stub-mdemg",
+    "tags": [
+      "mdemg",
+      "stub",
+      "jiminy",
+      "feedback",
+      "observe"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "d4a908ca850ef00e251b46dde1cc6a90e256f6d869cbfc70464833cf3cfcab6d"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/v1/jiminy/feedback",
+    "headers": {
+      "X-API-Key": "${MDEMG_API_KEY:-ci-stub-key}",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "guidance_id": "gd-fixture-1",
+      "action_summary": "User alice approved CAR CR-1",
+      "space_id": "org.northfield.governance",
+      "session_id": "alice:P-NF-KY-7",
+      "outcome": "followed"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "guidance_id echoed",
+        "path": "$.guidance_id",
+        "op": "equals",
+        "expected": "gd-fixture-1"
+      },
+      {
+        "name": "results array",
+        "path": "$.results",
+        "op": "type_is",
+        "expected": "array"
+      },
+      {
+        "name": "applied bool",
+        "path": "$.applied",
+        "op": "type_is",
+        "expected": "boolean"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "feedback_missing_guidance_id_400",
+      "request": {
+        "body": {
+          "guidance_id": ""
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body_assertions": [
+          {
+            "name": "error",
+            "path": "$.error",
+            "op": "exists"
+          }
+        ]
+      }
+    },
+    {
+      "name": "observe_learning",
+      "request": {
+        "path": "/v1/conversation/observe",
+        "body": {
+          "space_id": "org.northfield.governance",
+          "session_id": "alice:P-NF-KY-7",
+          "content": "Closeout MP information: filler changeover tooling needs a dedicated cart",
+          "obs_type": "learning"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "obs_id",
+            "path": "$.obs_id",
+            "op": "type_is",
+            "expected": "string"
+          },
+          {
+            "name": "node_id",
+            "path": "$.node_id",
+            "op": "type_is",
+            "expected": "string"
+          },
+          {
+            "name": "surprise_score",
+            "path": "$.surprise_score",
+            "op": "type_is",
+            "expected": "number"
+          },
+          {
+            "name": "summary",
+            "path": "$.summary",
+            "op": "type_is",
+            "expected": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "observe_missing_content_400",
+      "request": {
+        "path": "/v1/conversation/observe",
+        "body": {
+          "space_id": "org.northfield.governance",
+          "content": ""
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body_assertions": []
+      }
+    }
+  ]
+}

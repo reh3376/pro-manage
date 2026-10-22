@@ -91,12 +91,26 @@ jobs:
           push: false
           pr_comment: false   # the job has contents:read only; results are in the check, not a comment
 
+  uxts:
+    name: UxTS gates (spec hashes, UNTS, inventories, matrix)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # matrix currency uses git commit dates
+      - uses: astral-sh/setup-uv@v6
+      - run: make test-uxts-hashes
+      - run: make test-unts
+      - run: make verify-inventories
+      - run: make check-matrix
+
   compose-smoke:
-    name: Compose smoke (stub MDEMG)
+    name: Compose smoke + UATS (stub MDEMG)
     runs-on: ubuntu-latest
     needs: [go, python, frontend]
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
       - name: Build and start the stack
         run: |
           docker compose --env-file deploy/compose/.env.ci \
@@ -107,6 +121,12 @@ jobs:
           MDEMG_API_KEY: ci-stub-key
           SMOKE_TIMEOUT: "240"
         run: scripts/smoke.sh --stub
+      - name: UATS against the running services
+        run: make test-uats
+      - name: UATS against the stub MDEMG (MDEMG field-shape pins)
+        env:
+          MDEMG_API_KEY: ci-stub-key
+        run: make test-uats-stub
       - name: Logs on failure
         if: failure()
         run: |
