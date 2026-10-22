@@ -20,7 +20,7 @@ export PM_SIDECAR_URL  ?= http://127.0.0.1:7070
 export PM_FRONTEND_URL ?= http://127.0.0.1:3100
 export STUB_MDEMG_URL  ?= http://127.0.0.1:9997
 
-.PHONY: help env dev dev-stub dev-down dev-logs mdemg-up mdemg-down mdemg-logs \
+.PHONY: help env dev dev-stub dev-down dev-logs mdemg-up mdemg-down mdemg-logs db-seed db-psql sqlc go-test-integration \
         build test lint smoke smoke-stub ci-local hooks \
         go-build go-test go-lint py-sync py-test py-lint fe-install fe-typecheck fe-build \
         proto proto-lint proto-breaking \
@@ -34,6 +34,7 @@ env: ## Create deploy/compose/.env from the example (never overwrites)
 	@test -f $(COMPOSE_DIR)/.env || { cp $(COMPOSE_DIR)/.env.example $(COMPOSE_DIR)/.env; \
 	  sed -i '' "s/^MDEMG_API_KEY=$$/MDEMG_API_KEY=$$(openssl rand -hex 24)/" $(COMPOSE_DIR)/.env; \
 	  sed -i '' "s/^MDEMG_J17_TICKET_SECRET=$$/MDEMG_J17_TICKET_SECRET=$$(openssl rand -hex 32)/" $(COMPOSE_DIR)/.env; \
+	  sed -i '' "s/^AUDIT_CHAIN_KEY=$$/AUDIT_CHAIN_KEY=$$(openssl rand -hex 32)/" $(COMPOSE_DIR)/.env; \
 	  echo "wrote $(COMPOSE_DIR)/.env (edit the change-me-dev passwords if you like)"; }
 
 # ---------------------------------------------------------------- dev stacks
@@ -67,6 +68,20 @@ smoke: ## Probe every service in the running dev stack
 
 smoke-stub: ## Probe every service including the stub MDEMG
 	@set -a; source $(COMPOSE_DIR)/.env; set +a; scripts/smoke.sh --stub
+
+# ---------------------------------------------------------------- database
+
+db-seed: ## Load the Northfield Spirits Co. dev seed into the running dev stack (idempotent)
+	$(COMPOSE) exec -T postgres psql -v ON_ERROR_STOP=1 -U pm -d pm_core < $(GO_DIR)/db/seeds/northfield.sql
+
+db-psql: ## psql into the dev database
+	$(COMPOSE) exec postgres psql -U pm -d pm_core
+
+sqlc: ## Regenerate internal/db from db/queries (pinned sqlc via go run)
+	cd $(GO_DIR) && go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1 generate
+
+go-test-integration: ## Go integration tests against TEST_DATABASE_URL (the dev stack's Postgres by default)
+	cd $(GO_DIR) && TEST_DATABASE_URL=$${TEST_DATABASE_URL:-postgres://pm:$$(grep ^POSTGRES_PASSWORD= ../../$(COMPOSE_DIR)/.env | cut -d= -f2)@127.0.0.1:$${PM_POSTGRES_PORT:-5440}/pm_core?sslmode=disable} go test -tags integration -count=1 ./internal/store/
 
 # ---------------------------------------------------------------- build/test
 

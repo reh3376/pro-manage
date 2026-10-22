@@ -17,19 +17,28 @@
       "recorded_at": "2026-10-22T13:29:40Z"
     },
     "docs/inventories/policy_variables_inventory.json": {
-      "sha256": "4d614eaf0e9b75344168d7fd4073649f0c513bb8d9dd35cb8138c101c130c7d0",
-      "history": [],
-      "recorded_at": "2026-10-22T13:29:40Z"
+      "sha256": "5a4ed9056ec8a3275858e1557e4162f389c3f86d62b838bb855195c5eb75f884",
+      "history": [
+        {
+          "sha256": "4d614eaf0e9b75344168d7fd4073649f0c513bb8d9dd35cb8138c101c130c7d0",
+          "recorded_at": "2026-10-22T13:29:40Z"
+        }
+      ],
+      "recorded_at": "2026-10-22T14:15:38Z"
     },
     "docs/inventories/routes_inventory.json": {
-      "sha256": "ff488c30862e8f961c5cfe02905eb3e2baaa7d405944c34c06ad9a777fb7c7fc",
+      "sha256": "2b38a8d1bf8a5ab235a48a249984beb373db06ad25b1e2f52cd8c9b1fcee9c9d",
       "history": [
+        {
+          "sha256": "ff488c30862e8f961c5cfe02905eb3e2baaa7d405944c34c06ad9a777fb7c7fc",
+          "recorded_at": "2026-10-22T13:31:05Z"
+        },
         {
           "sha256": "bc7adadefd5e3e6ebcc30502a9329c71d8694313fcb0ccf4545686a6c06d7e92",
           "recorded_at": "2026-10-22T13:29:40Z"
         }
       ],
-      "recorded_at": "2026-10-22T13:31:05Z"
+      "recorded_at": "2026-10-22T14:15:38Z"
     },
     "docs/tests/uats/runners/uats_runner.py": {
       "sha256": "2ae714b57d7ec2692389aabbdc9208d47981c1aaa95ecfbceebea8ea07c945fb",
@@ -66,15 +75,40 @@
       "history": [],
       "recorded_at": "2026-10-22T13:29:40Z"
     },
+    "docs/tests/uats/specs/pm-core/audit.uats.json": {
+      "sha256": "80187abe2c32a97061d9687a7c193c8dc89ab0454d6acaad13fc8799f4ad6b21",
+      "history": [],
+      "recorded_at": "2026-10-22T14:15:38Z"
+    },
     "docs/tests/uats/specs/pm-core/healthz.uats.json": {
       "sha256": "27bb4196042b3c5d3d445e9c48b20097fa2b4b351254d161f060aee330bb6360",
       "history": [],
       "recorded_at": "2026-10-22T13:29:40Z"
     },
+    "docs/tests/uats/specs/pm-core/policy.uats.json": {
+      "sha256": "56f95a4962123909a74ed162f99f42b787eb89754af051a20d2212b4509baf69",
+      "history": [],
+      "recorded_at": "2026-10-22T14:15:38Z"
+    },
+    "docs/tests/uats/specs/pm-core/projects.uats.json": {
+      "sha256": "336f11aaa5bdad4ddcf6863627855d73ab47719e6416be7528f0c55cb6a3b01c",
+      "history": [],
+      "recorded_at": "2026-10-22T14:15:38Z"
+    },
     "docs/tests/uats/specs/pm-core/readyz.uats.json": {
       "sha256": "58a92b5ec1b7a7729abe867d75029e905246bf275b6a79749c18d3f2dad966ca",
       "history": [],
       "recorded_at": "2026-10-22T13:29:40Z"
+    },
+    "docs/tests/uats/specs/pm-core/sites.uats.json": {
+      "sha256": "36e1c24ae266f6b42018226a08bb77b60e27e1a14879a24cf85c715a04c5c76e",
+      "history": [
+        {
+          "sha256": "a39e4b255fc8c3f8e0ff5947f91a2005ccbf285122a3823d175262e75598062e",
+          "recorded_at": "2026-10-22T14:15:38Z"
+        }
+      ],
+      "recorded_at": "2026-10-22T14:17:10Z"
     },
     "docs/tests/uats/specs/pm-core/version.uats.json": {
       "sha256": "456fe10874fa04e32b62144ef5f6fe05c7b5e48659799465f32f0f201357b44f",
@@ -162,6 +196,6 @@
       "recorded_at": "2026-10-22T13:29:40Z"
     }
   },
-  "updated_at": "2026-10-22T13:31:05Z",
-  "count": 30
+  "updated_at": "2026-10-22T14:17:10Z",
+  "count": 34
 }

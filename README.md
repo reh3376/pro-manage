@@ -47,6 +47,7 @@ It is for a single company, hosted on the company's intranet in containers, tune
 | Glossary (TPM, EEM, CAR, AACE, LCC/TIC, OEE/MTBF/…) | [`docs/fsd/13-glossary.md`](./docs/fsd/13-glossary.md) |
 | Phased roadmap (thin spine, delivery scenarios, layer catalogue), milestones, risk register | [`docs/fsd/roadmap.md`](./docs/fsd/roadmap.md) |
 | Owner decision checklist (every open item, grouped by what it unblocks) | [`docs/fsd/open-items.md`](./docs/fsd/open-items.md) |
+| Engineering backlog (repo hardening, tooling, hygiene items) | [`docs/backlog.md`](./docs/backlog.md) |
 
 ---
 
@@ -78,6 +79,14 @@ make uxts         # UxTS gates: spec hashes, UNTS registry, adjudication invento
 make test-uats    # UATS contract specs against the running dev stack (and test-uats-stub, test-uats-live)
 make hooks        # install the pre-commit gate (same checks as CI, before every commit)
 make help         # everything else
+```
+
+Then `make db-seed` loads the Northfield Spirits Co. data (two sites, five projects, the starter policy variables). The API is at `http://localhost:8080/api/v1`; until SSO lands, requests name the acting user with an `X-Dev-Actor` header (development only, `PM_DEV_ACTOR_HEADER`):
+
+```bash
+curl -s -H 'X-Dev-Actor: alice.owner' localhost:8080/api/v1/projects | jq '.items[].code'
+curl -s -H 'X-Dev-Actor: alice.owner' localhost:8080/api/v1/projects/01900000-0000-7000-8000-00000000b004/policy/car.threshold.vp_finance
+curl -s -H 'X-Dev-Actor: alice.owner' localhost:8080/api/v1/audit/verify
 ```
 
 Services on the host: frontend `:3100`, pm-core `:8080`, pm-workers `:8081`, sidecar `:7070` (HTTP) and `:7071` (gRPC), Keycloak `:8180` (realm `northfield`, users such as `alice.owner` / `northfield-dev`), Mailpit `:8026`, RustFS console `:9101`, dedicated MDEMG `:9998`. The seed company is the fictional Northfield Spirits Co.

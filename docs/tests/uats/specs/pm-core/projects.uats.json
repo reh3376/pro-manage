@@ -1,0 +1,274 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core projects",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "api",
+      "projects"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "Project list (with site filter), create (defaults from site and actor, validation), get. Requires the Northfield seed.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "6a585d60fb75ce7d0c529e8b563b389689106eb710e16cfd5678a9a804271653"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/projects",
+    "headers": {
+      "X-Dev-Actor": "alice.owner",
+      "Content-Type": "application/json"
+    }
+  },
+  "variables": {
+    "run": {
+      "generator": "uuid"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "items array",
+        "path": "$.items",
+        "op": "type_is",
+        "expected": "array"
+      },
+      {
+        "name": "seeded projects present",
+        "path": "$.items",
+        "op": "length_greater_than",
+        "expected": 4
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "missing_dev_actor_401",
+      "request": {
+        "headers": {
+          "X-Dev-Actor": ""
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": [
+          {
+            "name": "error code",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "unauthenticated"
+          }
+        ]
+      }
+    },
+    {
+      "name": "filter_by_site",
+      "request": {
+        "query": {
+          "site_id": "01900000-0000-7000-8000-00000000a001"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "ky projects",
+            "path": "$.items",
+            "op": "length_greater_than",
+            "expected": 2
+          },
+          {
+            "name": "all ky",
+            "path": "$.items[0].site_id",
+            "op": "equals",
+            "expected": "01900000-0000-7000-8000-00000000a001"
+          }
+        ]
+      }
+    },
+    {
+      "name": "create_project_201",
+      "request": {
+        "method": "POST",
+        "body": {
+          "code": "P-UATS-{{run}}",
+          "name": "UATS project",
+          "site_id": "01900000-0000-7000-8000-00000000a001",
+          "project_type": "reliability",
+          "baseline_budget_total": "250000.00",
+          "start_date": "2026-11-01",
+          "target_end_date": "2027-02-28",
+          "tpm_pillar_tags": [
+            "planned_maintenance"
+          ]
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body_assertions": [
+          {
+            "name": "project_id",
+            "path": "$.project_id",
+            "op": "type_is",
+            "expected": "string"
+          },
+          {
+            "name": "currency from site",
+            "path": "$.currency",
+            "op": "equals",
+            "expected": "USD"
+          },
+          {
+            "name": "owner defaults to actor",
+            "path": "$.owner_user_id",
+            "op": "equals",
+            "expected": "alice.owner"
+          },
+          {
+            "name": "lifecycle initiate",
+            "path": "$.lifecycle_state",
+            "op": "equals",
+            "expected": "initiate"
+          },
+          {
+            "name": "fel1 default",
+            "path": "$.fel_stage",
+            "op": "equals",
+            "expected": "fel1"
+          },
+          {
+            "name": "onboarding registered",
+            "path": "$.onboarding_level",
+            "op": "equals",
+            "expected": "registered"
+          },
+          {
+            "name": "budget string",
+            "path": "$.baseline_budget_total",
+            "op": "equals",
+            "expected": "250000.00"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown_site_422",
+      "request": {
+        "method": "POST",
+        "body": {
+          "code": "P-UATS-X{{run}}",
+          "name": "bad site",
+          "site_id": "01900000-0000-7000-8000-0000000000ff",
+          "project_type": "reliability"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": [
+          {
+            "name": "validation",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "validation_failed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "bad_project_type_422",
+      "request": {
+        "method": "POST",
+        "body": {
+          "code": "P-UATS-Y{{run}}",
+          "name": "bad type",
+          "site_id": "01900000-0000-7000-8000-00000000a001",
+          "project_type": "moonshot"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "end_before_start_422",
+      "request": {
+        "method": "POST",
+        "body": {
+          "code": "P-UATS-Z{{run}}",
+          "name": "dates",
+          "site_id": "01900000-0000-7000-8000-00000000a001",
+          "project_type": "reliability",
+          "start_date": "2027-01-01",
+          "target_end_date": "2026-01-01"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "get_seeded_project",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "code",
+            "path": "$.code",
+            "op": "equals",
+            "expected": "P-NF-KY-7"
+          },
+          {
+            "name": "state plan",
+            "path": "$.lifecycle_state",
+            "op": "equals",
+            "expected": "plan"
+          },
+          {
+            "name": "fel3",
+            "path": "$.fel_stage",
+            "op": "equals",
+            "expected": "fel3"
+          },
+          {
+            "name": "hazardous area",
+            "path": "$.hazardous_area_classification",
+            "op": "equals",
+            "expected": "class_i_div_1"
+          },
+          {
+            "name": "budget",
+            "path": "$.baseline_budget_total",
+            "op": "equals",
+            "expected": "42000000.00"
+          }
+        ]
+      }
+    },
+    {
+      "name": "get_unknown_project_404",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-0000000000ff"
+      },
+      "expected": {
+        "status": 404,
+        "body_assertions": []
+      }
+    }
+  ]
+}

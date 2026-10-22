@@ -45,7 +45,8 @@ def _read(path: Path) -> str:
 
 def scan_routes() -> dict[str, str]:
     found: dict[str, str] = {}
-    go_re = re.compile(r'HandleFunc\(\s*"([A-Z]+)\s+(/[^"\s]*)"')
+    # Go 1.22+ method-qualified patterns on mux.Handle(...) and mux.HandleFunc(...).
+    go_re = re.compile(r'\.Handle(?:Func)?\(\s*"([A-Z]+)\s+(/[^"\s]*)"')
     for p in (ROOT / "services").rglob("*.go"):
         if p.name.endswith("_test.go"):
             continue
@@ -70,10 +71,14 @@ def scan_policy_variables() -> dict[str, str]:
     for p in (ROOT / "services" / "pm-core").rglob("*.go"):
         for m in pat.finditer(_read(p)):
             found[m.group(1)] = str(p.relative_to(ROOT))
-    seed_pat = re.compile(r"INSERT INTO policy_variables[^;]*?VALUES\s*\(\s*'([a-z0-9_.<>]+)'", re.I | re.S)
+    # Seed SQL: every tuple of an INSERT INTO policy_variables statement (multi-row inserts included).
+    # Statement runs to ON CONFLICT or the next INSERT (descriptions may contain semicolons).
+    stmt_pat = re.compile(r"INSERT INTO policy_variables\b.*?(?=ON CONFLICT|INSERT INTO|\Z)", re.I | re.S)
+    tuple_pat = re.compile(r"\(\s*'([a-z0-9_.<>]+)'\s*,")
     for p in (ROOT / "services" / "pm-core").rglob("*.sql"):
-        for m in seed_pat.finditer(_read(p)):
-            found[m.group(1)] = str(p.relative_to(ROOT))
+        for stmt in stmt_pat.finditer(_read(p)):
+            for m in tuple_pat.finditer(stmt.group(0)):
+                found[m.group(1)] = str(p.relative_to(ROOT))
     return found
 
 

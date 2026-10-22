@@ -1,0 +1,104 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core audit chain",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "api",
+      "audit"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-22",
+    "description": "Chain verification walks every AuditEvent and recomputes the HMAC chain; a tampered row would return 409 valid=false.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "cbb40658dda170a77d37208f695db57138c2ba17e557a8a086f11082721cf11d"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/audit/verify",
+    "headers": {
+      "X-Dev-Actor": "alice.owner",
+      "Content-Type": "application/json"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "tenant",
+        "path": "$.tenant_id",
+        "op": "equals",
+        "expected": "default"
+      },
+      {
+        "name": "valid",
+        "path": "$.valid",
+        "op": "equals",
+        "expected": true
+      },
+      {
+        "name": "checked number",
+        "path": "$.checked",
+        "op": "type_is",
+        "expected": "number"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "missing_dev_actor_401",
+      "request": {
+        "headers": {
+          "X-Dev-Actor": ""
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": [
+          {
+            "name": "error code",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "unauthenticated"
+          }
+        ]
+      }
+    },
+    {
+      "name": "project_audit_list",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/audit"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "items array",
+            "path": "$.items",
+            "op": "type_is",
+            "expected": "array"
+          }
+        ]
+      }
+    },
+    {
+      "name": "project_audit_unknown_404",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-0000000000ff/audit"
+      },
+      "expected": {
+        "status": 404,
+        "body_assertions": []
+      }
+    }
+  ]
+}
