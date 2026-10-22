@@ -1,0 +1,17 @@
+{
+  "surface": "grpc_methods",
+  "description": "Every rpc declared under proto/ must have a UDTS spec and a consumer (FSD §12, §15). Key: 'package.Service/Rpc'.",
+  "entries": {
+    "pm.core.v1.VersionService/GetVersion": {
+      "writers": [
+        "services/pm-core/internal/grpcserver/server.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/pm_core_version_get.udts.json",
+        "services/pm-core/tests/udts/contract_test.go"
+      ],
+      "disposition": "active",
+      "notes": "First served RPC; exercises buf generation, the gRPC server, and the UDTS pattern."
+    }
+  }
+}

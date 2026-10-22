@@ -6,6 +6,11 @@
       "history": [],
       "recorded_at": "2026-10-22T13:29:40Z"
     },
+    "docs/inventories/grpc_methods_inventory.json": {
+      "sha256": "a59d1e19d1db8c98e6014950ae33d985c91b011fd7c822a866de02d190118812",
+      "history": [],
+      "recorded_at": "2026-10-22T15:06:07Z"
+    },
     "docs/inventories/loss_categories_inventory.json": {
       "sha256": "7d1b5310a2e59d03b86b7ac8f68df79427d26df1231538ca4a7d657799aaba53",
       "history": [],
@@ -160,6 +165,21 @@
       "history": [],
       "recorded_at": "2026-10-22T13:29:40Z"
     },
+    "docs/tests/udts/schema/udts.schema.json": {
+      "sha256": "e687c70cd7b019d11bb26e88a0323952a23aa7a083091f0ddd6a3a4f29c3228f",
+      "history": [],
+      "recorded_at": "2026-10-22T15:06:07Z"
+    },
+    "docs/tests/udts/specs/pm_core_grpc_health.udts.json": {
+      "sha256": "29c362b7f36ac6b86ebc0437e27d2c410758fbf7f43c7f5865ba443f24585561",
+      "history": [],
+      "recorded_at": "2026-10-22T15:06:07Z"
+    },
+    "docs/tests/udts/specs/pm_core_version_get.udts.json": {
+      "sha256": "63bfce2fedabd336b6a0363eace8463013805e694ae25121e9e178424ee29c1f",
+      "history": [],
+      "recorded_at": "2026-10-22T15:06:07Z"
+    },
     "docs/tests/uots/runners/uots_runner.py": {
       "sha256": "628afeb11747f7f620c07aa645265ccdc2cd3cae7e0843d58c5a6e3889d7e42b",
       "history": [],
@@ -196,6 +216,6 @@
       "recorded_at": "2026-10-22T13:29:40Z"
     }
   },
-  "updated_at": "2026-10-22T14:17:10Z",
-  "count": 34
+  "updated_at": "2026-10-22T15:06:07Z",
+  "count": 38
 }

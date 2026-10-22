@@ -1,0 +1,23 @@
+{
+  "udts_version": "1.0.0",
+  "service": "grpc.health.v1.Health",
+  "method": "Check",
+  "request": {
+    "service": ""
+  },
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "status"
+  },
+  "config": {
+    "timeout_ms": 5000
+  },
+  "metadata": {
+    "description": "Standard gRPC health service on pm-core's gRPC port reports SERVING.",
+    "tags": [
+      "pm-core",
+      "contract",
+      "health"
+    ]
+  }
+}

@@ -17,15 +17,21 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/secrets"
 )
 
-// Version is set at build time with -ldflags "-X .../config.Version=...".
-var Version = "dev"
+// Version and GitSHA are set at build time with -ldflags "-X .../config.Version=... -X .../config.GitSHA=...".
+var (
+	Version = "dev"
+	GitSHA  = "unknown"
+)
 
 // Config is the resolved configuration for one pm-core (or pm-workers) process.
 type Config struct {
 	ServiceName string
 	ListenAddr  string
-	LogLevel    slog.Level
-	LogFormat   string // json | text
+	// GRPCAddr is pm-core's internal gRPC listener (FSD §05); GRPCReflection enables server reflection (dev/CI only).
+	GRPCAddr       string
+	GRPCReflection bool
+	LogLevel       slog.Level
+	LogFormat      string // json | text
 
 	// DatabaseURL is the Postgres DSN for pm-core's OLTP store. When unset the
 	// binary serves health endpoints only (slice 0 behaviour).
@@ -59,6 +65,8 @@ func Load(ctx context.Context, service string, sp secrets.Provider) (Config, err
 		MDEMGBaseURL:   strings.TrimRight(envOr("MDEMG_BASE_URL", "http://127.0.0.1:9998"), "/"),
 		MDEMGTimeout:   durationOr("MDEMG_TIMEOUT", 10*time.Second),
 		WorkerTick:     durationOr("PM_WORKERS_TICK", 30*time.Second),
+		GRPCAddr:       envOr("PM_CORE_GRPC_ADDR", ":8090"),
+		GRPCReflection: boolOr("PM_CORE_GRPC_REFLECTION", false),
 		DBAutoMigrate:  boolOr("PM_DB_AUTO_MIGRATE", false),
 		DevActorHeader: boolOr("PM_DEV_ACTOR_HEADER", false),
 		TenantID:       envOr("PM_TENANT_ID", "default"),

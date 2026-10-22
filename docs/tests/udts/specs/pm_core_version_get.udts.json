@@ -1,0 +1,22 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.core.v1.VersionService",
+  "method": "GetVersion",
+  "request": {},
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "version"
+  },
+  "config": {
+    "timeout_ms": 5000,
+    "proto_sha256": "7beb8417c5f1dda37fa1bbc0cf9635ebe69ef0997e0ac0f7ad205ed13ebf16f5"
+  },
+  "metadata": {
+    "description": "GetVersion answers with service, version, git_sha; the first served RPC of pm-core (FSD §05). proto_sha256 pins proto/pm/core/v1/version.proto.",
+    "tags": [
+      "pm-core",
+      "contract",
+      "version"
+    ]
+  }
+}

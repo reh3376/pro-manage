@@ -89,7 +89,7 @@ curl -s -H 'X-Dev-Actor: alice.owner' localhost:8080/api/v1/projects/01900000-00
 curl -s -H 'X-Dev-Actor: alice.owner' localhost:8080/api/v1/audit/verify
 ```
 
-Services on the host: frontend `:3100`, pm-core `:8080`, pm-workers `:8081`, sidecar `:7070` (HTTP) and `:7071` (gRPC), Keycloak `:8180` (realm `northfield`, users such as `alice.owner` / `northfield-dev`), Mailpit `:8026`, RustFS console `:9101`, dedicated MDEMG `:9998`. The seed company is the fictional Northfield Spirits Co.
+Services on the host: frontend `:3100`, pm-core `:8080` (REST) and `:8090` (gRPC, reflection on in dev), pm-workers `:8081`, sidecar `:7070` (HTTP) and `:7071` (gRPC), Keycloak `:8180` (realm `northfield`, users such as `alice.owner` / `northfield-dev`), Mailpit `:8026`, RustFS console `:9101`, dedicated MDEMG `:9998`. The seed company is the fictional Northfield Spirits Co.
 
 Layout: `services/pm-core` (Go: `cmd/pm-core`, `cmd/pm-workers`, `cmd/stub-mdemg`), `services/pm-sidecar` (Python), `apps/pm-frontend` (Next.js), `connectors/`, `proto/`, `deploy/compose/`, `docs/`.
 

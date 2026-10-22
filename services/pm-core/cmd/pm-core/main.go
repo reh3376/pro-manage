@@ -12,11 +12,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/reh3376/pro-manage/services/pm-core/internal/api"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/config"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/domain"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/grpcserver"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/secrets"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
@@ -75,8 +78,21 @@ func run() error {
 	mux.HandleFunc("GET /healthz", httpx.Health("pm-core", config.Version))
 	mux.HandleFunc("GET /readyz", httpx.Ready("pm-core", checks))
 	mux.HandleFunc("GET /version", func(w http.ResponseWriter, _ *http.Request) {
-		httpx.WriteJSON(w, http.StatusOK, map[string]string{"service": "pm-core", "version": config.Version})
+		httpx.WriteJSON(w, http.StatusOK, map[string]string{"service": "pm-core", "version": config.Version, "git_sha": config.GitSHA})
 	})
 
-	return httpx.Run(ctx, log, cfg.ListenAddr, mux)
+	// gRPC (internal surface) and HTTP (edge) share one lifetime: a signal or a
+	// failure of either stops both.
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	grpcSrv := grpcserver.New(log, grpcserver.Options{Addr: cfg.GRPCAddr, Version: config.Version, GitSHA: config.GitSHA, Reflection: cfg.GRPCReflection})
+	grpcErr := make(chan error, 1)
+	go func() { grpcErr <- grpcSrv.Run(ctx) }()
+
+	httpErr := httpx.Run(ctx, log, cfg.ListenAddr, mux)
+	stop()
+	if err := <-grpcErr; err != nil && httpErr == nil {
+		return err
+	}
+	return httpErr
 }
