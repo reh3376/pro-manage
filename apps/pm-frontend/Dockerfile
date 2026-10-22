@@ -1,5 +1,7 @@
 FROM node:22-alpine AS base
-RUN corepack enable
+# pnpm is installed explicitly (pinned to package.json's packageManager version) rather than
+# through corepack, which newer Node images no longer bundle.
+RUN npm install -g pnpm@12.4.2 && npm cache clean --force
 WORKDIR /app
 
 FROM base AS deps

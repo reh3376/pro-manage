@@ -26,6 +26,10 @@ updates:
   - package-ecosystem: npm
     directory: /apps/pm-frontend
     schedule: { interval: weekly, day: monday }
+    ignore:
+      # @types/node tracks the runtime major (Node 22 LTS); a newer major describes APIs the runtime lacks.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       frontend: { patterns: ["*"] }
     commit-message: { prefix: "deps(fe)" }
@@ -36,6 +40,15 @@ updates:
       - /services/pm-sidecar
       - /apps/pm-frontend
     schedule: { interval: weekly, day: monday }
+    ignore:
+      # Base images track the pinned toolchain majors (Node 22 LTS, Go 1.26, Python 3.14; FSD §05).
+      # Major bumps are deliberate decisions, not Dependabot PRs. (Node 25 also dropped corepack.)
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "golang"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     groups:
       images: { patterns: ["*"] }
     commit-message: { prefix: "deps(docker)" }
@@ -47,6 +60,8 @@ updates:
       # Pinned deliberately: the MDEMG images follow the version pin in FSD §06, not Dependabot.
       - dependency-name: "ghcr.io/reh3376/mdemg"
       - dependency-name: "ghcr.io/reh3376/mdemg-neural-sidecar"
+      # Neo4j stays on the line MDEMG is built and tested against (neo4j:5), not Neo4j's calendar releases.
+      - dependency-name: "neo4j"
     groups:
       compose: { patterns: ["*"] }
     commit-message: { prefix: "deps(compose)" }
