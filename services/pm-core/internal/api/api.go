@@ -22,6 +22,7 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/policy"
+	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
 
 // API holds the dependencies handlers need.
@@ -29,6 +30,8 @@ type API struct {
 	Log            *slog.Logger
 	Domain         *domain.Service
 	Chain          *audit.Chain
+	MDEMG          *mdemgadapter.Client // nil when MDEMG_BASE_URL is unset
+	MDEMGBaseURL   string
 	DevActorHeader bool // when true, X-Dev-Actor names the acting user (development only; replaced by IdPi_OIDC)
 }
 
@@ -49,6 +52,7 @@ func (a *API) Mount(mux *http.ServeMux) {
 	mux.Handle("GET /api/v1/projects/{project_id}/policy/{key}", wrap(a.projectPolicy))
 	mux.Handle("GET /api/v1/policy-variables", wrap(a.listPolicyVariables))
 	mux.Handle("GET /api/v1/audit/verify", wrap(a.verifyAudit))
+	a.mountMDEMG(mux, wrap)
 }
 
 // ---------------------------------------------------------------- middleware

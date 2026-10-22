@@ -13,6 +13,17 @@
       "disposition": "active",
       "notes": "Recomputes the tenant's audit hash chain; 409 when broken. The nightly verification job (FSD §08) will call this."
     },
+    "pm-core GET /api/v1/mdemg/status": {
+      "writers": [
+        "services/pm-core/internal/api/mdemg.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/mdemg_status.uats.json",
+        "scripts/smoke.sh"
+      ],
+      "disposition": "active",
+      "notes": "Reachability and Jiminy state of the configured MDEMG via pkg/mdemgadapter; 503 when unreachable."
+    },
     "pm-core GET /api/v1/policy-variables": {
       "writers": [
         "services/pm-core/internal/api/api.go"
