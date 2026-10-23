@@ -83,6 +83,9 @@ func TestSSOLoginEndToEnd(t *testing.T) {
 	if user == "bob.finance" && !contains(me.Pools, "finance_approver_eligible") {
 		t.Fatalf("bob should be in the finance pool: %+v", me)
 	}
+	// The callback landed on pm-core's PM_PUBLIC_URL host (localhost in CI, maybe 127.0.0.1 on a
+	// workstation); cookies are host-scoped, so the rest of the flow stays on that host.
+	core = resp.Request.URL.Scheme + "://" + resp.Request.URL.Host
 	coreURL, _ := url.Parse(core)
 	cookieSeen := false
 	for _, ck := range jar.Cookies(coreURL) {
