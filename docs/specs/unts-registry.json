@@ -12,14 +12,18 @@
       "recorded_at": "2026-10-22T18:29:08Z"
     },
     "docs/inventories/grpc_methods_inventory.json": {
-      "sha256": "16558d17590e5fce1bab611e24207225b8906ab09214910d3382068ffc0294f0",
+      "sha256": "3544ae8779d83774325624046c6a76c63a0dc39dd3eb9e82d8d545f1e78ee61e",
       "history": [
+        {
+          "sha256": "16558d17590e5fce1bab611e24207225b8906ab09214910d3382068ffc0294f0",
+          "recorded_at": "2026-10-22T18:29:08Z"
+        },
         {
           "sha256": "a59d1e19d1db8c98e6014950ae33d985c91b011fd7c822a866de02d190118812",
           "recorded_at": "2026-10-22T15:06:07Z"
         }
       ],
-      "recorded_at": "2026-10-22T18:29:08Z"
+      "recorded_at": "2026-10-23T18:49:50Z"
     },
     "docs/inventories/loss_categories_inventory.json": {
       "sha256": "7d1b5310a2e59d03b86b7ac8f68df79427d26df1231538ca4a7d657799aaba53",
@@ -204,14 +208,24 @@
       "recorded_at": "2026-10-22T15:06:07Z"
     },
     "docs/tests/udts/specs/idpi_oidc_authenticate_interactive.udts.json": {
-      "sha256": "680c51500340fc819cb335493020b2e41aa4f9f36875ce29582d1ed706b1b07d",
-      "history": [],
-      "recorded_at": "2026-10-22T18:29:08Z"
+      "sha256": "be03803c884910c82d3778f51106322a94be2da1b300421336d3938170b94c4f",
+      "history": [
+        {
+          "sha256": "680c51500340fc819cb335493020b2e41aa4f9f36875ce29582d1ed706b1b07d",
+          "recorded_at": "2026-10-22T18:29:08Z"
+        }
+      ],
+      "recorded_at": "2026-10-23T18:49:50Z"
     },
     "docs/tests/udts/specs/idpi_oidc_complete_authentication_bad_code.udts.json": {
-      "sha256": "c4be949637207e906c2c36db706d14e3b0f03b8af17c714c8ad2193005e975ee",
-      "history": [],
-      "recorded_at": "2026-10-22T18:29:08Z"
+      "sha256": "dcea4d3bae0153b9aba2153372dacdd79c12dc9805c9643073a8950c12f2d4cf",
+      "history": [
+        {
+          "sha256": "c4be949637207e906c2c36db706d14e3b0f03b8af17c714c8ad2193005e975ee",
+          "recorded_at": "2026-10-22T18:29:08Z"
+        }
+      ],
+      "recorded_at": "2026-10-23T18:49:50Z"
     },
     "docs/tests/udts/specs/idpi_oidc_connector_capabilities.udts.json": {
       "sha256": "4709b4b4ef1957699d63f273948a41e00e5d11eeaf01f251153cb3cb746650df",
@@ -224,24 +238,44 @@
       "recorded_at": "2026-10-22T18:29:08Z"
     },
     "docs/tests/udts/specs/idpi_oidc_logout.udts.json": {
-      "sha256": "955c4b1b70eeeaa3a1424ff5fbaeb84e421d7d17fa2f29671fe60bc52f872727",
-      "history": [],
-      "recorded_at": "2026-10-22T18:29:08Z"
+      "sha256": "69f609091b3eb32165c69054c2de8c3240eb7c38675b377d51d9b86a4c2a2da8",
+      "history": [
+        {
+          "sha256": "955c4b1b70eeeaa3a1424ff5fbaeb84e421d7d17fa2f29671fe60bc52f872727",
+          "recorded_at": "2026-10-22T18:29:08Z"
+        }
+      ],
+      "recorded_at": "2026-10-23T18:49:50Z"
     },
     "docs/tests/udts/specs/idpi_oidc_refresh_token_garbage.udts.json": {
-      "sha256": "b84de1e9e064a0b8a4c76f44c39c442413be6c3ecdd5cba0a8528cc304bd2312",
-      "history": [],
-      "recorded_at": "2026-10-22T18:29:08Z"
+      "sha256": "9fe45f0a15ff1768ac96f9a04b3b2b9d619eea20c61fdcbf02889aa1e4f3e7c5",
+      "history": [
+        {
+          "sha256": "b84de1e9e064a0b8a4c76f44c39c442413be6c3ecdd5cba0a8528cc304bd2312",
+          "recorded_at": "2026-10-22T18:29:08Z"
+        }
+      ],
+      "recorded_at": "2026-10-23T18:49:50Z"
     },
     "docs/tests/udts/specs/idpi_oidc_resolve_claims_to_roles.udts.json": {
-      "sha256": "e6f995b7ae6cf887cf6b50d409808f69b0b15b9a25e46ea7cc77adadc760ad30",
-      "history": [],
-      "recorded_at": "2026-10-22T18:29:08Z"
+      "sha256": "894ba9b4f8620da3efde5798ff8981a2fca8a8e17f587895688b350d0193bdf9",
+      "history": [
+        {
+          "sha256": "e6f995b7ae6cf887cf6b50d409808f69b0b15b9a25e46ea7cc77adadc760ad30",
+          "recorded_at": "2026-10-22T18:29:08Z"
+        }
+      ],
+      "recorded_at": "2026-10-23T18:49:50Z"
     },
     "docs/tests/udts/specs/idpi_oidc_validate_token_garbage.udts.json": {
-      "sha256": "cd3fec7abcb9373384b6cb4c093fdb563c04ae7f737ec65158209682ddd073c1",
-      "history": [],
-      "recorded_at": "2026-10-22T18:29:08Z"
+      "sha256": "d278e7a8b162b0a2da803c88359631329c36a01ee8a86575252b0ce1c2530b4c",
+      "history": [
+        {
+          "sha256": "cd3fec7abcb9373384b6cb4c093fdb563c04ae7f737ec65158209682ddd073c1",
+          "recorded_at": "2026-10-22T18:29:08Z"
+        }
+      ],
+      "recorded_at": "2026-10-23T18:49:50Z"
     },
     "docs/tests/udts/specs/pm_core_grpc_health.udts.json": {
       "sha256": "29c362b7f36ac6b86ebc0437e27d2c410758fbf7f43c7f5865ba443f24585561",
@@ -289,9 +323,14 @@
       "recorded_at": "2026-10-22T18:29:08Z"
     },
     "proto/pm/connector/v1/idpi.proto": {
-      "sha256": "2cbec93716311023faf83ac1fe7a84ab17308b9ca7b332029ce0c73bfe4a6d53",
-      "history": [],
-      "recorded_at": "2026-10-22T18:29:08Z"
+      "sha256": "2d6711ce82cd50fd710e778f57cf9dc0b9b7e9ef2385d77674d5548a3365d139",
+      "history": [
+        {
+          "sha256": "2cbec93716311023faf83ac1fe7a84ab17308b9ca7b332029ce0c73bfe4a6d53",
+          "recorded_at": "2026-10-22T18:29:08Z"
+        }
+      ],
+      "recorded_at": "2026-10-23T18:49:50Z"
     },
     "proto/pm/core/v1/version.proto": {
       "sha256": "7beb8417c5f1dda37fa1bbc0cf9635ebe69ef0997e0ac0f7ad205ed13ebf16f5",
@@ -299,6 +338,6 @@
       "recorded_at": "2026-10-22T13:29:40Z"
     }
   },
-  "updated_at": "2026-10-22T18:29:08Z",
+  "updated_at": "2026-10-23T18:49:50Z",
   "count": 51
 }

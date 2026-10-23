@@ -104,7 +104,7 @@ go-test: ## Go unit tests (race detector on) in every Go module
 	@set -e; for m in $(GO_MODULES); do echo "== go test: $$m"; (cd $$m && go test -race -count=1 ./...); done
 
 go-lint: ## go vet in every Go module (golangci-lint arrives with the first real service code)
-	@set -e; for m in $(GO_MODULES); do echo "== go vet: $$m"; (cd $$m && go vet ./... && gofmt -l . | (! grep .)); done
+	@set -e; for m in $(GO_MODULES); do echo "== go vet + gofmt: $$m"; (cd $$m && go vet ./... && unformatted=$$(gofmt -l .) && if [ -n "$$unformatted" ]; then echo "gofmt needed: $$unformatted"; exit 1; fi); done
 
 py-sync: ## Install the sidecar environment with uv
 	cd $(PY_DIR) && uv sync

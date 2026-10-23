@@ -150,8 +150,8 @@ func TestKeycloakTokensRolesRefreshLogout(t *testing.T) {
 	if bad, err := s.ValidateToken(ctx, &connectorv1.ValidateTokenRequest{Token: bob.AccessToken[:len(bob.AccessToken)-4] + "AAAA"}); err != nil || bad.GetValid() {
 		t.Fatalf("tampered token must be invalid: %+v %v", bad, err)
 	}
-	a, err := s.AuthenticateInteractive(ctx, &connectorv1.AuthenticateInteractiveRequest{RedirectUri: "http://localhost:8080/auth/callback", State: "it", Nonce: "n"})
-	if err != nil || !strings.Contains(a.GetAuthorizationUrl(), "/protocol/openid-connect/auth?") || !strings.Contains(a.GetAuthorizationUrl(), "code_challenge_method=S256") {
+	a, err := s.AuthenticateInteractive(ctx, &connectorv1.AuthenticateInteractiveRequest{RedirectUri: "http://localhost:8080/auth/callback", Nonce: "n"})
+	if err != nil || !strings.Contains(a.GetAuthorizationUrl(), "/protocol/openid-connect/auth?") || !strings.Contains(a.GetAuthorizationUrl(), "code_challenge_method=S256") || a.GetState() == "" {
 		t.Fatalf("auth url: %+v %v", a, err)
 	}
 }

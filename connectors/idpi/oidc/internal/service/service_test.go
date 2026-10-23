@@ -43,7 +43,7 @@ func TestWithIdPDown(t *testing.T) {
 	if err != nil || c.GetModule() != "IdPi_OIDC" || c.GetType() != "IdPi" || len(c.GetCapabilities()) != 6 || c.GetContract() != "pm.connector.v1.IdpiService" {
 		t.Fatalf("capabilities: %+v %v", c, err)
 	}
-	if _, err := s.AuthenticateInteractive(ctx, &connectorv1.AuthenticateInteractiveRequest{RedirectUri: "http://x/cb", State: "s"}); status.Code(err) != codes.Unavailable {
+	if _, err := s.AuthenticateInteractive(ctx, &connectorv1.AuthenticateInteractiveRequest{RedirectUri: "http://x/cb"}); status.Code(err) != codes.Unavailable {
 		t.Fatalf("auth with idp down: %v", err)
 	}
 	if _, err := s.AuthenticateInteractive(ctx, &connectorv1.AuthenticateInteractiveRequest{}); status.Code(err) != codes.InvalidArgument {
@@ -79,8 +79,8 @@ func TestWithFakeIdP(t *testing.T) {
 	if h.GetStatus() != connectorv1.HealthCheckResponse_STATUS_SERVING {
 		t.Fatalf("health: %+v", h)
 	}
-	a, err := s.AuthenticateInteractive(ctx, &connectorv1.AuthenticateInteractiveRequest{RedirectUri: "http://localhost:8080/auth/callback", State: "login-1", Nonce: "n"})
-	if err != nil || !strings.HasPrefix(a.GetAuthorizationUrl(), issuer+"/auth?") || a.GetCodeVerifier() == "" || a.GetState() != "login-1" {
+	a, err := s.AuthenticateInteractive(ctx, &connectorv1.AuthenticateInteractiveRequest{RedirectUri: "http://localhost:8080/auth/callback", Nonce: "n"})
+	if err != nil || !strings.HasPrefix(a.GetAuthorizationUrl(), issuer+"/auth?") || a.GetCodeVerifier() == "" || len(a.GetState()) != 43 || !strings.Contains(a.GetAuthorizationUrl(), "state="+a.GetState()) {
 		t.Fatalf("auth: %+v %v", a, err)
 	}
 	v, err := s.ValidateToken(ctx, &connectorv1.ValidateTokenRequest{Token: "garbage"})

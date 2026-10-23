@@ -124,7 +124,7 @@ Front SSO for pro_manage. OIDC + SAML abstractions. Resolve IdP claims into pro_
 ### gRPC interface (summary)
 The contract is `proto/pm/connector/v1/idpi.proto` (`pm.connector.v1.IdpiService`) beside the common `pm.connector.v1.ConnectorService` in `connector.proto`; message names follow buf's standard (`<Rpc>Request` / `<Rpc>Response`).
 - `HealthCheck`, `Capabilities` (ConnectorService)
-- `AuthenticateInteractive` (returns the PKCE authorization URL and the verifier pm-core keeps server-side)
+- `AuthenticateInteractive` (returns the PKCE authorization URL with a state and verifier minted by the module from `crypto/rand`; pm-core keys its pending-login record on the state and keeps the verifier beside it; neither is ever caller-supplied, so a login cannot be fixed or guessed)
 - `CompleteAuthentication` (the second leg of the code flow: code exchange, id token verified, claims returned; added 2026-10-22 because the interactive flow has two legs and the module holds no state between them)
 - `ValidateToken` (OK with `valid=false` for a bad token, so the session layer branches on the field)
 - `RefreshToken`

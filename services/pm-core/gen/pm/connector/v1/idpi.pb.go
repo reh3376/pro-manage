@@ -118,7 +118,6 @@ func (x *Claims) GetAttributes() map[string]string {
 type AuthenticateInteractiveRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RedirectUri   string                 `protobuf:"bytes,1,opt,name=redirect_uri,json=redirectUri,proto3" json:"redirect_uri,omitempty"` // where the IdP sends the browser back (pm-core's callback)
-	State         string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`                                // pm-core's opaque login id, echoed by the IdP
 	Nonce         string                 `protobuf:"bytes,3,opt,name=nonce,proto3" json:"nonce,omitempty"`                                // bound into the id token
 	Scopes        []string               `protobuf:"bytes,4,rep,name=scopes,proto3" json:"scopes,omitempty"`                              // extra scopes beyond openid; empty uses the module's default
 	unknownFields protoimpl.UnknownFields
@@ -162,13 +161,6 @@ func (x *AuthenticateInteractiveRequest) GetRedirectUri() string {
 	return ""
 }
 
-func (x *AuthenticateInteractiveRequest) GetState() string {
-	if x != nil {
-		return x.State
-	}
-	return ""
-}
-
 func (x *AuthenticateInteractiveRequest) GetNonce() string {
 	if x != nil {
 		return x.Nonce
@@ -186,8 +178,8 @@ func (x *AuthenticateInteractiveRequest) GetScopes() []string {
 type AuthenticateInteractiveResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	AuthorizationUrl string                 `protobuf:"bytes,1,opt,name=authorization_url,json=authorizationUrl,proto3" json:"authorization_url,omitempty"` // send the browser here
-	State            string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
-	CodeVerifier     string                 `protobuf:"bytes,3,opt,name=code_verifier,json=codeVerifier,proto3" json:"code_verifier,omitempty"` // PKCE verifier pm-core keeps server-side for CompleteAuthentication
+	State            string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`                                               // random, minted here; pm-core keys its pending-login record on it and checks the callback against it
+	CodeVerifier     string                 `protobuf:"bytes,3,opt,name=code_verifier,json=codeVerifier,proto3" json:"code_verifier,omitempty"`             // PKCE verifier pm-core keeps server-side for CompleteAuthentication
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -860,12 +852,11 @@ const file_pm_connector_v1_idpi_proto_rawDesc = "" +
 	"attributes\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x87\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"w\n" +
 	"\x1eAuthenticateInteractiveRequest\x12!\n" +
 	"\fredirect_uri\x18\x01 \x01(\tR\vredirectUri\x12\x14\n" +
-	"\x05state\x18\x02 \x01(\tR\x05state\x12\x14\n" +
 	"\x05nonce\x18\x03 \x01(\tR\x05nonce\x12\x16\n" +
-	"\x06scopes\x18\x04 \x03(\tR\x06scopes\"\x89\x01\n" +
+	"\x06scopes\x18\x04 \x03(\tR\x06scopesJ\x04\b\x02\x10\x03\"\x89\x01\n" +
 	"\x1fAuthenticateInteractiveResponse\x12+\n" +
 	"\x11authorization_url\x18\x01 \x01(\tR\x10authorizationUrl\x12\x14\n" +
 	"\x05state\x18\x02 \x01(\tR\x05state\x12#\n" +

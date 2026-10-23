@@ -8,8 +8,10 @@ import "google/protobuf/timestamp.proto";
 // pm-core owns sessions, users, and grants; the module only talks to the IdP.
 // The interactive login is two RPCs because the authorization-code flow has
 // two legs: AuthenticateInteractive builds the redirect, CompleteAuthentication
-// exchanges the code the IdP sent back. PKCE state (the verifier) travels
-// through pm-core's pending-login record, never through the browser.
+// exchanges the code the IdP sent back. The module mints the OAuth state
+// (cryptographically random, never caller-supplied, so it cannot be fixed or
+// guessed) and the PKCE verifier; both travel through pm-core's pending-login
+// record, never through the browser.
 service IdpiService {
   rpc AuthenticateInteractive(AuthenticateInteractiveRequest) returns (AuthenticateInteractiveResponse);
   rpc CompleteAuthentication(CompleteAuthenticationRequest) returns (CompleteAuthenticationResponse);
@@ -31,15 +33,15 @@ message Claims {
 }
 
 message AuthenticateInteractiveRequest {
+  reserved 2;                     // was a caller-supplied state; the module mints it (see the service comment)
   string redirect_uri = 1;        // where the IdP sends the browser back (pm-core's callback)
-  string state = 2;               // pm-core's opaque login id, echoed by the IdP
   string nonce = 3;               // bound into the id token
   repeated string scopes = 4;     // extra scopes beyond openid; empty uses the module's default
 }
 
 message AuthenticateInteractiveResponse {
   string authorization_url = 1;   // send the browser here
-  string state = 2;
+  string state = 2;               // random, minted here; pm-core keys its pending-login record on it and checks the callback against it
   string code_verifier = 3;       // PKCE verifier pm-core keeps server-side for CompleteAuthentication
 }
 

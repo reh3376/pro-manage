@@ -35,8 +35,10 @@ const (
 // pm-core owns sessions, users, and grants; the module only talks to the IdP.
 // The interactive login is two RPCs because the authorization-code flow has
 // two legs: AuthenticateInteractive builds the redirect, CompleteAuthentication
-// exchanges the code the IdP sent back. PKCE state (the verifier) travels
-// through pm-core's pending-login record, never through the browser.
+// exchanges the code the IdP sent back. The module mints the OAuth state
+// (cryptographically random, never caller-supplied, so it cannot be fixed or
+// guessed) and the PKCE verifier; both travel through pm-core's pending-login
+// record, never through the browser.
 type IdpiServiceClient interface {
 	AuthenticateInteractive(ctx context.Context, in *AuthenticateInteractiveRequest, opts ...grpc.CallOption) (*AuthenticateInteractiveResponse, error)
 	CompleteAuthentication(ctx context.Context, in *CompleteAuthenticationRequest, opts ...grpc.CallOption) (*CompleteAuthenticationResponse, error)
@@ -122,8 +124,10 @@ func (c *idpiServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts 
 // pm-core owns sessions, users, and grants; the module only talks to the IdP.
 // The interactive login is two RPCs because the authorization-code flow has
 // two legs: AuthenticateInteractive builds the redirect, CompleteAuthentication
-// exchanges the code the IdP sent back. PKCE state (the verifier) travels
-// through pm-core's pending-login record, never through the browser.
+// exchanges the code the IdP sent back. The module mints the OAuth state
+// (cryptographically random, never caller-supplied, so it cannot be fixed or
+// guessed) and the PKCE verifier; both travel through pm-core's pending-login
+// record, never through the browser.
 type IdpiServiceServer interface {
 	AuthenticateInteractive(context.Context, *AuthenticateInteractiveRequest) (*AuthenticateInteractiveResponse, error)
 	CompleteAuthentication(context.Context, *CompleteAuthenticationRequest) (*CompleteAuthenticationResponse, error)

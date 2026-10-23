@@ -11,7 +11,7 @@
   },
   "config": {
     "timeout_ms": 10000,
-    "proto_sha256": "2cbec93716311023faf83ac1fe7a84ab17308b9ca7b332029ce0c73bfe4a6d53"
+    "proto_sha256": "2d6711ce82cd50fd710e778f57cf9dc0b9b7e9ef2385d77674d5548a3365d139"
   },
   "metadata": {
     "description": "ValidateToken never fails the RPC for a bad token: OK with valid=false and the reason, so pm-core's session layer branches on the field.",

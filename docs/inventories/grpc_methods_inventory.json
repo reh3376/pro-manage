@@ -36,7 +36,7 @@
         "connectors/idpi/oidc/tests/integration/keycloak_test.go"
       ],
       "disposition": "active",
-      "notes": "First leg of the code flow: PKCE authorization URL plus the verifier pm-core keeps in its pending-login record."
+      "notes": "First leg of the code flow: PKCE authorization URL plus the random state and verifier the module mints and pm-core keeps in its pending-login record (CodeQL go/constant-oauth2-state closed 2026-10-23 by moving the state mint into the module)."
     },
     "pm.connector.v1.IdpiService/CompleteAuthentication": {
       "writers": [

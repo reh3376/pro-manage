@@ -62,19 +62,22 @@ func TestDiscoveryBackchannelRewriteAndAuthURL(t *testing.T) {
 		t.Fatalf("browser endpoints must keep the advertised origin: %+v", d)
 	}
 
-	authURL, verifier, err := p.AuthURL(context.Background(), "http://localhost:8080/auth/callback", "state-1", "nonce-1", []string{"groups"})
+	authURL, state, verifier, err := p.AuthURL(context.Background(), "http://localhost:8080/auth/callback", "nonce-1", []string{"groups"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	u, _ := url.Parse(authURL)
 	q := u.Query()
-	if !strings.HasPrefix(authURL, issuer+"/auth?") || q.Get("response_type") != "code" || q.Get("client_id") != "pm-core" || q.Get("state") != "state-1" || q.Get("nonce") != "nonce-1" || q.Get("code_challenge_method") != "S256" || q.Get("code_challenge") == "" || len(verifier) < 43 {
-		t.Fatalf("auth url: %s (verifier %d chars)", authURL, len(verifier))
+	if !strings.HasPrefix(authURL, issuer+"/auth?") || q.Get("response_type") != "code" || q.Get("client_id") != "pm-core" || q.Get("state") != state || len(state) != 43 || q.Get("nonce") != "nonce-1" || q.Get("code_challenge_method") != "S256" || q.Get("code_challenge") == "" || len(verifier) < 43 {
+		t.Fatalf("auth url: %s (state %q, verifier %d chars)", authURL, state, len(verifier))
+	}
+	if _, again, _, _ := p.AuthURL(context.Background(), "http://localhost:8080/auth/callback", "", nil); again == state {
+		t.Fatal("state must be fresh per call")
 	}
 	if q.Get("scope") != "openid profile email groups" || q.Get("redirect_uri") != "http://localhost:8080/auth/callback" {
 		t.Fatalf("scope/redirect: %s", authURL)
 	}
-	if _, _, err := p.AuthURL(context.Background(), "", "s", "", nil); !errors.Is(err, ErrInvalidGrant) {
+	if _, _, _, err := p.AuthURL(context.Background(), "", "", nil); !errors.Is(err, ErrInvalidGrant) {
 		t.Fatalf("missing redirect must be invalid grant, got %v", err)
 	}
 
@@ -115,7 +118,7 @@ func TestDiscoveryIssuerMismatchAndUnreachable(t *testing.T) {
 	if _, err := down.Discover(context.Background()); !errors.Is(err, ErrNotReady) {
 		t.Fatalf("unreachable: %v", err)
 	}
-	if _, _, err := down.AuthURL(context.Background(), "http://x/cb", "s", "", nil); !errors.Is(err, ErrNotReady) {
+	if _, _, _, err := down.AuthURL(context.Background(), "http://x/cb", "", nil); !errors.Is(err, ErrNotReady) {
 		t.Fatalf("auth url without discovery: %v", err)
 	}
 	if _, err := New(Config{Issuer: "nope", ClientID: "c"}); err == nil {

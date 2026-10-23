@@ -72,13 +72,13 @@ func (s *Service) Capabilities(_ context.Context, _ *connectorv1.CapabilitiesReq
 
 // ---------------------------------------------------------------- IdpiService
 
-// AuthenticateInteractive builds the PKCE redirect.
+// AuthenticateInteractive builds the PKCE redirect; the state and verifier are minted here.
 func (s *Service) AuthenticateInteractive(ctx context.Context, req *connectorv1.AuthenticateInteractiveRequest) (*connectorv1.AuthenticateInteractiveResponse, error) {
-	u, verifier, err := s.Provider.AuthURL(ctx, req.GetRedirectUri(), req.GetState(), req.GetNonce(), req.GetScopes())
+	u, state, verifier, err := s.Provider.AuthURL(ctx, req.GetRedirectUri(), req.GetNonce(), req.GetScopes())
 	if err != nil {
 		return nil, grpcErr(err)
 	}
-	return &connectorv1.AuthenticateInteractiveResponse{AuthorizationUrl: u, State: req.GetState(), CodeVerifier: verifier}, nil
+	return &connectorv1.AuthenticateInteractiveResponse{AuthorizationUrl: u, State: state, CodeVerifier: verifier}, nil
 }
 
 // CompleteAuthentication exchanges the code and returns the verified claims.

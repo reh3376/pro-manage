@@ -7,6 +7,8 @@ package oidc
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -206,23 +208,35 @@ func (p *Provider) oauth(ctx context.Context, redirectURI string) (*oauth2.Confi
 	}, nil
 }
 
-// AuthURL builds the PKCE authorization URL; the returned verifier must be kept
-// server-side by the caller (pm-core's pending-login record).
-func (p *Provider) AuthURL(ctx context.Context, redirectURI, state, nonce string, extraScopes []string) (authURL, verifier string, err error) {
-	if redirectURI == "" || state == "" {
-		return "", "", fmt.Errorf("%w: redirect_uri and state are required", ErrInvalidGrant)
+// AuthURL builds the PKCE authorization URL. The state is minted here from
+// crypto/rand (never caller-supplied, so it cannot be fixed or guessed); the
+// caller keeps it and the verifier server-side in its pending-login record
+// and checks the IdP's callback against the state.
+func (p *Provider) AuthURL(ctx context.Context, redirectURI, nonce string, extraScopes []string) (authURL, state, verifier string, err error) {
+	if redirectURI == "" {
+		return "", "", "", fmt.Errorf("%w: redirect_uri is required", ErrInvalidGrant)
 	}
 	oc, err := p.oauth(ctx, redirectURI)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	oc.Scopes = append(append([]string{}, oc.Scopes...), extraScopes...)
+	state = randomToken()
 	verifier = oauth2.GenerateVerifier()
 	opts := []oauth2.AuthCodeOption{oauth2.S256ChallengeOption(verifier)}
 	if nonce != "" {
 		opts = append(opts, gooidc.Nonce(nonce))
 	}
-	return oc.AuthCodeURL(state, opts...), verifier, nil
+	return oc.AuthCodeURL(state, opts...), state, verifier, nil
+}
+
+// randomToken is 32 random bytes, base64url without padding (43 characters).
+func randomToken() string {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		panic("crypto/rand unavailable: " + err.Error())
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
 }
 
 // Exchange redeems the authorization code and verifies the id token.
