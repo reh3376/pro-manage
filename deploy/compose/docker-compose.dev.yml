@@ -19,7 +19,11 @@ x-pm-env: &pm-env
   S3_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
   S3_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin}
   S3_BUCKET: pm-dev
-  OIDC_ISSUER: http://keycloak:8080/realms/northfield
+  # Keycloak advertises KC_HOSTNAME (the browser-facing URL) as its issuer; in-network calls go through the backchannel.
+  OIDC_ISSUER: http://localhost:${PM_KEYCLOAK_PORT:-8180}/realms/northfield
+  OIDC_DISCOVERY_URL: http://keycloak:8080/realms/northfield/.well-known/openid-configuration
+  OIDC_BACKCHANNEL_BASE: http://keycloak:8080
+  IDPI_OIDC_ADDR: idpi-oidc:7080
   SMTP_HOST: mailpit
   SMTP_PORT: "1025"
   PM_DB_AUTO_MIGRATE: ${PM_DB_AUTO_MIGRATE:-true}
@@ -197,6 +201,31 @@ services:
     ports:
       - "127.0.0.1:${PM_SIDECAR_HTTP_PORT:-7070}:7070"
       - "127.0.0.1:${PM_SIDECAR_GRPC_PORT:-7071}:7071"
+
+  idpi-oidc:
+    # IdPi_OIDC connector module (FSD §04, §10, §15): built from the repository root because the
+    # contract's generated code lives in the pm-core module until the Connector SDK exists.
+    build:
+      context: ../..
+      dockerfile: connectors/idpi/oidc/Dockerfile
+      args:
+        VERSION: ${PM_VERSION:-dev}
+    environment:
+      PM_LOG_FORMAT: ${PM_LOG_FORMAT:-json}
+      PM_LOG_LEVEL: ${PM_LOG_LEVEL:-info}
+      OIDC_ISSUER: http://localhost:${PM_KEYCLOAK_PORT:-8180}/realms/northfield
+      OIDC_DISCOVERY_URL: http://keycloak:8080/realms/northfield/.well-known/openid-configuration
+      OIDC_BACKCHANNEL_BASE: http://keycloak:8080
+      OIDC_CLIENT_ID: pm-core
+      OIDC_CLIENT_SECRET: ${PM_CORE_OIDC_SECRET:-pm-core-dev-secret}
+      OIDC_ACCEPTED_AUDIENCES: pm-frontend,pm-dev-cli
+      OIDC_SCOPES: openid   # the dev realm's partial import has no profile/email scopes; the pro_manage scope is default
+      IDPI_GRPC_REFLECTION: ${PM_CORE_GRPC_REFLECTION:-true}
+    ports:
+      - "127.0.0.1:${PM_IDPI_GRPC_PORT:-7080}:7080"
+      - "127.0.0.1:${PM_IDPI_HTTP_PORT:-7081}:7081"
+    depends_on:
+      - keycloak
 
   pm-frontend:
     build:

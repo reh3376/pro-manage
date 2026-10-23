@@ -1,0 +1,25 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.IdpiService",
+  "method": "ValidateToken",
+  "request": {
+    "token": "not.a.jwt"
+  },
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "valid"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "2d6711ce82cd50fd710e778f57cf9dc0b9b7e9ef2385d77674d5548a3365d139"
+  },
+  "metadata": {
+    "description": "ValidateToken never fails the RPC for a bad token: OK with valid=false and the reason, so pm-core's session layer branches on the field.",
+    "tags": [
+      "idpi-oidc",
+      "contract",
+      "idpi",
+      "token"
+    ]
+  }
+}

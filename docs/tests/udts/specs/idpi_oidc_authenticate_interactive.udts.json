@@ -1,0 +1,26 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.IdpiService",
+  "method": "AuthenticateInteractive",
+  "request": {
+    "redirect_uri": "http://localhost:8080/auth/callback",
+    "nonce": "udts-nonce"
+  },
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "authorization_url"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "2d6711ce82cd50fd710e778f57cf9dc0b9b7e9ef2385d77674d5548a3365d139"
+  },
+  "metadata": {
+    "description": "AuthenticateInteractive returns the PKCE authorization URL with a state and verifier minted by the module (never caller-supplied), which pm-core keeps server-side (FSD \u00a704 IdPi). Needs the IdP's discovery document (Keycloak in the dev stack).",
+    "tags": [
+      "idpi-oidc",
+      "contract",
+      "idpi",
+      "login"
+    ]
+  }
+}

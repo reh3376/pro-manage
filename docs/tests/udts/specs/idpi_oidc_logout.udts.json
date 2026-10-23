@@ -1,0 +1,26 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.IdpiService",
+  "method": "Logout",
+  "request": {
+    "id_token_hint": "udts",
+    "post_logout_redirect_uri": "http://localhost:3100/"
+  },
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "end_session_url"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "2d6711ce82cd50fd710e778f57cf9dc0b9b7e9ef2385d77674d5548a3365d139"
+  },
+  "metadata": {
+    "description": "Logout without a refresh token revokes nothing and returns the RP-initiated end-session URL when the IdP has one.",
+    "tags": [
+      "idpi-oidc",
+      "contract",
+      "idpi",
+      "logout"
+    ]
+  }
+}

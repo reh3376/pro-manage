@@ -1,5 +1,72 @@
 {
   "surface": "connector_capabilities",
-  "description": "Every capability a connector manifest can declare (connectors/*/connector.yaml) must have a pm-core consumer that routes on it (FSD \u00a715, \u00a712).",
-  "entries": {}
+  "description": "Every capability a connector manifest declares (connectors/<type>/<code>/connector.yaml) must have a pm-core consumer that routes on it (FSD \u00a715, \u00a712). Key: '<type>/<code>:<capability>'.",
+  "entries": {
+    "idpi/oidc:claims_to_roles": {
+      "writers": [
+        "connectors/idpi/oidc/connector.yaml"
+      ],
+      "readers": [
+        "connectors/idpi/oidc/internal/service/service.go (Capabilities)",
+        "docs/tests/udts/specs/idpi_oidc_connector_capabilities.udts.json"
+      ],
+      "disposition": "planned",
+      "notes": "ResolveClaimsToRoles from the mapping file; pm-core consumer: platform roles and approver pools on login (4b, closes B-09). Disposition planned until pm-core routes on it."
+    },
+    "idpi/oidc:interactive_login": {
+      "writers": [
+        "connectors/idpi/oidc/connector.yaml"
+      ],
+      "readers": [
+        "connectors/idpi/oidc/internal/service/service.go (Capabilities)",
+        "docs/tests/udts/specs/idpi_oidc_connector_capabilities.udts.json"
+      ],
+      "disposition": "planned",
+      "notes": "Authorization-code login (AuthenticateInteractive + CompleteAuthentication). pm-core consumer: the login routes of slice 4b. Disposition planned until pm-core routes on it."
+    },
+    "idpi/oidc:logout": {
+      "writers": [
+        "connectors/idpi/oidc/connector.yaml"
+      ],
+      "readers": [
+        "connectors/idpi/oidc/internal/service/service.go (Capabilities)",
+        "docs/tests/udts/specs/idpi_oidc_connector_capabilities.udts.json"
+      ],
+      "disposition": "planned",
+      "notes": "Revocation plus end-session URL; pm-core consumer: logout cascade (4b). Disposition planned until pm-core routes on it."
+    },
+    "idpi/oidc:pkce": {
+      "writers": [
+        "connectors/idpi/oidc/connector.yaml"
+      ],
+      "readers": [
+        "connectors/idpi/oidc/internal/service/service.go (Capabilities)",
+        "docs/tests/udts/specs/idpi_oidc_connector_capabilities.udts.json"
+      ],
+      "disposition": "planned",
+      "notes": "PKCE S256 on the code flow; pm-core keeps the verifier server-side. Disposition planned until pm-core routes on it."
+    },
+    "idpi/oidc:token_refresh": {
+      "writers": [
+        "connectors/idpi/oidc/connector.yaml"
+      ],
+      "readers": [
+        "connectors/idpi/oidc/internal/service/service.go (Capabilities)",
+        "docs/tests/udts/specs/idpi_oidc_connector_capabilities.udts.json"
+      ],
+      "disposition": "planned",
+      "notes": "RefreshToken; pm-core consumer: sliding sessions (4b). Disposition planned until pm-core routes on it."
+    },
+    "idpi/oidc:token_validation": {
+      "writers": [
+        "connectors/idpi/oidc/connector.yaml"
+      ],
+      "readers": [
+        "connectors/idpi/oidc/internal/service/service.go (Capabilities)",
+        "docs/tests/udts/specs/idpi_oidc_connector_capabilities.udts.json"
+      ],
+      "disposition": "planned",
+      "notes": "ValidateToken against the IdP JWKS; pm-core consumer: session validation (4b). Disposition planned until pm-core routes on it."
+    }
+  }
 }

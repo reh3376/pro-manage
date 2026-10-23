@@ -77,6 +77,7 @@ make test         # Go tests, sidecar tests, frontend type check
 make lint         # go vet, ruff, mypy, buf lint
 make uxts         # UxTS gates: spec hashes, UNTS registry, adjudication inventories, matrix currency
 make test-uats    # UATS contract specs against the running dev stack (and test-uats-stub, test-uats-live)
+make test-udts    # UDTS gRPC contract specs against pm-core and the IdPi_OIDC module
 make check-outbox # prove the outbox path: pm-core enqueue -> pm-workers drain -> MDEMG
 make check-car    # the Phase 0 exit test: a toy CAR end to end (guide card, classify, audit + GuidanceOutcome, four-stage chain, feedback)
 make hooks        # install the pre-commit gate (same checks as CI, before every commit)
@@ -95,9 +96,9 @@ curl -s -H 'X-Dev-Actor: bob.finance' localhost:8080/api/v1/inbox
 
 The governed action today is the CAR (`POST /api/v1/projects/{id}/cars`, then `/cars/{id}/guidance`, `/preclassify`, `/submit`, `/decide`): guide on open from both MDEMG spaces, classify on submit under the kind's fail-closed tier (`mdemg.tier.approval.car`), the chain of §08 built from the policy snapshot, every decision audited, and the `GuidanceOutcome` written with the `AuditEvent`. `scripts/car_check.sh` walks it end to end and is what CI runs.
 
-Services on the host: frontend `:3100`, pm-core `:8080` (REST) and `:8090` (gRPC, reflection on in dev), pm-workers `:8081`, sidecar `:7070` (HTTP) and `:7071` (gRPC), Keycloak `:8180` (realm `northfield`, users such as `alice.owner` / `northfield-dev`), Mailpit `:8026`, RustFS console `:9101`, dedicated MDEMG `:9998`. The seed company is the fictional Northfield Spirits Co.
+Services on the host: frontend `:3100`, pm-core `:8080` (REST) and `:8090` (gRPC, reflection on in dev), pm-workers `:8081`, sidecar `:7070` (HTTP) and `:7071` (gRPC), IdPi_OIDC `:7080` (gRPC) and `:7081` (HTTP), Keycloak `:8180` (realm `northfield`, users such as `alice.owner` / `northfield-dev`), Mailpit `:8026`, RustFS console `:9101`, dedicated MDEMG `:9998`. The seed company is the fictional Northfield Spirits Co.
 
-Layout: `services/pm-core` (Go: `cmd/pm-core`, `cmd/pm-workers`, `cmd/stub-mdemg`), `services/pm-sidecar` (Python), `apps/pm-frontend` (Next.js), `connectors/`, `proto/`, `deploy/compose/`, `docs/`.
+Layout: `services/pm-core` (Go: `cmd/pm-core`, `cmd/pm-workers`, `cmd/stub-mdemg`), `services/pm-sidecar` (Python), `apps/pm-frontend` (Next.js), `connectors/<type>/<code>/` (connector modules, each its own Go module; `idpi/oidc` first), `proto/`, `deploy/compose/`, `docs/`.
 
 ## Development workflow
 
@@ -111,7 +112,7 @@ Layout: `services/pm-core` (Go: `cmd/pm-core`, `cmd/pm-workers`, `cmd/stub-mdemg
 
 ## Status
 
-The FSD and roadmap are ratified and the **thin spine** is being built under Scenario A (owner plus AI collaborator), one reviewed PR per slice on `pro-dev01`. Landed so far: the monorepo scaffold and compose stack (0a), the UxTS gates (0b), pm-core with Sites, Projects, policy variables and the hash-chained audit log (1a), the gRPC surface with UDTS (1b), `pkg/mdemgadapter` (2a), the Postgres outbox and pm-workers drain (2b), and the toy CAR end to end with the governance gate (3). The roadmap's Phase 0 exit test (a CAR approval that renders a guidance card, classifies on submit, writes the AuditEvent with its GuidanceOutcome, and dispatches feedback) runs in CI against the stub MDEMG. Next on the spine: `IdPi_OIDC`, Sigi, `ERPi_IFS`, Commsi nudges, and the persona screens.
+The FSD and roadmap are ratified and the **thin spine** is being built under Scenario A (owner plus AI collaborator), one reviewed PR per slice on `pro-dev01`. Landed so far: the monorepo scaffold and compose stack (0a), the UxTS gates (0b), pm-core with Sites, Projects, policy variables and the hash-chained audit log (1a), the gRPC surface with UDTS (1b), `pkg/mdemgadapter` (2a), the Postgres outbox and pm-workers drain (2b), the toy CAR end to end with the governance gate (3), and the connector contract with the `IdPi_OIDC` module against the dev Keycloak (4a). The roadmap's Phase 0 exit test (a CAR approval that renders a guidance card, classifies on submit, writes the AuditEvent with its GuidanceOutcome, and dispatches feedback) runs in CI against the stub MDEMG. Next on the spine: pm-core login and sessions on `IdPi_OIDC` (4b), membership and ACL, Sigi, `ERPi_IFS`, Commsi nudges, and the persona screens.
 
 The design keeps iterating under direct dialogue between the owner and an AI collaborator (Claude Code), with decisions captured in each FSD section's **Decisions on record** block and open items under **Open items for Section N**. See [`docs/fsd/roadmap.md`](./docs/fsd/roadmap.md) and [`docs/backlog.md`](./docs/backlog.md).
 

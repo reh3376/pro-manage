@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package pm.connector.v1;
+
+// ConnectorService is the surface every connector instance presents regardless
+// of type (FSD §10 "Common contract", §15 conformance kit): pm-core routes
+// around unhealthy or capability-mismatched instances on these two RPCs. The
+// per-type contracts (IdpiService, ErpiService, ...) live beside this file.
+service ConnectorService {
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc Capabilities(CapabilitiesRequest) returns (CapabilitiesResponse);
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_SERVING = 1;
+    STATUS_DEGRADED = 2;      // serving, but a dependency (IdP, ERP) is failing its probe
+    STATUS_NOT_SERVING = 3;
+  }
+  Status status = 1;
+  string detail = 2;
+  // Named dependency probes, e.g. "oidc_discovery": "ok" or an error string.
+  map<string, string> checks = 3;
+}
+
+message CapabilitiesRequest {}
+
+message CapabilitiesResponse {
+  string module = 1;             // e.g. IdPi_OIDC (manifest `module`)
+  string type = 2;               // e.g. IdPi
+  string code = 3;               // e.g. OIDC
+  string version = 4;            // module version
+  string contract = 5;           // e.g. pm.connector.v1.Idpi
+  repeated string capabilities = 6;  // manifest `capabilities`, adjudicated in docs/inventories
+  repeated string tiers = 7;         // manifest `tiers` (§10 tier table), when the type has them
+}

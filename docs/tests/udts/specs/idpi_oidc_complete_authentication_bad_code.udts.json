@@ -1,0 +1,27 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.IdpiService",
+  "method": "CompleteAuthentication",
+  "request": {
+    "code": "udts-bogus-code",
+    "redirect_uri": "http://localhost:8080/auth/callback",
+    "code_verifier": "udts-verifier-udts-verifier-udts-verifier-udts-verifier",
+    "nonce": "n"
+  },
+  "expected": {
+    "status_code": "INVALID_ARGUMENT"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "2d6711ce82cd50fd710e778f57cf9dc0b9b7e9ef2385d77674d5548a3365d139"
+  },
+  "metadata": {
+    "description": "A code the IdP rejects is INVALID_ARGUMENT (invalid_grant), never INTERNAL; an unreachable IdP would be UNAVAILABLE.",
+    "tags": [
+      "idpi-oidc",
+      "contract",
+      "idpi",
+      "login"
+    ]
+  }
+}

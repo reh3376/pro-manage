@@ -67,7 +67,7 @@ The success criteria per phase apply to both; in scenario A they are read as "at
 - **UxTS scaffold:** vendored runner primitives and reference runners pinned to an MDEMG tag; `schema/`, `specs/`, `runners/` directories per framework; `docs/tests/UXTS_FRAMEWORK_MATRIX.md` with a CI disposition per framework; `add-hashes` / `verify-hashes` wired; UNTS registry; the five adjudication registries with their verifiers and the inventory pre-commit hook (`§12`).
 - `docker-compose.dev.yml` spins up Postgres, pm-TSDB, Redis, RustFS (S3), Keycloak, Mailpit, and (with `--profile stub`) the stub MDEMG, alongside pm-core, pm-sidecar, pm-workers, pm-frontend.
 - Vault wired for secrets; initial secrets provisioned.
-- `IdPi` module shell + one backend (OIDC generic) authenticating locally against Keycloak-dev; local break-glass admin flow working.
+- `IdPi` module shell + one backend (OIDC generic) authenticating locally against Keycloak-dev; local break-glass admin flow working. **Module side met 2026-10-22 (slice 4a):** `connectors/idpi/oidc` serves the contract against the dev Keycloak with UDTS specs for every RPC and a live token test; pm-core's login, users, sessions, and the break-glass flow are slice 4b.
 - `pm-core` edge: auth middleware + ACL plumbing (section-level grants minimum).
 - `MDEMG` reachable from pm-core; `pkg/mdemgadapter` with `/guide`, `/classify`, `/feedback`, `/conversation/observe` wrappers; outbox worker drains to MDEMG.
 - First governance space seeded (`space=org.pm_dev.governance`); 2–3 toy constraints authored.

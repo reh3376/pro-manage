@@ -122,12 +122,14 @@ Based on the owner's research into IFS Cloud integration (October 2026; validate
 Front SSO for pro_manage. OIDC + SAML abstractions. Resolve IdP claims into pro_manage platform roles.
 
 ### gRPC interface (summary)
-- `HealthCheck`, `Capabilities`
-- `AuthenticateInteractive(AuthRequest) → AuthResponse` (returns redirect to IdP)
-- `ValidateToken(TokenRequest) → TokenValidation`
-- `RefreshToken(RefreshRequest) → RefreshResponse`
-- `ResolveClaimsToRoles(ClaimsRequest) → RolesResponse`
-- `Logout(LogoutRequest) → LogoutResponse`
+The contract is `proto/pm/connector/v1/idpi.proto` (`pm.connector.v1.IdpiService`) beside the common `pm.connector.v1.ConnectorService` in `connector.proto`; message names follow buf's standard (`<Rpc>Request` / `<Rpc>Response`).
+- `HealthCheck`, `Capabilities` (ConnectorService)
+- `AuthenticateInteractive` (returns the PKCE authorization URL with a state and verifier minted by the module from `crypto/rand`; pm-core keys its pending-login record on the state and keeps the verifier beside it; neither is ever caller-supplied, so a login cannot be fixed or guessed)
+- `CompleteAuthentication` (the second leg of the code flow: code exchange, id token verified, claims returned; added 2026-10-22 because the interactive flow has two legs and the module holds no state between them)
+- `ValidateToken` (OK with `valid=false` for a bad token, so the session layer branches on the field)
+- `RefreshToken`
+- `ResolveClaimsToRoles` (pure: the mapping file of `§04` applied to the claims; returns platform roles, workflow pools, and attributes such as `site`)
+- `Logout` (refresh-token revocation plus the RP-initiated end-session URL)
 
 ### Year-one backends
 - `IdPi_OIDC` (generic OIDC: Entra ID, Okta, Keycloak, Google Workspace, etc. via the generic flow)
