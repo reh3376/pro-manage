@@ -44,9 +44,22 @@ var (
 
 // Actor is who performs a mutation, as resolved by the API layer.
 type Actor struct {
-	UserID    string
-	SourceIP  string
-	RequestID string
+	UserID        string   // the login handle (preferred_username); what audit rows and pools key on today
+	Subject       string   // the IdP's stable id when the actor came from a session
+	PlatformRoles []string // §04 platform roles from the session; empty for the dev header
+	SessionID     string
+	SourceIP      string
+	RequestID     string
+}
+
+// HasRole reports a platform role.
+func (a Actor) HasRole(role string) bool {
+	for _, r := range a.PlatformRoles {
+		if r == role {
+			return true
+		}
+	}
+	return false
 }
 
 // Service is the spine's domain service.

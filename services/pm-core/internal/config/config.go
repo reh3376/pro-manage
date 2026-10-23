@@ -56,6 +56,15 @@ type Config struct {
 	// PreclassifyTTL is how long a settled form's verdict stays valid (§06 default 10 minutes).
 	PreclassifyTTL time.Duration
 
+	// Identity and sessions (FSD §04). Login is enabled when both IdPiAddr and RedisURL are set.
+	IdPiAddr      string        // IDPI_OIDC_ADDR, the IdPi_OIDC module's gRPC address
+	RedisURL      string        // REDIS_URL, the session store
+	PublicURL     string        // PM_PUBLIC_URL, where the browser reaches pm-core (callback base)
+	FrontendURL   string        // PM_FRONTEND_URL, default return_to and post-logout landing
+	SessionTTL    time.Duration // PM_SESSION_TTL sliding window (default 8h)
+	SessionMaxAge time.Duration // PM_SESSION_MAX_AGE absolute cap (default 24h)
+	CookieSecure  bool          // PM_COOKIE_SECURE (true behind TLS)
+
 	// Workers
 	WorkerTick        time.Duration
 	OutboxMaxAttempts int           // dead-letter after this many failed deliveries
@@ -80,6 +89,13 @@ func Load(ctx context.Context, service string, sp secrets.Provider) (Config, err
 		DBAutoMigrate:     boolOr("PM_DB_AUTO_MIGRATE", false),
 		DevActorHeader:    boolOr("PM_DEV_ACTOR_HEADER", false),
 		TenantID:          envOr("PM_TENANT_ID", "default"),
+		IdPiAddr:          os.Getenv("IDPI_OIDC_ADDR"),
+		RedisURL:          os.Getenv("REDIS_URL"),
+		PublicURL:         strings.TrimRight(envOr("PM_PUBLIC_URL", "http://localhost:8080"), "/"),
+		FrontendURL:       strings.TrimRight(envOr("PM_FRONTEND_URL", "http://localhost:3100"), "/"),
+		SessionTTL:        durationOr("PM_SESSION_TTL", 8*time.Hour),
+		SessionMaxAge:     durationOr("PM_SESSION_MAX_AGE", 24*time.Hour),
+		CookieSecure:      boolOr("PM_COOKIE_SECURE", false),
 	}
 
 	switch strings.ToLower(envOr("PM_LOG_LEVEL", "info")) {

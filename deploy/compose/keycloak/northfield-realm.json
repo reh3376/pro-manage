@@ -170,15 +170,27 @@
     },
     {
       "clientId": "pm-core",
-      "name": "pro_manage API (token validation and service calls)",
+      "name": "pro_manage API (server-side login via IdPi_OIDC, token validation, service calls)",
       "enabled": true,
       "publicClient": false,
       "bearerOnly": false,
       "protocol": "openid-connect",
       "secret": "pm-core-dev-secret",
-      "standardFlowEnabled": false,
+      "standardFlowEnabled": true,
       "serviceAccountsEnabled": true,
-      "directAccessGrantsEnabled": false
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8080/auth/callback",
+        "http://127.0.0.1:8080/auth/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:8080",
+        "http://localhost:3100"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3100/*##http://localhost:8080/*"
+      }
     },
     {
       "clientId": "pm-dev-cli",

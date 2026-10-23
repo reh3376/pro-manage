@@ -1,6 +1,6 @@
 # Engineering backlog
 
-Status: **Living list** · Last updated: 2026-10-22
+Status: **Living list** · Last updated: 2026-10-23
 
 Work the owner has asked for that is not a spine slice or an FSD open item. Ordered by priority within each group; each item names what "done" looks like. Owner decisions live in [open-items.md](./fsd/open-items.md); the delivery order lives in the [roadmap](./fsd/roadmap.md).
 
@@ -55,16 +55,16 @@ The toy compares the routing amount in the CAR's currency against thresholds res
 
 `stage_due_at` is recorded and the inbox flags overdue stages, but nothing nudges yet. pm-workers gets the SLA tick (`§08`), Commsi_SMTP sends the nudge, and an empty approver pool pauses the workflow with a visible blocker instead of failing the submit as a precondition.
 
-### B-10 pm-core login on IdPi_OIDC (slice 4b)
+### B-09 Admin override of a Tier A refusal
 
-The module exists (slice 4a). pm-core still authenticates by `X-Dev-Actor`. Slice 4b adds the connector client, `GET /auth/login` and `/auth/callback` through `AuthenticateInteractive` and `CompleteAuthentication` (a pending-login record holds state, nonce, and the PKCE verifier), just-in-time `users` rows, Redis-backed opaque sessions (`§04` session model: 8 h sliding, 24 h cap), `GET /auth/me`, the logout cascade, the actor resolved from the session with platform roles, and the approver pools filled from `ResolveClaimsToRoles` (closes the first half of B-09). The Keycloak `pm-core` client needs `standardFlowEnabled` and the callback redirect URI (a realm change, so an existing dev volume must be dropped with `make dev-down V=1` or edited in the admin console). The dev realm's partial import creates no `profile` or `email` client scopes, so the module runs with `OIDC_SCOPES=openid` there; real IdPs keep the `openid profile email` default. The dev header stays available behind `PM_DEV_ACTOR_HEADER` for CI.
+Pools from IdP claims landed in slice 4b (2026-10-23): every login refills the user's `source = idp` rows from `ResolveClaimsToRoles`; seed and manual rows stay. Still open: the admin override that `§06` offers after a Tier A refusal (`overridden_by_admin`, `blocked_false_positive` feedback). The actor now carries platform roles from the session, so the override can be gated on `platform_admin` once the ACL layer lands.
 
-### B-09 Approver pools from IdP claims; admin override of a Tier A refusal
+### B-11 Re-key attribution to user_id
 
-`approver_pools` is a global table filled by the seed and `POST /api/v1/approver-pools`; `IdPi_OIDC` claims mapping (groups to pools, `§04`) replaces the manual rows. The admin override that `§06` offers after a Tier A refusal (`overridden_by_admin`, `blocked_false_positive` feedback) is not exposed until the ACL layer can tell who is an admin.
+Audit rows (`actor_user_id`), `projects.owner_user_id`, `approver_pools.user_id`, and stage assignees key on the login handle (`preferred_username`). The IdP subject is the stable identity (`users.external_id`, `users.user_id`). Before the pilot: a migration that adds `actor_id uuid` beside the handle, backfills from `users`, and makes the handle a display value, so a renamed account keeps its history.
 
 ## Done
 
 | Id | Item | Closed in |
 |---|---|---|
-| (none yet) | | |
+| B-10 | pm-core login on IdPi_OIDC (slice 4b): login and callback routes, just-in-time users, Redis sessions, actor from the session, pools from claims | 2026-10-23 |

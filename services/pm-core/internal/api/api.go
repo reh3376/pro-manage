@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/auth"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/domain"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
@@ -32,7 +33,9 @@ type API struct {
 	Chain          *audit.Chain
 	MDEMG          *mdemgadapter.Client // nil when MDEMG_BASE_URL is unset
 	MDEMGBaseURL   string
-	DevActorHeader bool // when true, X-Dev-Actor names the acting user (development only; replaced by IdPi_OIDC)
+	DevActorHeader bool // when true, X-Dev-Actor names the acting user (development and CI only)
+	// Auth resolves the actor from the session cookie (FSD §04); nil when login is not configured.
+	Auth *auth.Handler
 }
 
 type ctxKey int
@@ -70,18 +73,25 @@ func (a *API) requestID(next http.Handler) http.Handler {
 	})
 }
 
-// requireActor resolves who is calling. Until SSO lands (IdPi_OIDC slice) the
-// only supported mode is the development header; with the header disabled every
-// /api/v1 call is 401, which is the safe default for any non-dev deployment.
+// requireActor resolves who is calling: the session cookie first (SSO through
+// IdPi_OIDC, §04), then the development header when it is enabled. With neither,
+// every /api/v1 call is 401, the safe default for any non-dev deployment.
 func (a *API) requireActor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if a.Auth != nil {
+			if actor, ok := a.Auth.Actor(r); ok {
+				actor.RequestID = requestIDFrom(r.Context())
+				next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), actorKey, actor)))
+				return
+			}
+		}
 		if !a.DevActorHeader {
-			writeError(w, http.StatusUnauthorized, "unauthenticated", "sign-in is not available yet; PM_DEV_ACTOR_HEADER is off")
+			writeError(w, http.StatusUnauthorized, "unauthenticated", "sign in at /auth/login")
 			return
 		}
 		user := strings.TrimSpace(r.Header.Get("X-Dev-Actor"))
 		if user == "" {
-			writeError(w, http.StatusUnauthorized, "unauthenticated", "X-Dev-Actor header required in development mode")
+			writeError(w, http.StatusUnauthorized, "unauthenticated", "sign in at /auth/login, or send X-Dev-Actor in development mode")
 			return
 		}
 		host, _, _ := net.SplitHostPort(r.RemoteAddr)
@@ -89,6 +99,12 @@ func (a *API) requireActor(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), actorKey, actor)))
 	})
 }
+
+// RequestIDMiddleware exposes the request-id wrapper for routes mounted outside /api/v1.
+func (a *API) RequestIDMiddleware(next http.Handler) http.Handler { return a.requestID(next) }
+
+// RequestIDFrom exposes the request id for other packages' logs.
+func RequestIDFrom(ctx context.Context) string { return requestIDFrom(ctx) }
 
 func actorFrom(ctx context.Context) domain.Actor {
 	a, _ := ctx.Value(actorKey).(domain.Actor)

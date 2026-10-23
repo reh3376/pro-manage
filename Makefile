@@ -29,7 +29,7 @@ export STUB_MDEMG_URL  ?= http://127.0.0.1:9997
         build test lint smoke smoke-stub ci-local hooks \
         go-build go-test go-lint py-sync py-test py-lint fe-install fe-typecheck fe-build \
         proto proto-lint proto-breaking \
-        uxts test-uats test-udts test-idpi-live test-uats-stub test-uats-live test-mdemg-stub test-mdemg-live check-outbox test-outbox-stub check-car test-car-stub test-uxts-hashes uxts-add-hashes \
+        uxts test-uats test-udts test-idpi-live test-uats-stub test-uats-live test-mdemg-stub test-mdemg-live check-outbox test-outbox-stub check-car test-car-stub check-login test-uxts-hashes uxts-add-hashes \
         test-unts unts-update verify-inventories check-matrix
 
 help: ## Show this help
@@ -147,6 +147,9 @@ test-uats: ## UATS validate-all for the services against the running dev stack (
 test-udts: ## UDTS gRPC contract specs against the running dev stack (pm-core at UDTS_TARGET, IdPi_OIDC at UDTS_IDPI_TARGET)
 	cd $(GO_DIR) && UDTS_TARGET=$(UDTS_TARGET) go test -count=1 -v ./tests/udts/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+contract_test)"
 	cd $(IDPI_DIR) && UDTS_IDPI_TARGET=$(UDTS_IDPI_TARGET) go test -count=1 -v ./tests/udts/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+contract_test)"
+
+check-login: ## SSO login end to end through pm-core, IdPi_OIDC, and the dev Keycloak (cookie jar drives the login form)
+	cd $(GO_DIR) && PM_CORE_URL=$(PM_CORE_URL) go test -tags integration -count=1 -v ./tests/login/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+login_test)"
 
 test-idpi-live: ## IdPi_OIDC integration test against the dev stack's Keycloak (password grant through pm-dev-cli)
 	cd $(IDPI_DIR) && IDPI_TEST_ISSUER=http://127.0.0.1:$${PM_KEYCLOAK_PORT:-8180}/realms/northfield go test -tags integration -count=1 -v ./tests/integration/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+keycloak_test)"
