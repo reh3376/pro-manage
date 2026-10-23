@@ -178,6 +178,45 @@
       "disposition": "active",
       "notes": "Get a site."
     },
+    "pm-core GET /auth/callback": {
+      "writers": [
+        "services/pm-core/internal/auth/auth.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/auth.uats.json",
+        "services/pm-core/tests/login/login_test.go",
+        "services/pm-core/internal/auth/auth_test.go",
+        "apps/pm-frontend/app/page.tsx"
+      ],
+      "disposition": "active",
+      "notes": "Completes the flow: redeems the pending login once, exchanges the code through the module, resolves roles, provisions the user just in time, fills IdP-sourced approver pools, opens the session, sets the pm_session cookie, 302 to return_to. 400 login_state_unknown | login_rejected | idp_error."
+    },
+    "pm-core GET /auth/login": {
+      "writers": [
+        "services/pm-core/internal/auth/auth.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/auth.uats.json",
+        "services/pm-core/tests/login/login_test.go",
+        "services/pm-core/internal/auth/auth_test.go",
+        "apps/pm-frontend/app/page.tsx"
+      ],
+      "disposition": "active",
+      "notes": "Starts the SSO code flow through IdPi_OIDC (\u00a704): mints the nonce, stores the pending login (state, verifier, return_to) in Redis, 302 to the IdP. 503 idp_unavailable when the module or IdP is down."
+    },
+    "pm-core GET /auth/me": {
+      "writers": [
+        "services/pm-core/internal/auth/auth.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/auth.uats.json",
+        "services/pm-core/tests/login/login_test.go",
+        "services/pm-core/internal/auth/auth_test.go",
+        "apps/pm-frontend/app/page.tsx"
+      ],
+      "disposition": "active",
+      "notes": "The signed-in user, platform roles, pools, attributes, and session window; 401 without a session."
+    },
     "pm-core GET /healthz": {
       "writers": [
         "services/pm-core/cmd/pm-core/main.go"
@@ -327,6 +366,19 @@
       ],
       "disposition": "active",
       "notes": "Create a site; AuditEvent site.create in the same transaction."
+    },
+    "pm-core POST /auth/logout": {
+      "writers": [
+        "services/pm-core/internal/auth/auth.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/auth.uats.json",
+        "services/pm-core/tests/login/login_test.go",
+        "services/pm-core/internal/auth/auth_test.go",
+        "apps/pm-frontend/app/page.tsx"
+      ],
+      "disposition": "active",
+      "notes": "Ends the session, revokes the refresh token at the IdP, clears the cookie, returns the end-session URL; 401 without a session."
     },
     "pm-frontend GET /api/healthz": {
       "writers": [

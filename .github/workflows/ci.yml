@@ -161,6 +161,10 @@ jobs:
         env:
           IDPI_TEST_ISSUER: http://127.0.0.1:8180/realms/northfield
         run: cd connectors/idpi/oidc && go test -tags integration -count=1 ./tests/integration/
+      - name: SSO login end to end (pm-core -> IdPi_OIDC -> Keycloak login form -> session -> /api/v1 -> logout)
+        env:
+          PM_CORE_URL: http://127.0.0.1:8080
+        run: cd services/pm-core && go test -tags integration -count=1 ./tests/login/
       - name: MDEMG adapter integration tests (against the stub)
         env:
           MDEMG_TEST_URL: http://127.0.0.1:9997
