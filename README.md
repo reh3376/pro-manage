@@ -80,11 +80,12 @@ make test-uats    # UATS contract specs against the running dev stack (and test-
 make test-udts    # UDTS gRPC contract specs against pm-core and the IdPi_OIDC module
 make check-outbox # prove the outbox path: pm-core enqueue -> pm-workers drain -> MDEMG
 make check-car    # the Phase 0 exit test: a toy CAR end to end (guide card, classify, audit + GuidanceOutcome, four-stage chain, feedback)
+make check-login  # SSO end to end: pm-core -> IdPi_OIDC -> Keycloak login form -> session cookie -> /api/v1 -> logout
 make hooks        # install the pre-commit gate (same checks as CI, before every commit)
 make help         # everything else
 ```
 
-Then `make db-seed` loads the Northfield Spirits Co. data (two sites, five projects, the starter policy variables, the approver pools for the dev users, and one approved CAR of history). The API is at `http://localhost:8080/api/v1`; until SSO lands, requests name the acting user with an `X-Dev-Actor` header (development only, `PM_DEV_ACTOR_HEADER`):
+Then `make db-seed` loads the Northfield Spirits Co. data (two sites, five projects, the starter policy variables, the approver pools for the dev users, and one approved CAR of history). The API is at `http://localhost:8080/api/v1`. Sign in through the frontend's link or `http://localhost:8080/auth/login` (the dev Keycloak users, password `northfield-dev`); the `pm_session` cookie then authenticates every call. In development and CI the `X-Dev-Actor` header still names an acting user directly (`PM_DEV_ACTOR_HEADER`), which is what the examples below use:
 
 ```bash
 curl -s -H 'X-Dev-Actor: alice.owner' localhost:8080/api/v1/projects | jq '.items[].code'
@@ -112,7 +113,7 @@ Layout: `services/pm-core` (Go: `cmd/pm-core`, `cmd/pm-workers`, `cmd/stub-mdemg
 
 ## Status
 
-The FSD and roadmap are ratified and the **thin spine** is being built under Scenario A (owner plus AI collaborator), one reviewed PR per slice on `pro-dev01`. Landed so far: the monorepo scaffold and compose stack (0a), the UxTS gates (0b), pm-core with Sites, Projects, policy variables and the hash-chained audit log (1a), the gRPC surface with UDTS (1b), `pkg/mdemgadapter` (2a), the Postgres outbox and pm-workers drain (2b), the toy CAR end to end with the governance gate (3), and the connector contract with the `IdPi_OIDC` module against the dev Keycloak (4a). The roadmap's Phase 0 exit test (a CAR approval that renders a guidance card, classifies on submit, writes the AuditEvent with its GuidanceOutcome, and dispatches feedback) runs in CI against the stub MDEMG. Next on the spine: pm-core login and sessions on `IdPi_OIDC` (4b), membership and ACL, Sigi, `ERPi_IFS`, Commsi nudges, and the persona screens.
+The FSD and roadmap are ratified and the **thin spine** is being built under Scenario A (owner plus AI collaborator), one reviewed PR per slice on `pro-dev01`. Landed so far: the monorepo scaffold and compose stack (0a), the UxTS gates (0b), pm-core with Sites, Projects, policy variables and the hash-chained audit log (1a), the gRPC surface with UDTS (1b), `pkg/mdemgadapter` (2a), the Postgres outbox and pm-workers drain (2b), the toy CAR end to end with the governance gate (3), the connector contract with the `IdPi_OIDC` module against the dev Keycloak (4a), and SSO sign-in with just-in-time users, Redis sessions, and approver pools from IdP claims (4b). The roadmap's Phase 0 exit test (a CAR approval that renders a guidance card, classifies on submit, writes the AuditEvent with its GuidanceOutcome, and dispatches feedback) runs in CI against the stub MDEMG. Next on the spine: project membership and section-level ACL, Sigi, `ERPi_IFS`, Commsi nudges, and the persona screens.
 
 The design keeps iterating under direct dialogue between the owner and an AI collaborator (Claude Code), with decisions captured in each FSD section's **Decisions on record** block and open items under **Open items for Section N**. See [`docs/fsd/roadmap.md`](./docs/fsd/roadmap.md) and [`docs/backlog.md`](./docs/backlog.md).
 

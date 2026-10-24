@@ -12,6 +12,8 @@
 
 - **2026-10-22:** **`IdPi_OIDC` exists as a module (slice 4a).** `connectors/idpi/oidc/` implements `pm.connector.v1.IdpiService` against the dev Keycloak realm: discovery with a backchannel rewrite (the dev IdP advertises its browser-facing issuer), PKCE code flow in two RPCs (`AuthenticateInteractive`, `CompleteAuthentication`), JWKS verification with audience-or-`azp` acceptance, refresh, revocation plus end-session URL, and the claims-to-roles mapping of this section as a YAML rule file (`mapping.yaml`: groups and realm roles to platform roles, workflow pools, and a `site` attribute). pm-core's login routes, users, sessions, and the pool fill from claims are slice 4b; break-glass admin and SCIM stay open (OI-19, OI-20).
 
+- **2026-10-23:** **SSO sign-in works end to end (slice 4b).** pm-core's `/auth/login` and `/auth/callback` drive the two legs through `IdPi_OIDC`; a pending-login record in Redis carries the module-minted state, the nonce, and the PKCE verifier; the user is provisioned just in time (`users`, keyed on the IdP subject), the approver pools are refilled from `ResolveClaimsToRoles` on every login (rows marked `source = idp`; seed and manual rows untouched), and the session is the Redis-backed opaque-cookie model below (8 h sliding, 24 h cap). `/auth/me` and `/auth/logout` (revocation plus end-session URL) complete the surface, and `requireActor` resolves the actor from the session before falling back to the development header. Deliberate carry-overs: audit rows and pool rows key on the login handle rather than `user_id` until B-11; break-glass local admins, SCIM, and session revocation by an admin remain open (OI-19, OI-20).
+
 ## Identity
 
 ### IdPi: the SSO abstraction

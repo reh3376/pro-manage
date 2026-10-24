@@ -51,6 +51,7 @@ type ApproverPool struct {
 	SiteID  *uuid.UUID `json:"site_id"`
 	AddedBy string     `json:"added_by"`
 	AddedAt time.Time  `json:"added_at"`
+	Source  string     `json:"source"`
 }
 
 type AuditEvent struct {
@@ -255,4 +256,20 @@ type Site struct {
 	UpdatedAt          time.Time       `json:"updated_at"`
 	UpdatedBy          string          `json:"updated_by"`
 	Version            int32           `json:"version"`
+}
+
+type User struct {
+	UserID        uuid.UUID       `json:"user_id"`
+	TenantID      string          `json:"tenant_id"`
+	ExternalID    string          `json:"external_id"`
+	Username      string          `json:"username"`
+	Email         string          `json:"email"`
+	DisplayName   string          `json:"display_name"`
+	PlatformRoles []string        `json:"platform_roles"`
+	Attributes    json.RawMessage `json:"attributes"`
+	IsLocal       bool            `json:"is_local"`
+	IsActive      bool            `json:"is_active"`
+	CreatedAt     time.Time       `json:"created_at"`
+	LastLoginAt   *time.Time      `json:"last_login_at"`
+	LoginCount    int32           `json:"login_count"`
 }

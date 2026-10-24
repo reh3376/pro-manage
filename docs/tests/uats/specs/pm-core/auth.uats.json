@@ -1,0 +1,129 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core auth edge",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "api",
+      "auth",
+      "sso"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-23",
+    "description": "The login edge without a browser: /auth/login redirects to the IdP (302, not followed), /auth/callback refuses an unknown state and an IdP error, /auth/me and /auth/logout are 401 without a session. The full sign-in runs in services/pm-core/tests/login against the dev Keycloak.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "f1270049b1b003e20302807fd1e9c87532598ac09e37df3c838ac66cb84097c3"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/auth/me",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "expected": {
+    "status": 401,
+    "body_assertions": [
+      {
+        "name": "unauthenticated",
+        "path": "$.error.code",
+        "op": "equals",
+        "expected": "unauthenticated"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "login_redirects_to_idp_302",
+      "request": {
+        "path": "/auth/login",
+        "query": {
+          "return_to": "/auth/me"
+        }
+      },
+      "expected": {
+        "status": 302,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "callback_unknown_state_400",
+      "request": {
+        "path": "/auth/callback",
+        "query": {
+          "state": "uats-unknown",
+          "code": "x"
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body_assertions": [
+          {
+            "name": "state unknown",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "login_state_unknown"
+          }
+        ]
+      }
+    },
+    {
+      "name": "callback_idp_error_400",
+      "request": {
+        "path": "/auth/callback",
+        "query": {
+          "error": "access_denied",
+          "error_description": "uats"
+        }
+      },
+      "expected": {
+        "status": 400,
+        "body_assertions": [
+          {
+            "name": "idp error",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "idp_error"
+          }
+        ]
+      }
+    },
+    {
+      "name": "logout_without_session_401",
+      "request": {
+        "method": "POST",
+        "path": "/auth/logout"
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "api_without_session_or_header_401",
+      "request": {
+        "path": "/api/v1/projects"
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": [
+          {
+            "name": "unauthenticated",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "unauthenticated"
+          }
+        ]
+      }
+    }
+  ]
+}

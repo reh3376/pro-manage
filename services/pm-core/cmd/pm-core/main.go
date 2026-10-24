@@ -18,12 +18,15 @@ import (
 
 	"github.com/reh3376/pro-manage/services/pm-core/internal/api"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/auth"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/config"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/idpi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/domain"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/grpcserver"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/secrets"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/sessions"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
 	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
@@ -86,6 +89,25 @@ func run() error {
 			gate.Client = mc
 			h := mc.Health(ctx)
 			log.Info("mdemg configured", "base_url", cfg.MDEMGBaseURL, "governance_space", mdemgadapter.GovernanceSpace(cfg.GovernanceOrgID), "reachable", h.Reachable, "jiminy_enabled", h.JiminyEnabled, "latency_ms", h.LatencyMs)
+		}
+		if cfg.IdPiAddr != "" && cfg.RedisURL != "" {
+			store, err := sessions.Open(ctx, cfg.RedisURL)
+			if err != nil {
+				return err
+			}
+			defer store.Close()
+			store.TTL, store.MaxAge = cfg.SessionTTL, cfg.SessionMaxAge
+			ic, err := idpi.Dial(cfg.IdPiAddr)
+			if err != nil {
+				return err
+			}
+			defer ic.Close()
+			checks["redis"] = store.Ping // the IdP's own health shows at /auth/login (503) and the module's /readyz, not here: pm-core serves without it
+			a.Auth = &auth.Handler{Log: log, Sessions: store, IdPi: ic, Users: svc, PublicURL: cfg.PublicURL, FrontendURL: cfg.FrontendURL, CookieSecure: cfg.CookieSecure, RequestID: api.RequestIDFrom}
+			a.Auth.Mount(mux, a.RequestIDMiddleware)
+			log.Info("login configured", "idpi", cfg.IdPiAddr, "callback", cfg.PublicURL+"/auth/callback", "session_ttl", cfg.SessionTTL.String(), "session_max_age", cfg.SessionMaxAge.String())
+		} else {
+			log.Warn("login not configured (IDPI_OIDC_ADDR and REDIS_URL required); only the dev actor header can authenticate", "dev_actor_header", cfg.DevActorHeader)
 		}
 		a.Mount(mux)
 	}
