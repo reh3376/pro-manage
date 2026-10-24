@@ -71,3 +71,16 @@ ON CONFLICT (tenant_id, code) DO NOTHING;
 INSERT INTO policy_values (value_id, variable_key, scope_kind, scope_id, value, set_by, reason) VALUES
   ('01900000-0000-7000-8000-00000000c001', 'car.threshold.vp_finance', 'site', '01900000-0000-7000-8000-00000000a002', '6750000', 'dana.policy', 'CAD equivalent of the global USD threshold at the seed rate (dev only)')
 ON CONFLICT (value_id) DO NOTHING;
+
+-- Memberships (FSD §04 base roles) beyond the owners the migration created: fay.ops views Still House 2,
+-- gus.maint edits Boiler 2 but is masked from its documents, hana.epcm is an external contributor on Still House 2.
+INSERT INTO project_members (project_id, user_id, base_role, invited_by, activated_at) VALUES
+  ('01900000-0000-7000-8000-00000000b001', 'fay.ops',   'viewer',      'alice.owner', now()),
+  ('01900000-0000-7000-8000-00000000b001', 'hana.epcm', 'contributor', 'alice.owner', now()),
+  ('01900000-0000-7000-8000-00000000b003', 'gus.maint', 'editor',      'alice.owner', now())
+ON CONFLICT (project_id, user_id) DO NOTHING;
+
+INSERT INTO acl_grants (grant_id, project_id, user_id, scope_kind, scope_target, permission, granted_by, reason) VALUES
+  ('01900000-0000-7000-8000-00000000f001', '01900000-0000-7000-8000-00000000b003', 'gus.maint', 'section', 'section:documents', 'deny', 'alice.owner', 'vendor drawings under NDA until award'),
+  ('01900000-0000-7000-8000-00000000f002', '01900000-0000-7000-8000-00000000b001', 'fay.ops',   'section', 'section:budget',    'read', 'alice.owner', 'operations lead reviews the CAR')
+ON CONFLICT (project_id, user_id, scope_kind, scope_target, permission) DO NOTHING;

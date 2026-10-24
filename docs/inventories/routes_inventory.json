@@ -2,6 +2,28 @@
   "surface": "routes",
   "description": "Every HTTP route shipped by pro_manage services must be adjudicated here (FSD \u00a712, DORMANT-CENSUS pattern). Key: '<binary> <METHOD> <path>'.",
   "entries": {
+    "pm-core DELETE /api/v1/projects/{project_id}/grants/{grant_id}": {
+      "writers": [
+        "services/pm-core/internal/api/access.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/access.uats.json",
+        "services/pm-core/internal/domain/membership_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Remove a grant (team write); audited."
+    },
+    "pm-core DELETE /api/v1/projects/{project_id}/members/{user_id}": {
+      "writers": [
+        "services/pm-core/internal/api/access.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/access.uats.json",
+        "services/pm-core/internal/domain/membership_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Remove a member (team write; never the last owner); audited."
+    },
     "pm-core GET /api/v1/audit/verify": {
       "writers": [
         "services/pm-core/internal/api/api.go"
@@ -101,6 +123,17 @@
       "disposition": "active",
       "notes": "Get a project."
     },
+    "pm-core GET /api/v1/projects/{project_id}/access": {
+      "writers": [
+        "services/pm-core/internal/api/access.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/access.uats.json",
+        "services/pm-core/internal/domain/membership_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "The caller's effective permission per section (\u00a704 grant evaluation), base role, grants, stage assignment; for the UI and the ACL specs."
+    },
     "pm-core GET /api/v1/projects/{project_id}/audit": {
       "writers": [
         "services/pm-core/internal/api/api.go"
@@ -123,6 +156,17 @@
       "disposition": "active",
       "notes": "CARs of a project, newest first."
     },
+    "pm-core GET /api/v1/projects/{project_id}/grants": {
+      "writers": [
+        "services/pm-core/internal/api/access.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/access.uats.json",
+        "services/pm-core/internal/domain/membership_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "ACLGrant rows of the project (team read)."
+    },
     "pm-core GET /api/v1/projects/{project_id}/guidance-outcomes": {
       "writers": [
         "services/pm-core/internal/api/car.go"
@@ -134,6 +178,17 @@
       ],
       "disposition": "active",
       "notes": "GuidanceOutcome rows (what users saw and did at governed actions, \u00a706 audit coupling)."
+    },
+    "pm-core GET /api/v1/projects/{project_id}/members": {
+      "writers": [
+        "services/pm-core/internal/api/access.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/access.uats.json",
+        "services/pm-core/internal/domain/membership_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "ProjectMember rows (team read)."
     },
     "pm-core GET /api/v1/projects/{project_id}/policy/{key}": {
       "writers": [
@@ -343,6 +398,28 @@
       ],
       "disposition": "active",
       "notes": "EstimateArtifact behind a CAR (\u00a703): AACE class, as-of, TIC, contingency, basis-of-estimate document; audited."
+    },
+    "pm-core POST /api/v1/projects/{project_id}/grants": {
+      "writers": [
+        "services/pm-core/internal/api/access.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/access.uats.json",
+        "services/pm-core/internal/domain/membership_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Add a section grant (read | write | read_full on audit | deny) with optional expiry and reason (team write); audited."
+    },
+    "pm-core POST /api/v1/projects/{project_id}/members": {
+      "writers": [
+        "services/pm-core/internal/api/access.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/access.uats.json",
+        "services/pm-core/internal/domain/membership_integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Invite or re-role a member (team write; owner by default); a project keeps at least one owner; audited."
     },
     "pm-core POST /api/v1/projects/{project_id}/promises": {
       "writers": [

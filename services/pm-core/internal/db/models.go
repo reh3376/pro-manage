@@ -11,6 +11,19 @@ import (
 	"github.com/google/uuid"
 )
 
+type AclGrant struct {
+	GrantID     uuid.UUID  `json:"grant_id"`
+	ProjectID   uuid.UUID  `json:"project_id"`
+	UserID      string     `json:"user_id"`
+	ScopeKind   string     `json:"scope_kind"`
+	ScopeTarget string     `json:"scope_target"`
+	Permission  string     `json:"permission"`
+	GrantedBy   string     `json:"granted_by"`
+	GrantedAt   time.Time  `json:"granted_at"`
+	ExpiresAt   *time.Time `json:"expires_at"`
+	Reason      string     `json:"reason"`
+}
+
 type ApprovalStage struct {
 	StageID               uuid.UUID  `json:"stage_id"`
 	WorkflowID            uuid.UUID  `json:"workflow_id"`
@@ -235,6 +248,16 @@ type Project struct {
 	UpdatedAt                   time.Time  `json:"updated_at"`
 	UpdatedBy                   string     `json:"updated_by"`
 	Version                     int32      `json:"version"`
+}
+
+type ProjectMember struct {
+	ProjectID   uuid.UUID  `json:"project_id"`
+	UserID      string     `json:"user_id"`
+	BaseRole    string     `json:"base_role"`
+	InvitedBy   string     `json:"invited_by"`
+	InvitedAt   time.Time  `json:"invited_at"`
+	ActivatedAt *time.Time `json:"activated_at"`
+	ExpiresAt   *time.Time `json:"expires_at"`
 }
 
 type Site struct {

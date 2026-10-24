@@ -19,7 +19,7 @@ The FSD describes a large system. The spine is the part that must exist before p
 
 | Spine element | What "done" means | FSD |
 |---|---|---|
-| Identity and membership | SSO through `IdPi_OIDC`; break-glass admin; `ProjectMember` with the four base roles; section-level ACL (document- and field-level are layers) | `§04` |
+| Identity and membership | SSO through `IdPi_OIDC`; break-glass admin; `ProjectMember` with the four base roles; section-level ACL (document- and field-level are layers). **Status 2026-10-24:** SSO (4a, 4b) and membership with section ACL (5) are in; break-glass admin is open (OI-19) | `§04` |
 | Site and Project | `Site` with time zone, currency, calendar; `Project` with lifecycle `Initiate → Plan → Execute`, FEL stage, type, onboarding level | `§03` |
 | Policy variables | `PolicyVariable` / `PolicyValue` with the five scopes, resolution, snapshot on workflow start, the policy editor, the starter CAR thresholds loaded from the DoA | `§08` |
 | The CAR | `CapitalAuthorization` (`full` first; `fel_funding` and `supplemental` follow in the same phase if cheap), `EstimateArtifact`, `BusinessCasePromise` required at submission, the CAR chain with eligibility pools, SLA tick and nudges, Sigi (DocuSign) envelope and signed artifact | `§03`, `§08` |

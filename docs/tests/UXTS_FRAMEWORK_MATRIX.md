@@ -2,13 +2,13 @@
 
 Purpose: the canonical map of each UxTS framework pro_manage runs to its schema, specs, runner, CI disposition, and status (FSD §12). If this file and a section of the FSD disagree, this file wins for the operational state and the FSD is corrected.
 
-Last verified: 2026-10-23 (slice 4b). Runners vendored from MDEMG `c1f14f74` (`v0.11.0-beta.3`), see `VENDORED.md`. `scripts/check_matrix_currency.py` fails CI when this date is more than 30 days older than the newest spec.
+Last verified: 2026-10-24 (slice 5). Runners vendored from MDEMG `c1f14f74` (`v0.11.0-beta.3`), see `VENDORED.md`. `scripts/check_matrix_currency.py` fails CI when this date is more than 30 days older than the newest spec.
 
 ## 1) Framework inventory
 
 | Framework | Name | Status | Specs | CI disposition |
 |---|---|---|---|---|
-| UATS | Universal API Test Specification | **active** | 14 service specs (pm-core 11: health, readiness, version, sites, projects, policy, audit chain, mdemg status, outbox, CAR, auth edge; pm-workers 1, pm-sidecar 1, pm-frontend 1), 5 stub-mdemg specs, 5 live mdemg specs | **merge-blocking**: `verify-hashes` on every PR; `validate-all` for the service and stub-mdemg sets inside the compose smoke job. Live mdemg set is **live-gated**: `make test-uats-live` on the workstation before merging anything that touches `pkg/mdemgadapter` |
+| UATS | Universal API Test Specification | **active** | 15 service specs (pm-core 12: health, readiness, version, sites, projects, policy, audit chain, mdemg status, outbox, CAR, auth edge, membership and ACL; pm-workers 1, pm-sidecar 1, pm-frontend 1), 5 stub-mdemg specs, 5 live mdemg specs | **merge-blocking**: `verify-hashes` on every PR; `validate-all` for the service and stub-mdemg sets inside the compose smoke job. Live mdemg set is **live-gated**: `make test-uats-live` on the workstation before merging anything that touches `pkg/mdemgadapter` |
 | UDTS | Universal DevSpace Test Specification | **active** | 10 (pm-core 2: `pm.core.v1.VersionService/GetVersion` with `proto_sha256` pinned, `grpc.health.v1.Health/Check`; IdPi_OIDC 8: both `pm.connector.v1.ConnectorService` RPCs and all six `pm.connector.v1.IdpiService` RPCs, pinned to their proto files) | **merge-blocking**: Go contract tests in `services/pm-core/tests/udts` and `connectors/idpi/oidc/tests/udts` run inside the compose smoke job against pm-core's and the module's gRPC ports; the proto hash checks run offline in every `go test` |
 | UNTS | Universal Hash Test Specification | **active** | registry (`docs/specs/unts-registry.json`) | **merge-blocking**: `scripts/unts.py verify` on every PR |
 | UOTS | Universal Observability Test Specification | vendored, no specs | 0 | merge-blocking from Phase 1 (dashboards, alert rules, metric registry) |
@@ -46,6 +46,7 @@ Inherited from MDEMG for the vendored runners (UATS hard-fails on `setup`, `tear
 ## 5) Gaps and next steps
 
 1. UDTS: active with the first served RPC (slice 1b). gRPC methods are adjudicated in `docs/inventories/grpc_methods_inventory.json` (scanner over `proto/**/*.proto`).
+1e. ACL (slice 5): `internal/acl` has a table test over the §04 grant evaluation; `access.uats.json` proves it at the edge for the seeded owner, viewer, editor-with-deny, contributor, non-member, portfolio executive, and platform admin; the domain integration test covers invitations, grants, the last-owner rule, visibility, and stage-assignee reads. USTS specs for the auth boundary (contributor scoping per endpoint) remain the pre-pilot gate.
 1d. SSO (slice 4b): `services/pm-core/tests/login` signs in through the real chain (pm-core, the module, Keycloak's login form driven with a cookie jar) and proves the session authenticates `/api/v1`; it runs in the compose smoke job. The auth UATS spec covers the browserless surface (redirect, bad callbacks, 401s).
 1c. The first connector contract (slice 4a): `pm.connector.v1.ConnectorService` and `IdpiService` have one UDTS spec per RPC against the running `IdPi_OIDC` module, and `connectors/idpi/oidc/tests/integration` drives the module against the dev Keycloak with real tokens (password grant through the dev-only `pm-dev-cli` client, since the browser leg cannot run in CI). Connector capabilities are adjudicated in `connector_capabilities_inventory.json` keyed `<type>/<code>:<capability>`; they stay `planned` until pm-core routes on them (slice 4b).
 1a. Go integration tests (`services/pm-core/internal/store`, build tag `integration`) run inside the compose smoke job against the stack's Postgres: migrations, audit chain and append-only triggers, Site/Project creation with audit-in-transaction, policy resolution. They use their own tenant (`it-test`) so their chain never mixes with the stack's `default` tenant.

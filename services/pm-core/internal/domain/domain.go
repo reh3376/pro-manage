@@ -346,6 +346,10 @@ func (s *Service) CreateProject(ctx context.Context, actor Actor, in CreateProje
 			}
 			return fmt.Errorf("create project: %w", err)
 		}
+		// The owner is the first member (§03 ProjectMember, §04 base roles).
+		if _, err := q.UpsertProjectMember(ctx, db.UpsertProjectMemberParams{ProjectID: pid, UserID: project.OwnerUserID, BaseRole: "owner", InvitedBy: actor.UserID}); err != nil {
+			return fmt.Errorf("owner membership: %w", err)
+		}
 		ev, err := s.Chain.Append(ctx, q, audit.Event{
 			TenantID: s.Tenant, ProjectID: &pid, ActorUserID: actor.UserID, ActionType: "project.create", SubjectType: "project",
 			SubjectID: pid.String(), After: project, SourceIP: actor.SourceIP, RequestID: actor.RequestID,

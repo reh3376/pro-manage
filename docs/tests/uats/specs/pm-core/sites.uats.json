@@ -13,21 +13,22 @@
   "metadata": {
     "author": "reh3376",
     "created": "2026-10-22",
-    "description": "Site list, create (with normalization, conflict, validation), get. Requires the Northfield seed.",
+    "description": "Site list, create (with normalization, conflict, validation), get. Requires the Northfield seed. Creating a site needs the platform_admin role (X-Dev-Roles in development).",
     "status": "active",
     "test_type": "contract",
     "priority": "high"
   },
   "config": {
     "timeout_ms": 10000,
-    "sha256": "7faed678ec6d2e7f5676b4b53ca2b2599774bcbf7274ed3c81586087a579304b"
+    "sha256": "ca2366fa3ef8383251d1b73ef3da9b22de6523e2b8e4761f35df95d1e21b7397"
   },
   "request": {
     "method": "GET",
     "path": "/api/v1/sites",
     "headers": {
       "X-Dev-Actor": "alice.owner",
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "X-Dev-Roles": "platform_admin"
     }
   },
   "variables": {
@@ -263,6 +264,33 @@
       "expected": {
         "status": 422,
         "body_assertions": []
+      }
+    },
+    {
+      "name": "create_site_without_platform_admin_403",
+      "request": {
+        "method": "POST",
+        "headers": {
+          "X-Dev-Roles": ""
+        },
+        "body": {
+          "code": "NF-NOPE",
+          "name": "no role",
+          "country": "US",
+          "time_zone": "America/New_York",
+          "currency": "USD"
+        }
+      },
+      "expected": {
+        "status": 403,
+        "body_assertions": [
+          {
+            "name": "forbidden",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "forbidden"
+          }
+        ]
       }
     }
   ]

@@ -1,7 +1,8 @@
 // Package api is pm-core's REST edge (FSD §05): JSON in and out, one error
-// envelope, request ids, and the actor resolution that the ACL layer (§04)
-// will replace when IdPi_OIDC lands. Every handler is covered by a UATS spec
-// (docs/tests/uats/specs/pm-core) and adjudicated in the routes inventory.
+// envelope, request ids, the actor resolved from the session (or the dev
+// header), and the section-level ACL of §04 on every project-scoped route.
+// Every handler is covered by a UATS spec (docs/tests/uats/specs/pm-core) and
+// adjudicated in the routes inventory.
 package api
 
 import (
@@ -17,6 +18,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/reh3376/pro-manage/services/pm-core/internal/acl"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/auth"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/domain"
@@ -58,6 +60,7 @@ func (a *API) Mount(mux *http.ServeMux) {
 	a.mountMDEMG(mux, wrap)
 	a.mountOutbox(mux, wrap)
 	a.mountCAR(mux, wrap)
+	a.mountAccess(mux, wrap)
 }
 
 // ---------------------------------------------------------------- middleware
@@ -96,6 +99,12 @@ func (a *API) requireActor(next http.Handler) http.Handler {
 		}
 		host, _, _ := net.SplitHostPort(r.RemoteAddr)
 		actor := domain.Actor{UserID: user, SourceIP: host, RequestID: requestIDFrom(r.Context())}
+		// X-Dev-Roles (comma-separated platform roles) stands in for the claims mapping in development and CI.
+		for _, role := range strings.Split(r.Header.Get("X-Dev-Roles"), ",") {
+			if role = strings.TrimSpace(role); role != "" {
+				actor.PlatformRoles = append(actor.PlatformRoles, role)
+			}
+		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), actorKey, actor)))
 	})
 }
@@ -181,6 +190,9 @@ func (a *API) listSites(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) createSite(w http.ResponseWriter, r *http.Request) {
+	if _, ok := a.requirePlatformRole(w, r, acl.PlatformAdmin); !ok {
+		return
+	}
 	var in domain.CreateSiteInput
 	if err := decode(r, &in); err != nil {
 		a.fail(w, r, err)
@@ -220,7 +232,7 @@ func (a *API) listProjects(w http.ResponseWriter, r *http.Request) {
 		}
 		siteID = &u
 	}
-	items, err := a.Domain.ListProjects(r.Context(), siteID)
+	items, err := a.Domain.ListVisibleProjects(r.Context(), actorFrom(r.Context()), siteID)
 	if err != nil {
 		a.fail(w, r, err)
 		return
@@ -248,6 +260,9 @@ func (a *API) getProject(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
+	if _, ok := a.authorize(w, r, id, acl.Overview, acl.Read); !ok {
+		return
+	}
 	p, err := a.Domain.GetProject(r.Context(), id)
 	if err != nil {
 		a.fail(w, r, err)
@@ -262,8 +277,8 @@ func (a *API) projectAudit(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
-	if _, err := a.Domain.GetProject(r.Context(), id); err != nil {
-		a.fail(w, r, err)
+	actor, ok := a.authorize(w, r, id, acl.Audit, acl.Read)
+	if !ok {
 		return
 	}
 	limit := int32(50)
@@ -277,13 +292,26 @@ func (a *API) projectAudit(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": items})
+	// Full before/after payloads need read_full on the audit section; everyone else gets the summary (§04).
+	c, err := a.Domain.Access(r.Context(), actor, id)
+	if err != nil {
+		a.fail(w, r, err)
+		return
+	}
+	if acl.Decide(c, acl.Audit, acl.ReadFull).Allowed {
+		httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": items, "full": true})
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": summarize(items), "full": false})
 }
 
 func (a *API) projectPolicy(w http.ResponseWriter, r *http.Request) {
 	id, err := pathUUID(r, "project_id")
 	if err != nil {
 		a.fail(w, r, err)
+		return
+	}
+	if _, ok := a.authorize(w, r, id, acl.Settings, acl.Read); !ok {
 		return
 	}
 	p, err := a.Domain.GetProject(r.Context(), id)
