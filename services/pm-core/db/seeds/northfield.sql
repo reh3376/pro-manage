@@ -72,8 +72,13 @@ INSERT INTO policy_values (value_id, variable_key, scope_kind, scope_id, value, 
   ('01900000-0000-7000-8000-00000000c001', 'car.threshold.vp_finance', 'site', '01900000-0000-7000-8000-00000000a002', '6750000', 'dana.policy', 'CAD equivalent of the global USD threshold at the seed rate (dev only)')
 ON CONFLICT (value_id) DO NOTHING;
 
--- Memberships (FSD §04 base roles) beyond the owners the migration created: fay.ops views Still House 2,
+-- Memberships (FSD §04 base roles). Owners first: on a fresh database the projects above arrive after
+-- migration 00005 ran its backfill, so the seed states them too. Then fay.ops views Still House 2,
 -- gus.maint edits Boiler 2 but is masked from its documents, hana.epcm is an external contributor on Still House 2.
+INSERT INTO project_members (project_id, user_id, base_role, invited_by, activated_at)
+SELECT project_id, owner_user_id, 'owner', 'seed', now() FROM projects WHERE created_by = 'seed'
+ON CONFLICT (project_id, user_id) DO NOTHING;
+
 INSERT INTO project_members (project_id, user_id, base_role, invited_by, activated_at) VALUES
   ('01900000-0000-7000-8000-00000000b001', 'fay.ops',   'viewer',      'alice.owner', now()),
   ('01900000-0000-7000-8000-00000000b001', 'hana.epcm', 'contributor', 'alice.owner', now()),
