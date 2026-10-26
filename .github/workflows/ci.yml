@@ -173,10 +173,11 @@ jobs:
         env:
           TEST_DATABASE_URL: postgres://pm:ci-postgres@127.0.0.1:5440/pm_core?sslmode=disable
           S3_TEST_ENDPOINT: http://127.0.0.1:9100
-          S3_TEST_ACCESS_KEY: rustfsadmin
-          S3_TEST_SECRET_KEY: rustfsadmin
           SIGI_TEST_ADDR: 127.0.0.1:7090
-        run: cd services/pm-core && go test -tags integration -count=1 ./internal/blobs/ ./internal/signing/
+        run: |
+          set -a; source deploy/compose/.env.ci; set +a
+          export S3_TEST_ACCESS_KEY="${RUSTFS_ACCESS_KEY:-rustfsadmin}" S3_TEST_SECRET_KEY="${RUSTFS_SECRET_KEY:-rustfsadmin}"
+          cd services/pm-core && go test -tags integration -count=1 ./internal/blobs/ ./internal/signing/
       - name: IdPi_OIDC against the dev Keycloak (tokens, claims to roles, refresh, logout)
         env:
           IDPI_TEST_ISSUER: http://127.0.0.1:8180/realms/northfield
