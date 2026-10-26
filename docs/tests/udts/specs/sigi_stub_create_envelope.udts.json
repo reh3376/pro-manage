@@ -1,0 +1,38 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.SigiService",
+  "method": "CreateEnvelope",
+  "request": {
+    "subject_type": "capital_authorization",
+    "subject_id": "udts-car",
+    "title": "UDTS CAR",
+    "document": "VURUUw==",
+    "document_media_type": "text/plain",
+    "signers": [
+      {
+        "user_id": "alice.owner",
+        "name": "Alice",
+        "order": 1,
+        "role": "project_owner"
+      }
+    ],
+    "idempotency_key": "udts-create"
+  },
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "envelope_id"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "aee080832009bccefd1c605de8c2995103045b4029013303d4523d974b3164a6"
+  },
+  "metadata": {
+    "description": "CreateEnvelope accepts a subject, title, document, and signers and returns the provider's envelope id in SENT state; the same idempotency key returns the same envelope.",
+    "tags": [
+      "sigi-stub",
+      "contract",
+      "sigi",
+      "envelope"
+    ]
+  }
+}

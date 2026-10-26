@@ -1,6 +1,6 @@
 # Engineering backlog
 
-Status: **Living list** · Last updated: 2026-10-24
+Status: **Living list** · Last updated: 2026-10-26
 
 Work the owner has asked for that is not a spine slice or an FSD open item. Ordered by priority within each group; each item names what "done" looks like. Owner decisions live in [open-items.md](./fsd/open-items.md); the delivery order lives in the [roadmap](./fsd/roadmap.md).
 
@@ -58,6 +58,10 @@ The toy compares the routing amount in the CAR's currency against thresholds res
 ### B-09 Admin override of a Tier A refusal
 
 Pools from IdP claims landed in slice 4b (2026-10-23): every login refills the user's `source = idp` rows from `ResolveClaimsToRoles`; seed and manual rows stay. Still open: the admin override that `§06` offers after a Tier A refusal (`overridden_by_admin`, `blocked_false_positive` feedback). The actor now carries platform roles from the session, so the override can be gated on `platform_admin` once the ACL layer lands.
+
+### B-13 Sigi_DS: the DocuSign backend, cancellation, and the inbound webhook path
+
+Slice 6 runs the whole envelope lifecycle against `Sigi_STUB`. `Sigi_DS` implements the same `pm.connector.v1.SigiService` against DocuSign eSignature REST (JWT grant, envelope from a template or the rendered document, embedded or email signing, Connect webhooks verified with the HMAC key) once the account exists (OI-17 decides which workflow kinds sign). Also open: `CancelEnvelope` when a CAR is cancelled, voiding a pending envelope on a supplemental, and the reverse-proxy path for provider webhooks (OI-13); until then reconciliation on the worker tick is the only path, which the design already treats as authoritative.
 
 ### B-12 Document and field grants, contributor contract scoping, row security
 

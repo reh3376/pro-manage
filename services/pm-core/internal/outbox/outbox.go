@@ -19,6 +19,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/sigi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/db"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
@@ -29,6 +30,7 @@ import (
 const (
 	KindMDEMGObserve  = "mdemg.observe"
 	KindMDEMGFeedback = "mdemg.feedback"
+	KindSigiCreate    = "sigi.envelope.create" // internal/signing.OutboxKind
 )
 
 // Statuses.
@@ -62,10 +64,16 @@ type Sink interface {
 	Feedback(ctx context.Context, req mdemgadapter.FeedbackRequest) (mdemgadapter.FeedbackResponse, error)
 }
 
+// Signing creates e-signature envelopes at the provider (internal/signing); nil disables the kind.
+type Signing interface {
+	CreateAtProvider(ctx context.Context, payload json.RawMessage) error
+}
+
 // Drainer delivers pending rows.
 type Drainer struct {
 	Store       *store.Store
 	Sink        Sink
+	Signing     Signing
 	Log         *slog.Logger
 	Worker      string        // locked_by identity (hostname:pid)
 	Batch       int32         // rows per claim (default 50)
@@ -184,9 +192,9 @@ func (d *Drainer) deliver(ctx context.Context, row db.Outbox) {
 	}
 }
 
-// permanent reports errors that retrying cannot fix: a payload MDEMG rejects or a bad key.
+// permanent reports errors that retrying cannot fix: a payload the target rejects or a bad key.
 func permanent(err error) bool {
-	return errors.Is(err, mdemgadapter.ErrBadRequest) || errors.Is(err, mdemgadapter.ErrUnauthorized) || errors.Is(err, errUnknownKind)
+	return errors.Is(err, mdemgadapter.ErrBadRequest) || errors.Is(err, mdemgadapter.ErrUnauthorized) || errors.Is(err, sigi.ErrRejected) || errors.Is(err, errUnknownKind)
 }
 
 var errUnknownKind = errors.New("outbox: unknown kind")
@@ -211,6 +219,11 @@ func (d *Drainer) dispatch(ctx context.Context, row db.Outbox) error {
 		}
 		_, err := d.Sink.Feedback(ctx, req)
 		return err
+	case KindSigiCreate:
+		if d.Signing == nil {
+			return errors.New("outbox: no signing service configured (retrying)")
+		}
+		return d.Signing.CreateAtProvider(ctx, row.Payload)
 	default:
 		return fmt.Errorf("%w: %s", errUnknownKind, row.Kind)
 	}

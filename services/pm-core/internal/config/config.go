@@ -65,6 +65,15 @@ type Config struct {
 	SessionMaxAge time.Duration // PM_SESSION_MAX_AGE absolute cap (default 24h)
 	CookieSecure  bool          // PM_COOKIE_SECURE (true behind TLS)
 
+	// E-signature (FSD §10 Sigi) and the object store that keeps signed artifacts (§05).
+	SigiAddr     string // SIGI_ADDR, the Sigi module's gRPC address (empty: signatures are requested but never created)
+	SigiProvider string // SIGI_PROVIDER: stub | docusign | adobe_sign | onespan
+	S3Endpoint   string // S3_ENDPOINT
+	S3AccessKey  string // S3_ACCESS_KEY (secret)
+	S3SecretKey  string // S3_SECRET_KEY (secret)
+	S3Bucket     string // S3_BUCKET
+	S3Region     string // S3_REGION
+
 	// Workers
 	WorkerTick        time.Duration
 	OutboxMaxAttempts int           // dead-letter after this many failed deliveries
@@ -96,6 +105,11 @@ func Load(ctx context.Context, service string, sp secrets.Provider) (Config, err
 		SessionTTL:        durationOr("PM_SESSION_TTL", 8*time.Hour),
 		SessionMaxAge:     durationOr("PM_SESSION_MAX_AGE", 24*time.Hour),
 		CookieSecure:      boolOr("PM_COOKIE_SECURE", false),
+		SigiAddr:          os.Getenv("SIGI_ADDR"),
+		SigiProvider:      envOr("SIGI_PROVIDER", "stub"),
+		S3Endpoint:        os.Getenv("S3_ENDPOINT"),
+		S3Bucket:          envOr("S3_BUCKET", "pm-dev"),
+		S3Region:          envOr("S3_REGION", "us-east-1"),
 	}
 
 	switch strings.ToLower(envOr("PM_LOG_LEVEL", "info")) {
@@ -117,6 +131,12 @@ func Load(ctx context.Context, service string, sp secrets.Provider) (Config, err
 		return cfg, err
 	}
 	if cfg.AuditChainKey, err = optionalSecret(ctx, sp, "AUDIT_CHAIN_KEY"); err != nil {
+		return cfg, err
+	}
+	if cfg.S3AccessKey, err = optionalSecret(ctx, sp, "S3_ACCESS_KEY"); err != nil {
+		return cfg, err
+	}
+	if cfg.S3SecretKey, err = optionalSecret(ctx, sp, "S3_SECRET_KEY"); err != nil {
 		return cfg, err
 	}
 	return cfg, nil

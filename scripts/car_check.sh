@@ -2,7 +2,8 @@
 # The Phase 0 exit test (FSD roadmap "Success criteria"), driven through the REST edge of the
 # running dev stack: estimate -> committed promise -> full CAR -> guide on open renders a card ->
 # preclassify -> submit (classify round-trip, AuditEvent + GuidanceOutcome written) -> every stage
-# approved by its pool -> CAR approved -> feedback and observe rows drained by pm-workers.
+# approved by its pool -> CAR approved -> envelope at the Sigi module, signed, captured as a PDF ->
+# feedback and observe rows drained by pm-workers.
 # Needs the Northfield seed (make db-seed) and a stub or live MDEMG behind pm-core.
 set -euo pipefail
 CORE="http://127.0.0.1:${PM_CORE_PORT:-8080}"
@@ -72,6 +73,40 @@ echo "      authorized_amount=$(printf '%s' "$dec" | j "['car']['authorized_amou
 expect "second decide by the owner is 409" 409 "$(call POST "/api/v1/cars/$car_id/decide" alice.owner '{"decision":"approve"}')" >/dev/null
 expect "former approver lost read once the chain closed (403)" 403 "$(call POST "/api/v1/cars/$car_id/decide" evan.exec '{"decision":"approve"}')" >/dev/null
 expect "non-member cannot read the CAR (403)" 403 "$(call GET "/api/v1/cars/$car_id" nobody.check)" >/dev/null
+# E-signature (FSD §08, §10): 42M is above car.esign.required_above, so an envelope was requested; pm-workers
+# creates it at the Sigi module, every approver "signs" through the stub's dev endpoint, and pm-workers
+# captures the signed PDF to the object store with its SHA-256.
+SIGI="http://127.0.0.1:${PM_SIGI_HTTP_PORT:-7091}"
+sig=$(expect "signature requested" 200 "$(call GET "/api/v1/cars/$car_id/signature" alice.owner)")
+[[ "$(printf '%s' "$sig" | j "['mode']")" == "esignature" ]] || { echo "FAIL  expected e-signature mode: $sig" >&2; exit 1; }
+deadline=$((SECONDS + TIMEOUT)); ref=""
+while [[ -z "$ref" || "$ref" == "None" ]]; do
+  (( SECONDS < deadline )) || { echo "FAIL  envelope not created at the provider within ${TIMEOUT}s: $sig" >&2; exit 1; }
+  sleep 2
+  sig=$(call GET "/api/v1/cars/$car_id/signature" alice.owner | sed '$d')
+  ref=$(printf '%s' "$sig" | j "['envelope'].get('provider_ref')")
+done
+echo "ok    envelope created at the provider ($ref)"
+for signer in alice.owner bob.finance evan.exec evan.exec; do
+  code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$SIGI/dev/envelopes/$ref/sign?user_id=$signer")
+  [[ "$code" == "200" ]] || { echo "FAIL  stub sign by $signer: http $code" >&2; exit 1; }
+done
+echo "ok    every approver signed at the stub"
+deadline=$((SECONDS + TIMEOUT))
+while :; do
+  sig=$(call GET "/api/v1/cars/$car_id/signature" alice.owner | sed '$d')
+  [[ "$(printf '%s' "$sig" | j "['envelope']['status']")" == "completed" ]] && break
+  (( SECONDS < deadline )) || { echo "FAIL  artifact not captured within ${TIMEOUT}s: $sig" >&2; exit 1; }
+  sleep 2
+done
+sha=$(printf '%s' "$sig" | j "['envelope']['artifact_sha256']")
+echo "ok    signed artifact captured (sha256 $sha)"
+hdr=$(curl -sS -D - -o /tmp/car-check-signed.pdf -H 'X-Dev-Actor: alice.owner' "$CORE/api/v1/cars/$car_id/signed-artifact")
+printf '%s' "$hdr" | grep -q "200" || { echo "FAIL  signed-artifact download: $hdr" >&2; exit 1; }
+[[ "$(shasum -a 256 /tmp/car-check-signed.pdf | cut -d' ' -f1)" == "$sha" ]] || { echo "FAIL  downloaded artifact hash differs from the record" >&2; exit 1; }
+head -c 8 /tmp/car-check-signed.pdf | grep -q "%PDF" || { echo "FAIL  artifact is not a PDF" >&2; exit 1; }
+echo "ok    signed PDF downloaded and verified against the recorded hash"
+expect "non-member cannot fetch the artifact (403)" 403 "$(call GET "/api/v1/cars/$car_id/signed-artifact" nobody.check)" >/dev/null
 expect "seeded draft without estimate is 422" 422 "$(call POST "/api/v1/cars/01900000-0000-7000-8000-00000000e002/submit" alice.owner)" >/dev/null
 expect "audit chain verifies" 200 "$(call GET "/api/v1/audit/verify" alice.owner)" >/dev/null
 

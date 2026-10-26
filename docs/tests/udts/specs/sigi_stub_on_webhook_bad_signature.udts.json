@@ -1,0 +1,29 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.SigiService",
+  "method": "OnWebhook",
+  "request": {
+    "provider": "stub",
+    "body": "e30=",
+    "headers": {
+      "X-Stub-Signature": "bad"
+    }
+  },
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "accepted"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "aee080832009bccefd1c605de8c2995103045b4029013303d4523d974b3164a6"
+  },
+  "metadata": {
+    "description": "OnWebhook never fails the RPC for a bad payload: OK with accepted=false and the reason, so pm-core answers the provider 401 and logs it.",
+    "tags": [
+      "sigi-stub",
+      "contract",
+      "sigi",
+      "webhook"
+    ]
+  }
+}

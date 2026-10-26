@@ -1,0 +1,24 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.SigiService",
+  "method": "DownloadSignedArtifact",
+  "request": {
+    "envelope_id": "udts-unknown"
+  },
+  "expected": {
+    "status_code": "NOT_FOUND"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "aee080832009bccefd1c605de8c2995103045b4029013303d4523d974b3164a6"
+  },
+  "metadata": {
+    "description": "DownloadSignedArtifact (server stream) of an unknown envelope fails with NOT_FOUND on the first receive; a completed envelope streams a PDF (covered by the signing integration test).",
+    "tags": [
+      "sigi-stub",
+      "contract",
+      "sigi",
+      "artifact"
+    ]
+  }
+}

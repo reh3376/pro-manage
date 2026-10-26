@@ -2,8 +2,12 @@
   "unts_version": "1.0.0",
   "artifacts": {
     "docs/inventories/connector_capabilities_inventory.json": {
-      "sha256": "e1c0c247b178b263a7c3a6fb224e0e661c07c580b47ba8a292479b1109e605e0",
+      "sha256": "ee3ebf7af881735c7a5811a73192c2ec10dc313421a1e2ba417c0d8b6ca5dd4c",
       "history": [
+        {
+          "sha256": "e1c0c247b178b263a7c3a6fb224e0e661c07c580b47ba8a292479b1109e605e0",
+          "recorded_at": "2026-10-23T20:24:40Z"
+        },
         {
           "sha256": "5c2295af9bb8753dbb04e2c451f827884064fa4ac9bed8c037669c0c507800d2",
           "recorded_at": "2026-10-22T18:29:08Z"
@@ -13,11 +17,15 @@
           "recorded_at": "2026-10-22T13:29:40Z"
         }
       ],
-      "recorded_at": "2026-10-23T20:24:40Z"
+      "recorded_at": "2026-10-26T14:53:39Z"
     },
     "docs/inventories/grpc_methods_inventory.json": {
-      "sha256": "3544ae8779d83774325624046c6a76c63a0dc39dd3eb9e82d8d545f1e78ee61e",
+      "sha256": "33944e0787b5fb8708a00ea0b290cc5160c42369f055d63165f0ab9aa4296cda",
       "history": [
+        {
+          "sha256": "3544ae8779d83774325624046c6a76c63a0dc39dd3eb9e82d8d545f1e78ee61e",
+          "recorded_at": "2026-10-23T18:49:50Z"
+        },
         {
           "sha256": "16558d17590e5fce1bab611e24207225b8906ab09214910d3382068ffc0294f0",
           "recorded_at": "2026-10-22T18:29:08Z"
@@ -27,7 +35,7 @@
           "recorded_at": "2026-10-22T15:06:07Z"
         }
       ],
-      "recorded_at": "2026-10-23T18:49:50Z"
+      "recorded_at": "2026-10-26T14:53:39Z"
     },
     "docs/inventories/loss_categories_inventory.json": {
       "sha256": "7d1b5310a2e59d03b86b7ac8f68df79427d26df1231538ca4a7d657799aaba53",
@@ -54,8 +62,12 @@
       "recorded_at": "2026-10-22T18:04:54Z"
     },
     "docs/inventories/routes_inventory.json": {
-      "sha256": "bf2c0785de9b649099605e172b8c6a2524ed5cb21512f77acd5e2f24af2499e4",
+      "sha256": "561bfbfe3831a582d2c4cb01cfb6fc79e10da40411671833e2d5b27719686dc6",
       "history": [
+        {
+          "sha256": "bf2c0785de9b649099605e172b8c6a2524ed5cb21512f77acd5e2f24af2499e4",
+          "recorded_at": "2026-10-24T15:45:29Z"
+        },
         {
           "sha256": "d224a4354611aec91a82bbfd39d383a8fb555a540d473d5fa580bf9c7be451ff",
           "recorded_at": "2026-10-23T20:24:40Z"
@@ -63,13 +75,9 @@
         {
           "sha256": "ea6e27d34eeed5b4c10304c80c42a072ddbeb9fa4e858b52b9f7eaaee21d448a",
           "recorded_at": "2026-10-22T18:04:54Z"
-        },
-        {
-          "sha256": "c743782122b8c58b306f7f69396fa2a00b47ec42181d2a62d584656056e80ede",
-          "recorded_at": "2026-10-22T17:31:24Z"
         }
       ],
-      "recorded_at": "2026-10-24T15:45:29Z"
+      "recorded_at": "2026-10-26T14:53:39Z"
     },
     "docs/tests/uats/runners/uats_runner.py": {
       "sha256": "2ae714b57d7ec2692389aabbdc9208d47981c1aaa95ecfbceebea8ea07c945fb",
@@ -155,6 +163,11 @@
       "sha256": "58a92b5ec1b7a7729abe867d75029e905246bf275b6a79749c18d3f2dad966ca",
       "history": [],
       "recorded_at": "2026-10-22T13:29:40Z"
+    },
+    "docs/tests/uats/specs/pm-core/signing.uats.json": {
+      "sha256": "37515ccc14ec30fef48cdfeb955b26f42cc1f1ecc5529acf7aa00eb8fa048704",
+      "history": [],
+      "recorded_at": "2026-10-26T14:53:39Z"
     },
     "docs/tests/uats/specs/pm-core/sites.uats.json": {
       "sha256": "426f515e6c5d69a8c52aa27e09313719429195a77ca5aafc128adb37f9b8071e",
@@ -305,6 +318,46 @@
       "history": [],
       "recorded_at": "2026-10-22T15:06:07Z"
     },
+    "docs/tests/udts/specs/sigi_stub_cancel_envelope_unknown.udts.json": {
+      "sha256": "bc8bcd486e83e2e17c2e5c4733d1944ccd20b113132630ba5d91831c3491c7fb",
+      "history": [],
+      "recorded_at": "2026-10-26T14:53:39Z"
+    },
+    "docs/tests/udts/specs/sigi_stub_connector_capabilities.udts.json": {
+      "sha256": "33027cc2c66eafecb51db13d15a9cf276c007a467fc6b8c7eff17882bedd64dc",
+      "history": [],
+      "recorded_at": "2026-10-26T14:53:39Z"
+    },
+    "docs/tests/udts/specs/sigi_stub_connector_healthcheck.udts.json": {
+      "sha256": "eb05e13242ef977787d7f9ef95150b9ef447e272ec3666b6de24ea7ee17d4a40",
+      "history": [],
+      "recorded_at": "2026-10-26T14:53:39Z"
+    },
+    "docs/tests/udts/specs/sigi_stub_create_envelope.udts.json": {
+      "sha256": "beaef7a7ce9215ad0a871eb91d89f5c706b3b14afa70cdaa5f47849224ceacdf",
+      "history": [],
+      "recorded_at": "2026-10-26T14:53:39Z"
+    },
+    "docs/tests/udts/specs/sigi_stub_create_envelope_missing_subject.udts.json": {
+      "sha256": "6b16b3d50fb298d46f84024bdd32d7b39a8aa174acae2f69998c77946462f8e5",
+      "history": [],
+      "recorded_at": "2026-10-26T14:53:39Z"
+    },
+    "docs/tests/udts/specs/sigi_stub_download_signed_artifact_unknown.udts.json": {
+      "sha256": "22ea88d9b5c5c5f1dc7940130fd030225a4cc02af6e937e51696711da2841d5e",
+      "history": [],
+      "recorded_at": "2026-10-26T14:53:39Z"
+    },
+    "docs/tests/udts/specs/sigi_stub_get_envelope_status_unknown.udts.json": {
+      "sha256": "3e53e8d77884ea2ed68cb19f92452b5954a1468a4a034d17eda6c2666f240dd5",
+      "history": [],
+      "recorded_at": "2026-10-26T14:53:39Z"
+    },
+    "docs/tests/udts/specs/sigi_stub_on_webhook_bad_signature.udts.json": {
+      "sha256": "59364ab56ff0454462e26baef8c0d4f658f53fc793125b9396d17334cb70e0d6",
+      "history": [],
+      "recorded_at": "2026-10-26T14:53:39Z"
+    },
     "docs/tests/uots/runners/uots_runner.py": {
       "sha256": "628afeb11747f7f620c07aa645265ccdc2cd3cae7e0843d58c5a6e3889d7e42b",
       "history": [],
@@ -350,12 +403,17 @@
       ],
       "recorded_at": "2026-10-23T18:49:50Z"
     },
+    "proto/pm/connector/v1/sigi.proto": {
+      "sha256": "aee080832009bccefd1c605de8c2995103045b4029013303d4523d974b3164a6",
+      "history": [],
+      "recorded_at": "2026-10-26T14:53:39Z"
+    },
     "proto/pm/core/v1/version.proto": {
       "sha256": "7beb8417c5f1dda37fa1bbc0cf9635ebe69ef0997e0ac0f7ad205ed13ebf16f5",
       "history": [],
       "recorded_at": "2026-10-22T13:29:40Z"
     }
   },
-  "updated_at": "2026-10-24T15:45:29Z",
-  "count": 53
+  "updated_at": "2026-10-26T14:53:39Z",
+  "count": 63
 }

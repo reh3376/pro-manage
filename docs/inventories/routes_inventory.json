@@ -59,6 +59,30 @@
       "disposition": "active",
       "notes": "Guide on open (\u00a706 GUIDE: warm both spaces, read latest, merge) plus the chain/tier preview; never fails on MDEMG trouble."
     },
+    "pm-core GET /api/v1/cars/{car_id}/signature": {
+      "writers": [
+        "services/pm-core/internal/api/signing.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/signing.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/signing/integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "The CAR's signature mode (attestation below car.esign.required_above, e-signature at or above) and envelope record (budget read)."
+    },
+    "pm-core GET /api/v1/cars/{car_id}/signed-artifact": {
+      "writers": [
+        "services/pm-core/internal/api/signing.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/signing.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/signing/integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Streams the captured signed artifact from the object store with its SHA-256 header (budget read); 404 until captured."
+    },
     "pm-core GET /api/v1/inbox": {
       "writers": [
         "services/pm-core/internal/api/car.go"
@@ -456,6 +480,18 @@
       ],
       "disposition": "active",
       "notes": "Ends the session, revokes the refresh token at the IdP, clears the cookie, returns the end-session URL; 401 without a session."
+    },
+    "pm-core POST /webhooks/sigi/{provider}": {
+      "writers": [
+        "services/pm-core/internal/api/signing.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/signing.uats.json",
+        "scripts/car_check.sh",
+        "services/pm-core/internal/signing/integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Provider webhook: forwarded to the Sigi module for signature verification, then the named envelope is reconciled; 401 when the module rejects it. No session (the provider signs the payload)."
     },
     "pm-frontend GET /api/healthz": {
       "writers": [

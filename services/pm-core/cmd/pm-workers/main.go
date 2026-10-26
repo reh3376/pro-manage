@@ -1,9 +1,9 @@
 // pm-workers runs pro_manage's scheduled jobs and outbox dispatch (FSD §05).
 //
-// Slice 2b: the outbox drainer (feedback and observe to MDEMG through
-// pkg/mdemgadapter) on every tick, with health, readiness, and a /stats view
-// of what it has delivered. SLA ticks, harvest triggers, and Commsi delivery
-// arrive with the features they serve.
+// The outbox drainer (feedback and observe to MDEMG, envelope creation at the
+// Sigi module) and the e-signature reconciliation run on every tick, with
+// health, readiness, and a /stats view. SLA ticks, harvest triggers, and
+// Commsi delivery arrive with the features they serve.
 package main
 
 import (
@@ -16,10 +16,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/blobs"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/config"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/sigi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/outbox"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/secrets"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/signing"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
 	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
@@ -64,6 +68,48 @@ func run() error {
 		host, _ := os.Hostname()
 		drainer = &outbox.Drainer{Store: st, Sink: sink, Log: log, Worker: fmt.Sprintf("%s:%d", host, os.Getpid()),
 			MaxAttempts: int32(cfg.OutboxMaxAttempts), BaseBackoff: cfg.OutboxBaseBackoff}
+
+		// E-signature (FSD §10 Sigi): create envelopes queued by approvals, then reconcile open ones every tick.
+		if cfg.SigiAddr != "" && cfg.AuditChainKey != "" {
+			chain, err := audit.NewChain([]byte(cfg.AuditChainKey))
+			if err != nil {
+				return err
+			}
+			sc, err := sigi.Dial(cfg.SigiAddr, cfg.SigiProvider)
+			if err != nil {
+				return err
+			}
+			defer sc.Close()
+			sign := &signing.Service{Store: st, Chain: chain, Sigi: sc, Tenant: cfg.TenantID, Log: log}
+			if cfg.S3Endpoint != "" {
+				bs, err := blobs.Open(ctx, blobs.Config{Endpoint: cfg.S3Endpoint, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey, Bucket: cfg.S3Bucket, Region: cfg.S3Region})
+				if err != nil {
+					return fmt.Errorf("object store (signed artifacts): %w", err)
+				}
+				sign.Blobs = bs
+				checks["s3"] = bs.Ping
+			}
+			drainer.Signing = sign
+			go func() {
+				t := time.NewTicker(cfg.WorkerTick)
+				defer t.Stop()
+				for {
+					if n, err := sign.Reconcile(ctx, 200); err != nil {
+						log.Error("envelope reconcile", "err", err)
+					} else if n > 0 {
+						log.Debug("envelopes reconciled", "open", n)
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case <-t.C:
+					}
+				}
+			}()
+			log.Info("signing running", "sigi", cfg.SigiAddr, "provider", cfg.SigiProvider, "object_store", sign.Blobs != nil)
+		} else {
+			log.Warn("signing disabled: SIGI_ADDR and AUDIT_CHAIN_KEY are both required; sigi.envelope.create rows will wait")
+		}
 		go drainer.Run(ctx, cfg.WorkerTick)
 		log.Info("outbox drain running", "tick", cfg.WorkerTick.String(), "max_attempts", cfg.OutboxMaxAttempts, "mdemg", cfg.MDEMGBaseURL)
 	}
@@ -85,5 +131,3 @@ func run() error {
 	}
 	return err
 }
-
-var _ = time.Second

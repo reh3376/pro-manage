@@ -24,6 +24,8 @@ x-pm-env: &pm-env
   OIDC_DISCOVERY_URL: http://keycloak:8080/realms/northfield/.well-known/openid-configuration
   OIDC_BACKCHANNEL_BASE: http://keycloak:8080
   IDPI_OIDC_ADDR: idpi-oidc:7080
+  SIGI_ADDR: sigi-stub:7090
+  SIGI_PROVIDER: stub
   # Browser-facing URLs for the login flow (callback base and return_to). Override in .env when
   # localhost is taken on the workstation (e.g. another service on [::1]:8080): PM_PUBLIC_URL=http://127.0.0.1:8080.
   PM_PUBLIC_URL: ${PM_PUBLIC_URL:-http://localhost:${PM_CORE_PORT:-8080}}
@@ -230,6 +232,22 @@ services:
       - "127.0.0.1:${PM_IDPI_HTTP_PORT:-7081}:7081"
     depends_on:
       - keycloak
+
+  sigi-stub:
+    # Sigi_STUB connector module (FSD §10): the development and CI e-signature backend. Envelopes live in
+    # memory; POST /dev/envelopes/{id}/sign on :7091 stands in for a signer; the signed artifact is a real PDF.
+    build:
+      context: ../..
+      dockerfile: connectors/sigi/stub/Dockerfile
+      args:
+        VERSION: ${PM_VERSION:-dev}
+    environment:
+      PM_LOG_FORMAT: ${PM_LOG_FORMAT:-json}
+      SIGI_WEBHOOK_SECRET: ${SIGI_WEBHOOK_SECRET:-stub-webhook-secret}
+      SIGI_GRPC_REFLECTION: ${PM_CORE_GRPC_REFLECTION:-true}
+    ports:
+      - "127.0.0.1:${PM_SIGI_GRPC_PORT:-7090}:7090"
+      - "127.0.0.1:${PM_SIGI_HTTP_PORT:-7091}:7091"
 
   pm-frontend:
     build:

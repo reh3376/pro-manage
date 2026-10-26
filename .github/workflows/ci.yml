@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   go:
-    name: Go (pm-core, pm-workers, stub-mdemg, IdPi_OIDC)
+    name: Go (pm-core, pm-workers, stub-mdemg, IdPi_OIDC, Sigi_STUB)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,12 +35,20 @@ jobs:
           cache-dependency-path: |
             services/pm-core/go.sum
             connectors/idpi/oidc/go.sum
+            connectors/sigi/stub/go.sum
       - run: go mod verify
       - run: go build ./...
       - run: go vet ./...
       - run: go test -race -count=1 ./...
       - name: IdPi_OIDC connector module
         working-directory: connectors/idpi/oidc
+        run: |
+          go mod verify
+          go build ./...
+          go vet ./... && test -z "$(gofmt -l .)"
+          go test -race -count=1 ./...
+      - name: Sigi_STUB connector module
+        working-directory: connectors/sigi/stub
         run: |
           go mod verify
           go build ./...
@@ -157,6 +165,18 @@ jobs:
         env:
           UDTS_IDPI_TARGET: 127.0.0.1:7080
         run: cd connectors/idpi/oidc && go test -count=1 ./tests/udts/
+      - name: UDTS gRPC contracts against Sigi_STUB
+        env:
+          UDTS_SIGI_TARGET: 127.0.0.1:7090
+        run: cd connectors/sigi/stub && go test -count=1 ./tests/udts/
+      - name: Object store and signing integration tests (RustFS + Sigi_STUB + Postgres)
+        env:
+          TEST_DATABASE_URL: postgres://pm:ci-postgres@127.0.0.1:5440/pm_core?sslmode=disable
+          S3_TEST_ENDPOINT: http://127.0.0.1:9100
+          S3_TEST_ACCESS_KEY: rustfsadmin
+          S3_TEST_SECRET_KEY: rustfsadmin
+          SIGI_TEST_ADDR: 127.0.0.1:7090
+        run: cd services/pm-core && go test -tags integration -count=1 ./internal/blobs/ ./internal/signing/
       - name: IdPi_OIDC against the dev Keycloak (tokens, claims to roles, refresh, logout)
         env:
           IDPI_TEST_ISSUER: http://127.0.0.1:8180/realms/northfield

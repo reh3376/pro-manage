@@ -8,13 +8,15 @@ COMPOSE_CI  := docker compose --env-file $(COMPOSE_DIR)/.env.ci -f $(COMPOSE_DIR
 MDEMG       := docker compose --env-file $(COMPOSE_DIR)/.env -f $(COMPOSE_DIR)/docker-compose.mdemg.yml
 GO_DIR      := services/pm-core
 IDPI_DIR    := connectors/idpi/oidc
-GO_MODULES  := $(GO_DIR) $(IDPI_DIR)
+SIGI_DIR    := connectors/sigi/stub
+GO_MODULES  := $(GO_DIR) $(IDPI_DIR) $(SIGI_DIR)
 PY_DIR      := services/pm-sidecar
 FE_DIR      := apps/pm-frontend
 VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 GIT_SHA     ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 export UDTS_TARGET ?= 127.0.0.1:8090
 export UDTS_IDPI_TARGET ?= 127.0.0.1:7080
+export UDTS_SIGI_TARGET ?= 127.0.0.1:7090
 
 UXTS_PY     := uv run -q --no-project --with requests --with jsonpath-ng python
 UATS_RUNNER := $(UXTS_PY) docs/tests/uats/runners/uats_runner.py
@@ -99,6 +101,7 @@ lint: go-lint py-lint proto-lint ## Run all linters
 go-build: ## Build the Go binaries (pm-core module and every connector module)
 	cd $(GO_DIR) && go build -ldflags "-X github.com/reh3376/pro-manage/services/pm-core/internal/config.Version=$(VERSION) -X github.com/reh3376/pro-manage/services/pm-core/internal/config.GitSHA=$(GIT_SHA)" ./...
 	cd $(IDPI_DIR) && go build ./...
+	cd $(SIGI_DIR) && go build ./...
 
 go-test: ## Go unit tests (race detector on) in every Go module
 	@set -e; for m in $(GO_MODULES); do echo "== go test: $$m"; (cd $$m && go test -race -count=1 ./...); done
@@ -144,9 +147,10 @@ test-uats: ## UATS validate-all for the services against the running dev stack (
 	@set -e; for t in pm-core pm-workers pm-sidecar pm-frontend; do \
 	  echo "== uats: $$t"; $(UATS_RUNNER) validate-all --spec-dir docs/tests/uats/specs/$$t --base-url $$(python3 -c "import os;print(os.environ['PM_'+'$$t'.upper().replace('PM-','').replace('-','_')+'_URL'])"); done
 
-test-udts: ## UDTS gRPC contract specs against the running dev stack (pm-core at UDTS_TARGET, IdPi_OIDC at UDTS_IDPI_TARGET)
+test-udts: ## UDTS gRPC contract specs against the running dev stack (pm-core, IdPi_OIDC, Sigi_STUB at UDTS_*_TARGET)
 	cd $(GO_DIR) && UDTS_TARGET=$(UDTS_TARGET) go test -count=1 -v ./tests/udts/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+contract_test)"
 	cd $(IDPI_DIR) && UDTS_IDPI_TARGET=$(UDTS_IDPI_TARGET) go test -count=1 -v ./tests/udts/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+contract_test)"
+	cd $(SIGI_DIR) && UDTS_SIGI_TARGET=$(UDTS_SIGI_TARGET) go test -count=1 -v ./tests/udts/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+contract_test)"
 
 check-login: ## SSO login end to end through pm-core, IdPi_OIDC, and the dev Keycloak (cookie jar drives the login form)
 	cd $(GO_DIR) && PM_CORE_URL=$(PM_CORE_URL) go test -tags integration -count=1 -v ./tests/login/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+login_test)"

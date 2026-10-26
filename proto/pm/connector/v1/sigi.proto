@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package pm.connector.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// SigiService is the e-signature connector contract (FSD §10 "Sigi"): envelope
+// lifecycle, status, signed-artifact capture, and provider webhooks. pm-core
+// decides what needs a signature (§08 policy, e.g. car.esign.required_above)
+// and keeps the envelope record and the artifact; the module only talks to the
+// provider (DocuSign, Adobe Sign, OneSpan, or the dev stub).
+service SigiService {
+  rpc CreateEnvelope(CreateEnvelopeRequest) returns (CreateEnvelopeResponse);
+  rpc GetEnvelopeStatus(GetEnvelopeStatusRequest) returns (GetEnvelopeStatusResponse);
+  rpc CancelEnvelope(CancelEnvelopeRequest) returns (CancelEnvelopeResponse);
+  rpc DownloadSignedArtifact(DownloadSignedArtifactRequest) returns (stream DownloadSignedArtifactResponse);
+  rpc OnWebhook(OnWebhookRequest) returns (OnWebhookResponse);
+}
+
+// Envelope statuses as pm-core sees them, whatever the provider calls them.
+enum EnvelopeStatus {
+  ENVELOPE_STATUS_UNSPECIFIED = 0;
+  ENVELOPE_STATUS_CREATED = 1;    // accepted by the provider, not yet sent to signers
+  ENVELOPE_STATUS_SENT = 2;       // signers notified; some may have signed
+  ENVELOPE_STATUS_COMPLETED = 3;  // every signer signed; the artifact can be downloaded
+  ENVELOPE_STATUS_DECLINED = 4;   // a signer declined
+  ENVELOPE_STATUS_VOIDED = 5;     // cancelled by pm-core or the provider
+  ENVELOPE_STATUS_EXPIRED = 6;
+}
+
+message Signer {
+  string user_id = 1;             // pro_manage login handle
+  string email = 2;
+  string name = 3;
+  int32 order = 4;                // signing order (1-based); equal orders sign in parallel
+  string role = 5;                // workflow role the signature stands for (project_owner, vp_finance, ...)
+}
+
+message SignerStatus {
+  Signer signer = 1;
+  string status = 2;              // pending | signed | declined
+  google.protobuf.Timestamp signed_at = 3;
+}
+
+message CreateEnvelopeRequest {
+  string subject_type = 1;        // capital_authorization | change_request | closeout | ...
+  string subject_id = 2;
+  string title = 3;               // e.g. "CAR CR-2457 Still House 2 column still, 42,000,000.00 USD"
+  bytes document = 4;             // the document to sign; PDF when the caller has one, else text the module renders
+  string document_media_type = 5; // application/pdf | text/plain
+  repeated Signer signers = 6;
+  string template = 7;            // provider template id (§10 config knob), optional
+  map<string, string> metadata = 8;  // provider custom fields (project code, amount, ...)
+  string idempotency_key = 9;     // pm-core's key (the audit id); a repeat returns the same envelope
+}
+
+message CreateEnvelopeResponse {
+  string envelope_id = 1;         // provider's id, opaque to pm-core
+  EnvelopeStatus status = 2;
+  repeated string signing_urls = 3;  // per signer, when the provider issues embedded signing links
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message GetEnvelopeStatusRequest {
+  string envelope_id = 1;
+}
+
+message GetEnvelopeStatusResponse {
+  string envelope_id = 1;
+  EnvelopeStatus status = 2;
+  repeated SignerStatus signers = 3;
+  google.protobuf.Timestamp completed_at = 4;
+  string artifact_sha256 = 5;     // set once completed; pm-core verifies the download against it
+  string detail = 6;
+}
+
+message CancelEnvelopeRequest {
+  string envelope_id = 1;
+  string reason = 2;
+}
+
+message CancelEnvelopeResponse {
+  EnvelopeStatus status = 1;
+}
+
+message DownloadSignedArtifactRequest {
+  string envelope_id = 1;
+}
+
+message DownloadSignedArtifactResponse {
+  bytes chunk = 1;
+  string media_type = 2;          // on the first chunk
+  int64 total_bytes = 3;          // on the first chunk, when known
+}
+
+message OnWebhookRequest {
+  string provider = 1;            // docusign | adobe_sign | onespan | stub
+  bytes body = 2;                 // the raw provider payload, verified by the module with its webhook secret
+  map<string, string> headers = 3;  // signature headers the provider sent
+}
+
+message OnWebhookResponse {
+  bool accepted = 1;              // signature verified and payload understood
+  string envelope_id = 2;
+  EnvelopeStatus status = 3;      // the status the webhook reports (pm-core reconciles with GetEnvelopeStatus)
+  string detail = 4;
+}
