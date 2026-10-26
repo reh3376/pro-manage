@@ -1,0 +1,27 @@
+# Module manifest (FSD §15). Commsi_SMTP delivers pm-core's notifications as email over SMTP:
+# Mailpit in the dev stack, the company relay in production.
+module: Commsi_SMTP
+type: Commsi
+code: SMTP
+version: 0.1.0
+contract: pm.connector.v1.CommsiService >= 1.0, < 2.0
+runtime: go
+image: pm-commsi-smtp
+capabilities:
+  - notification_send
+  - digest_send
+  - dedupe_window
+  - deep_links
+config_schema:
+  smtp_host:       { type: string, required: true }
+  smtp_port:       { type: integer, default: 587 }
+  smtp_starttls:   { type: bool, default: true }       # false for Mailpit and other plaintext dev relays
+  from_address:    { type: string, required: true }   # e.g. pro_manage <no-reply@example>
+  dedupe_window:   { type: duration, default: 10m }   # repeats of a dedupe_key inside the window are dropped (§10)
+  app_base_url:    { type: url, required: false }     # prefix for relative deep links
+secrets:
+  - SMTP_USERNAME   # empty for an unauthenticated relay
+  - SMTP_PASSWORD
+egress:
+  - "<smtp host>:587"
+inbound: []        # delivery receipts (bounces) are not consumed yet (OnDeliveryReceipt answers accepted=false)

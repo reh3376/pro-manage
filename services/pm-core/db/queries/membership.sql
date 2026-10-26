@@ -35,10 +35,10 @@ SELECT * FROM acl_grants WHERE grant_id = $1;
 DELETE FROM acl_grants WHERE grant_id = $1 AND project_id = $2;
 
 -- name: IsOpenStageAssignee :one
--- Workflow roles grant the read access a stage needs (§04): true while the user sits on an open stage of an in-flight workflow on the project.
+-- Workflow roles grant the read access a stage needs (§04): true while the user sits on the current, open stage of an in-flight workflow on the project.
 SELECT EXISTS (
     SELECT 1 FROM approval_stages s JOIN approval_workflows w ON w.workflow_id = s.workflow_id
-    WHERE w.tenant_id = $1 AND w.project_id = $2 AND w.status = 'in_flight' AND s.completed_at IS NULL AND $3::text = ANY (s.assignees)
+    WHERE w.tenant_id = $1 AND w.project_id = $2 AND w.status = 'in_flight' AND w.current_stage = s.stage_order AND s.completed_at IS NULL AND $3::text = ANY (s.assignees)
 ) AS assigned;
 
 -- name: ListVisibleProjects :many
@@ -50,6 +50,6 @@ WHERE p.tenant_id = $1
     sqlc.arg(see_all)::boolean
     OR EXISTS (SELECT 1 FROM project_members m WHERE m.project_id = p.project_id AND m.user_id = sqlc.arg(user_id)::text AND (m.expires_at IS NULL OR m.expires_at > now()))
     OR EXISTS (SELECT 1 FROM approval_stages s JOIN approval_workflows w ON w.workflow_id = s.workflow_id
-               WHERE w.project_id = p.project_id AND w.status = 'in_flight' AND s.completed_at IS NULL AND sqlc.arg(user_id)::text = ANY (s.assignees))
+               WHERE w.project_id = p.project_id AND w.status = 'in_flight' AND w.current_stage = s.stage_order AND s.completed_at IS NULL AND sqlc.arg(user_id)::text = ANY (s.assignees))
   )
 ORDER BY p.code;

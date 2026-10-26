@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package pm.connector.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// CommsiService is the notification connector contract (FSD §10 "Commsi"):
+// one unified payload pm-core sends for approval prompts, nudges, digests,
+// and alerts, delivered by the module through its channel (SMTP, Teams,
+// Slack). pm-core decides who gets what and when (§08 SLA tick, workflow
+// events); the module owns delivery, per-channel formatting, rate limits,
+// and the dedupe window per (user, notification_kind, subject_id).
+service CommsiService {
+  rpc SendNotification(SendNotificationRequest) returns (SendNotificationResponse);
+  rpc SendDigest(SendDigestRequest) returns (SendDigestResponse);
+  rpc OnDeliveryReceipt(OnDeliveryReceiptRequest) returns (OnDeliveryReceiptResponse);
+}
+
+message Recipient {
+  string user_id = 1;             // pro_manage login handle
+  string email = 2;
+  string name = 3;
+}
+
+// Notification kinds pm-core sends (free-form string so new kinds need no proto change; these are the spine's).
+//   approval.requested   a stage opened for the recipient
+//   approval.nudge       75% of the stage SLA elapsed
+//   approval.overdue     the stage SLA passed
+//   approval.escalated   the stage was escalated after the overdue grace
+//   approval.expired     the workflow expired undecided
+//   approval.decided     the subject was approved or rejected (to the owner)
+//   signature.requested  an e-signature envelope awaits the recipient
+//   alert.operational    platform alert (empty pool, delivery failures, MDEMG down)
+
+message SendNotificationRequest {
+  string kind = 1;
+  string subject_type = 2;        // capital_authorization | workflow | ...
+  string subject_id = 3;
+  repeated Recipient recipients = 4;
+  string subject = 5;             // one line
+  string body_text = 6;           // plain text body
+  string body_html = 7;           // optional HTML alternative
+  string deep_link = 8;           // where the action lives (the inbox or the subject's page)
+  string dedupe_key = 9;          // pm-core's key; the module drops a repeat inside its window
+  map<string, string> metadata = 10;  // project code, amount, due time, ... for channel templates
+  google.protobuf.Timestamp due_at = 11;  // when the action is due, if any
+}
+
+message SendNotificationResponse {
+  string delivery_id = 1;         // the module's id for the delivery (SMTP message id, Teams activity id, ...)
+  string channel = 2;             // smtp | teams | slack
+  string status = 3;              // sent | deduped | rejected
+  string detail = 4;
+}
+
+message DigestItem {
+  string kind = 1;
+  string subject_type = 2;
+  string subject_id = 3;
+  string title = 4;
+  string deep_link = 5;
+  google.protobuf.Timestamp due_at = 6;
+}
+
+message SendDigestRequest {
+  Recipient recipient = 1;
+  string period = 2;              // daily | weekly
+  repeated DigestItem items = 3;
+  string dedupe_key = 4;
+}
+
+message SendDigestResponse {
+  string delivery_id = 1;
+  string channel = 2;
+  string status = 3;
+  string detail = 4;
+}
+
+message OnDeliveryReceiptRequest {
+  string provider = 1;            // smtp | teams | slack
+  bytes body = 2;                 // the raw receipt payload, verified by the module
+  map<string, string> headers = 3;
+}
+
+message OnDeliveryReceiptResponse {
+  bool accepted = 1;
+  string delivery_id = 2;
+  string status = 3;              // delivered | bounced | read
+  string detail = 4;
+}

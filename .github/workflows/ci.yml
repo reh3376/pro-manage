@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   go:
-    name: Go (pm-core, pm-workers, stub-mdemg, IdPi_OIDC, Sigi_STUB)
+    name: Go (pm-core, pm-workers, stub-mdemg, IdPi_OIDC, Sigi_STUB, Commsi_SMTP)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -37,6 +37,7 @@ jobs:
             services/pm-core/go.sum
             connectors/idpi/oidc/go.sum
             connectors/sigi/stub/go.sum
+            connectors/commsi/smtp/go.sum
       - run: go mod verify
       - run: go build ./...
       - run: go vet ./...
@@ -50,6 +51,13 @@ jobs:
           go test -race -count=1 ./...
       - name: Sigi_STUB connector module
         working-directory: connectors/sigi/stub
+        run: |
+          go mod verify
+          go build ./...
+          go vet ./... && test -z "$(gofmt -l .)"
+          go test -race -count=1 ./...
+      - name: Commsi_SMTP connector module
+        working-directory: connectors/commsi/smtp
         run: |
           go mod verify
           go build ./...
@@ -170,6 +178,19 @@ jobs:
         env:
           UDTS_SIGI_TARGET: 127.0.0.1:7090
         run: cd connectors/sigi/stub && go test -count=1 ./tests/udts/
+      - name: UDTS gRPC contracts against Commsi_SMTP
+        env:
+          UDTS_COMMSI_TARGET: 127.0.0.1:7100
+        run: cd connectors/commsi/smtp && go test -count=1 ./tests/udts/
+      - name: Notification and SLA tick integration tests (Commsi_SMTP + Mailpit + Postgres)
+        env:
+          TEST_DATABASE_URL: postgres://pm:ci-postgres@127.0.0.1:5440/pm_core?sslmode=disable
+          COMMSI_TEST_ADDR: 127.0.0.1:7100
+          MAILPIT_TEST_URL: http://127.0.0.1:8026
+          SIGI_TEST_ADDR: 127.0.0.1:7090
+          MDEMG_TEST_URL: http://127.0.0.1:9997
+          MDEMG_TEST_KEY: ci-stub-key
+        run: cd services/pm-core && go test -tags integration -count=1 ./internal/notify/ ./internal/sla/
       - name: Object store and signing integration tests (RustFS + Sigi_STUB + Postgres)
         env:
           TEST_DATABASE_URL: postgres://pm:ci-postgres@127.0.0.1:5440/pm_core?sslmode=disable

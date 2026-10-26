@@ -40,6 +40,9 @@ type ApprovalStage struct {
 	GuidanceID            *string    `json:"guidance_id"`
 	ClassificationVerdict *string    `json:"classification_verdict"`
 	FailTier              *string    `json:"fail_tier"`
+	NudgedAt              *time.Time `json:"nudged_at"`
+	OverdueAt             *time.Time `json:"overdue_at"`
+	EscalatedAt           *time.Time `json:"escalated_at"`
 }
 
 type ApprovalWorkflow struct {

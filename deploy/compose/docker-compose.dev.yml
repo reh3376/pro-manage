@@ -26,6 +26,8 @@ x-pm-env: &pm-env
   IDPI_OIDC_ADDR: idpi-oidc:7080
   SIGI_ADDR: sigi-stub:7090
   SIGI_PROVIDER: stub
+  COMMSI_ADDR: commsi-smtp:7100
+  PM_NOTIFY_FALLBACK_DOMAIN: northfield.example   # dev-header actors have no users row; Mailpit catches everything
   # Browser-facing URLs for the login flow (callback base and return_to). Override in .env when
   # localhost is taken on the workstation (e.g. another service on [::1]:8080): PM_PUBLIC_URL=http://127.0.0.1:8080.
   PM_PUBLIC_URL: ${PM_PUBLIC_URL:-http://localhost:${PM_CORE_PORT:-8080}}
@@ -248,6 +250,28 @@ services:
     ports:
       - "127.0.0.1:${PM_SIGI_GRPC_PORT:-7090}:7090"
       - "127.0.0.1:${PM_SIGI_HTTP_PORT:-7091}:7091"
+
+  commsi-smtp:
+    # Commsi_SMTP connector module (FSD §10): pm-core's notifications as email, into Mailpit (UI on :8026).
+    build:
+      context: ../..
+      dockerfile: connectors/commsi/smtp/Dockerfile
+      args:
+        VERSION: ${PM_VERSION:-dev}
+    environment:
+      PM_LOG_FORMAT: ${PM_LOG_FORMAT:-json}
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_STARTTLS: "false"
+      COMMSI_FROM: "pro_manage <no-reply@northfield.example>"
+      COMMSI_DEDUPE_WINDOW: ${COMMSI_DEDUPE_WINDOW:-10m}
+      PM_FRONTEND_URL: ${PM_FRONTEND_URL:-http://localhost:${PM_FRONTEND_PORT:-3100}}
+      COMMSI_GRPC_REFLECTION: ${PM_CORE_GRPC_REFLECTION:-true}
+    ports:
+      - "127.0.0.1:${PM_COMMSI_GRPC_PORT:-7100}:7100"
+      - "127.0.0.1:${PM_COMMSI_HTTP_PORT:-7101}:7101"
+    depends_on:
+      - mailpit
 
   pm-frontend:
     build:

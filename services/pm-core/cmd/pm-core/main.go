@@ -27,6 +27,7 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/grpcserver"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/notify"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/secrets"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/sessions"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/signing"
@@ -100,7 +101,7 @@ func run() error {
 			}
 		}
 		log.Info("signing configured", "sigi", cfg.SigiAddr, "provider", cfg.SigiProvider, "object_store", sign.Blobs != nil)
-		svc := &domain.Service{Store: st, Chain: chain, Tenant: cfg.TenantID, Gate: gate, Log: log, Signing: sign}
+		svc := &domain.Service{Store: st, Chain: chain, Tenant: cfg.TenantID, Gate: gate, Log: log, Signing: sign, Notifier: &notify.Notifier{Tenant: cfg.TenantID, FallbackDomain: cfg.NotifyFallbackDomain}}
 		a := &api.API{Log: log, Domain: svc, Chain: chain, DevActorHeader: cfg.DevActorHeader, MDEMGBaseURL: cfg.MDEMGBaseURL, Signing: sign}
 		if cfg.MDEMGBaseURL != "" {
 			mc, err := mdemgadapter.New(mdemgadapter.Options{BaseURL: cfg.MDEMGBaseURL, APIKey: cfg.MDEMGAPIKey, ClassifyTimeout: cfg.MDEMGTimeout, UserAgent: "pro-manage/pm-core " + config.Version})

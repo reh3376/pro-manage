@@ -1,0 +1,23 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.ConnectorService",
+  "method": "Capabilities",
+  "request": {},
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "capabilities"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "b9b449c0bb0d2ba6926562bdfa7fca73daa7f902ba4ad3370f15a68499b6bc7c"
+  },
+  "metadata": {
+    "description": "Capabilities reports the manifest (connectors/commsi/smtp/connector.yaml): module Commsi_SMTP and the adjudicated capability list.",
+    "tags": [
+      "commsi-smtp",
+      "contract",
+      "connector",
+      "capabilities"
+    ]
+  }
+}

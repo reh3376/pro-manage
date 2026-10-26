@@ -2,8 +2,12 @@
   "unts_version": "1.0.0",
   "artifacts": {
     "docs/inventories/connector_capabilities_inventory.json": {
-      "sha256": "ee3ebf7af881735c7a5811a73192c2ec10dc313421a1e2ba417c0d8b6ca5dd4c",
+      "sha256": "dae6d0449cf694c48da520ab16f401fa06f2a3819a534f516812bfb38e2998c3",
       "history": [
+        {
+          "sha256": "ee3ebf7af881735c7a5811a73192c2ec10dc313421a1e2ba417c0d8b6ca5dd4c",
+          "recorded_at": "2026-10-26T14:53:39Z"
+        },
         {
           "sha256": "e1c0c247b178b263a7c3a6fb224e0e661c07c580b47ba8a292479b1109e605e0",
           "recorded_at": "2026-10-23T20:24:40Z"
@@ -11,17 +15,17 @@
         {
           "sha256": "5c2295af9bb8753dbb04e2c451f827884064fa4ac9bed8c037669c0c507800d2",
           "recorded_at": "2026-10-22T18:29:08Z"
-        },
-        {
-          "sha256": "febe4b3801cc46367f5e80ebc5102ff80dfbf7ad9014db34b30eb4e4efd21ac5",
-          "recorded_at": "2026-10-22T13:29:40Z"
         }
       ],
-      "recorded_at": "2026-10-26T14:53:39Z"
+      "recorded_at": "2026-10-26T15:29:54Z"
     },
     "docs/inventories/grpc_methods_inventory.json": {
-      "sha256": "33944e0787b5fb8708a00ea0b290cc5160c42369f055d63165f0ab9aa4296cda",
+      "sha256": "b5c03f2c5a73d1951d36e39f1f136782f8e438c28f71b0be83dd8f84059d33db",
       "history": [
+        {
+          "sha256": "33944e0787b5fb8708a00ea0b290cc5160c42369f055d63165f0ab9aa4296cda",
+          "recorded_at": "2026-10-26T14:53:39Z"
+        },
         {
           "sha256": "3544ae8779d83774325624046c6a76c63a0dc39dd3eb9e82d8d545f1e78ee61e",
           "recorded_at": "2026-10-23T18:49:50Z"
@@ -29,13 +33,9 @@
         {
           "sha256": "16558d17590e5fce1bab611e24207225b8906ab09214910d3382068ffc0294f0",
           "recorded_at": "2026-10-22T18:29:08Z"
-        },
-        {
-          "sha256": "a59d1e19d1db8c98e6014950ae33d985c91b011fd7c822a866de02d190118812",
-          "recorded_at": "2026-10-22T15:06:07Z"
         }
       ],
-      "recorded_at": "2026-10-26T14:53:39Z"
+      "recorded_at": "2026-10-26T15:29:54Z"
     },
     "docs/inventories/loss_categories_inventory.json": {
       "sha256": "7d1b5310a2e59d03b86b7ac8f68df79427d26df1231538ca4a7d657799aaba53",
@@ -48,8 +48,12 @@
       "recorded_at": "2026-10-22T13:29:40Z"
     },
     "docs/inventories/policy_variables_inventory.json": {
-      "sha256": "53a211745d286aec2534d179de430fb526ab3edb5aba576a9403ede85c4445e9",
+      "sha256": "faf2d36577e11b769086963da5ed9318cfe1f7ac8be8163822af2f69689b8876",
       "history": [
+        {
+          "sha256": "53a211745d286aec2534d179de430fb526ab3edb5aba576a9403ede85c4445e9",
+          "recorded_at": "2026-10-22T18:04:54Z"
+        },
         {
           "sha256": "5a4ed9056ec8a3275858e1557e4162f389c3f86d62b838bb855195c5eb75f884",
           "recorded_at": "2026-10-22T14:15:38Z"
@@ -59,7 +63,7 @@
           "recorded_at": "2026-10-22T13:29:40Z"
         }
       ],
-      "recorded_at": "2026-10-22T18:04:54Z"
+      "recorded_at": "2026-10-26T15:29:54Z"
     },
     "docs/inventories/routes_inventory.json": {
       "sha256": "561bfbfe3831a582d2c4cb01cfb6fc79e10da40411671833e2d5b27719686dc6",
@@ -238,6 +242,31 @@
       "history": [],
       "recorded_at": "2026-10-22T15:06:07Z"
     },
+    "docs/tests/udts/specs/commsi_smtp_connector_capabilities.udts.json": {
+      "sha256": "a59260953b73d5ebcd86094fa9ea62e28e6fa2c353314bf04c19f4e4648a4776",
+      "history": [],
+      "recorded_at": "2026-10-26T15:29:54Z"
+    },
+    "docs/tests/udts/specs/commsi_smtp_connector_healthcheck.udts.json": {
+      "sha256": "0d7d051bb82e5c46297ce3683b895ec03cd3f6cc219eb43de80380d50dc76777",
+      "history": [],
+      "recorded_at": "2026-10-26T15:29:54Z"
+    },
+    "docs/tests/udts/specs/commsi_smtp_on_delivery_receipt.udts.json": {
+      "sha256": "33181b459ac0e8ca5301cace64b4f879b2c14f2456049ab76844947441db6d70",
+      "history": [],
+      "recorded_at": "2026-10-26T15:29:54Z"
+    },
+    "docs/tests/udts/specs/commsi_smtp_send_digest_no_recipient.udts.json": {
+      "sha256": "58a5b22e4ddb7688aac05aabef7b8f1aa895b19ce514c25491c4f1e0ef6963e7",
+      "history": [],
+      "recorded_at": "2026-10-26T15:29:54Z"
+    },
+    "docs/tests/udts/specs/commsi_smtp_send_notification_no_recipient.udts.json": {
+      "sha256": "4d08f3900399224970c5b1f8e9ea85dd93120570c75fabfa571720c16d7f5663",
+      "history": [],
+      "recorded_at": "2026-10-26T15:29:54Z"
+    },
     "docs/tests/udts/specs/idpi_oidc_authenticate_interactive.udts.json": {
       "sha256": "be03803c884910c82d3778f51106322a94be2da1b300421336d3938170b94c4f",
       "history": [
@@ -388,6 +417,11 @@
       "history": [],
       "recorded_at": "2026-10-22T13:29:40Z"
     },
+    "proto/pm/connector/v1/commsi.proto": {
+      "sha256": "d990c71e6d39f07cfc468457b91107361f05ee3a35f9f7cbbead67046013f8b4",
+      "history": [],
+      "recorded_at": "2026-10-26T15:29:54Z"
+    },
     "proto/pm/connector/v1/connector.proto": {
       "sha256": "b9b449c0bb0d2ba6926562bdfa7fca73daa7f902ba4ad3370f15a68499b6bc7c",
       "history": [],
@@ -414,6 +448,6 @@
       "recorded_at": "2026-10-22T13:29:40Z"
     }
   },
-  "updated_at": "2026-10-26T14:53:39Z",
-  "count": 63
+  "updated_at": "2026-10-26T15:29:54Z",
+  "count": 69
 }

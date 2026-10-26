@@ -3,7 +3,7 @@
 # running dev stack: estimate -> committed promise -> full CAR -> guide on open renders a card ->
 # preclassify -> submit (classify round-trip, AuditEvent + GuidanceOutcome written) -> every stage
 # approved by its pool -> CAR approved -> envelope at the Sigi module, signed, captured as a PDF ->
-# feedback and observe rows drained by pm-workers.
+# approval request and outcome mails through Commsi_SMTP into Mailpit -> feedback and observe rows drained.
 # Needs the Northfield seed (make db-seed) and a stub or live MDEMG behind pm-core.
 set -euo pipefail
 CORE="http://127.0.0.1:${PM_CORE_PORT:-8080}"
@@ -58,6 +58,17 @@ sub=$(expect "submit" 200 "$(call POST "/api/v1/cars/$car_id/submit" alice.owner
 audit_id=$(printf '%s' "$sub" | j "['governance']['audit_id']")
 echo "      audit_id=$audit_id user_response=$(printf '%s' "$sub" | j "['governance']['user_response']")"
 
+# Notifications (FSD §10 Commsi): the submit queued an approval request to the stage-1 assignee; pm-workers
+# delivers it through Commsi_SMTP into Mailpit.
+MAILPIT="http://127.0.0.1:${PM_MAILPIT_UI_PORT:-8026}"
+deadline=$((SECONDS + TIMEOUT))
+while :; do
+  hits=$(curl -fsS "$MAILPIT/api/v1/search?query=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "CR-CHECK-$run awaits your decision")" | j "['total']")
+  [[ "${hits:-0}" -ge 1 ]] && break
+  (( SECONDS < deadline )) || { echo "FAIL  approval request mail not delivered within ${TIMEOUT}s" >&2; exit 1; }
+  sleep 2
+done
+echo "ok    approval request delivered to Mailpit"
 outcomes=$(expect "guidance outcomes" 200 "$(call GET "/api/v1/projects/$PROJECT/guidance-outcomes?limit=5" alice.owner)")
 [[ "$(printf '%s' "$outcomes" | j "['items'][0]['audit_id']")" == "$audit_id" ]] || { echo "FAIL  GuidanceOutcome not written with the AuditEvent" >&2; exit 1; }
 
@@ -122,4 +133,7 @@ while :; do
   (( SECONDS < deadline )) || { echo "FAIL  outbox not drained within ${TIMEOUT}s: $stats" >&2; exit 1; }
   sleep 2
 done
+hits=$(curl -fsS "$MAILPIT/api/v1/search?query=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "CR-CHECK-$run approved")" | j "['total']")
+[[ "${hits:-0}" -ge 1 ]] || { echo "FAIL  the owner's approval mail is missing from Mailpit" >&2; exit 1; }
+echo "ok    outcome mail delivered to the owner"
 echo "PASS  toy CAR end to end (CR-CHECK-$run)"

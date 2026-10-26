@@ -19,6 +19,7 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/db"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/notify"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/outbox"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/signing"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
@@ -75,6 +76,20 @@ type Service struct {
 	// Signing requests e-signature envelopes on final approvals (§08, §10); nil means
 	// every approval is attested by its audit row alone.
 	Signing *signing.Service
+	// Notifier enqueues Commsi notifications for workflow events (§08, §10); nil means none are sent.
+	Notifier *notify.Notifier
+}
+
+// notifyTx enqueues a notification inside q's transaction; recipients without an email are logged, never fatal.
+func (s *Service) notifyTx(ctx context.Context, q *db.Queries, n notify.Notification) error {
+	if s.Notifier == nil {
+		return nil
+	}
+	_, skipped, err := s.Notifier.Enqueue(ctx, q, n)
+	if len(skipped) > 0 {
+		s.logger().Warn("notification recipients without email skipped", "kind", n.Kind, "skipped", skipped)
+	}
+	return err
 }
 
 func (s *Service) gate() *governance.Gate {

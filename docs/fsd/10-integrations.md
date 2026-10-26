@@ -272,13 +272,14 @@ Where the company or its EPCM runs an EDMS (Aconex, ProjectWise, IFS Document Ma
 Deliver notifications (approval prompts, overdue nudges, digests, alerts, dashboard shares) through channels users already use.
 
 ### gRPC interface (summary)
-- `HealthCheck`, `Capabilities`
-- `SendNotification(SendRequest) → SendResult` (unified payload across channels)
-- `SendDigest(DigestRequest) → SendResult` (batched)
-- `OnDeliveryReceipt(Receipt) → Ack` (for channels that support it)
+The contract is `proto/pm/connector/v1/commsi.proto` (`pm.connector.v1.CommsiService`, slice 7, 2026-10-26); message names follow buf's standard.
+- `HealthCheck`, `Capabilities` (ConnectorService)
+- `SendNotification` (one unified payload: kind, subject, recipients with emails resolved by pm-core, subject line, text and optional HTML body, deep link, dedupe key, metadata, due time)
+- `SendDigest` (batched items for one recipient)
+- `OnDeliveryReceipt` (for channels that have receipts; SMTP answers `accepted=false`)
 
 ### Year-one backends
-- `Commsi_SMTP` (email)
+- `Commsi_SMTP` (email; built in slice 7 at `connectors/commsi/smtp`: plain or STARTTLS with PLAIN auth, a dedupe window per key, deep links prefixed with the frontend URL; Mailpit in the dev stack)
 - `Commsi_TEAMS` (Microsoft Teams via adaptive cards + bot or webhook)
 - `Commsi_SLACK` (Slack API + blocks)
 

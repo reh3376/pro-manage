@@ -153,7 +153,7 @@ func (q *Queries) InsertGrant(ctx context.Context, arg InsertGrantParams) (AclGr
 const isOpenStageAssignee = `-- name: IsOpenStageAssignee :one
 SELECT EXISTS (
     SELECT 1 FROM approval_stages s JOIN approval_workflows w ON w.workflow_id = s.workflow_id
-    WHERE w.tenant_id = $1 AND w.project_id = $2 AND w.status = 'in_flight' AND s.completed_at IS NULL AND $3::text = ANY (s.assignees)
+    WHERE w.tenant_id = $1 AND w.project_id = $2 AND w.status = 'in_flight' AND w.current_stage = s.stage_order AND s.completed_at IS NULL AND $3::text = ANY (s.assignees)
 ) AS assigned
 `
 
@@ -163,7 +163,7 @@ type IsOpenStageAssigneeParams struct {
 	Column3   string     `json:"column_3"`
 }
 
-// Workflow roles grant the read access a stage needs (§04): true while the user sits on an open stage of an in-flight workflow on the project.
+// Workflow roles grant the read access a stage needs (§04): true while the user sits on the current, open stage of an in-flight workflow on the project.
 func (q *Queries) IsOpenStageAssignee(ctx context.Context, arg IsOpenStageAssigneeParams) (bool, error) {
 	row := q.db.QueryRow(ctx, isOpenStageAssignee, arg.TenantID, arg.ProjectID, arg.Column3)
 	var assigned bool
@@ -286,7 +286,7 @@ WHERE p.tenant_id = $1
     $3::boolean
     OR EXISTS (SELECT 1 FROM project_members m WHERE m.project_id = p.project_id AND m.user_id = $4::text AND (m.expires_at IS NULL OR m.expires_at > now()))
     OR EXISTS (SELECT 1 FROM approval_stages s JOIN approval_workflows w ON w.workflow_id = s.workflow_id
-               WHERE w.project_id = p.project_id AND w.status = 'in_flight' AND s.completed_at IS NULL AND $4::text = ANY (s.assignees))
+               WHERE w.project_id = p.project_id AND w.status = 'in_flight' AND w.current_stage = s.stage_order AND s.completed_at IS NULL AND $4::text = ANY (s.assignees))
   )
 ORDER BY p.code
 `
