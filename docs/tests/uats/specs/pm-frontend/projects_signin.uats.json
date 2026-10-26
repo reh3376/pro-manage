@@ -1,0 +1,58 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-frontend persona screens sign-in edge",
+    "base_url": "${PM_FRONTEND_URL:-http://127.0.0.1:3100}",
+    "service": "pm-frontend",
+    "tags": [
+      "pm-frontend",
+      "auth",
+      "screens"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-26",
+    "description": "The persona screens (projects, project page, CAR form, approval screen, inbox) render server-side from pm-core with the browser's pm_session cookie. Without one, pm-core answers 401 and the page redirects to pm-core's sign-in carrying the page as return_to. The signed-in walk is tests/login/screens_test.go.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 15000,
+    "follow_redirects": false,
+    "sha256": "717ed7ebeda31c7f643f032480cd0536b1cffec79e01be6901e0e4635d91b368"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/projects"
+  },
+  "expected": {
+    "status": 307,
+    "headers": {
+      "location": {
+        "op": "contains",
+        "expected": "/auth/login?return_to="
+      }
+    },
+    "body_assertions": []
+  },
+  "variants": [
+    {
+      "name": "inbox_redirects_to_signin",
+      "request": {
+        "path": "/inbox"
+      },
+      "expected": {
+        "status": 307,
+        "headers": {
+          "location": {
+            "op": "contains",
+            "expected": "/auth/login?return_to="
+          }
+        },
+        "body_assertions": []
+      }
+    }
+  ]
+}

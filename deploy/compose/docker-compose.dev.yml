@@ -281,6 +281,7 @@ services:
       PM_WORKERS_URL: http://pm-workers:8081
       PM_SIDECAR_URL: http://pm-sidecar:7070
       PM_CORE_PUBLIC_URL: ${PM_PUBLIC_URL:-http://localhost:${PM_CORE_PORT:-8080}}
+      PM_FRONTEND_URL: ${PM_FRONTEND_URL:-http://localhost:${PM_FRONTEND_PORT:-3100}}
       PM_VERSION: ${PM_VERSION:-dev}
     ports:
       - "127.0.0.1:${PM_FRONTEND_PORT:-3100}:3100"

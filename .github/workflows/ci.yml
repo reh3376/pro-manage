@@ -207,7 +207,7 @@ jobs:
       - name: SSO login end to end (pm-core -> IdPi_OIDC -> Keycloak login form -> session -> /api/v1 -> logout)
         env:
           PM_CORE_URL: http://127.0.0.1:8080
-        run: cd services/pm-core && go test -tags integration -count=1 ./tests/login/
+        run: cd services/pm-core && go test -tags integration -count=1 -run SSOLogin ./tests/login/
       - name: MDEMG adapter integration tests (against the stub)
         env:
           MDEMG_TEST_URL: http://127.0.0.1:9997
@@ -223,6 +223,13 @@ jobs:
         run: cd services/pm-core && go test -tags integration -count=1 ./internal/domain/
       - name: Toy CAR end to end (Phase 0 exit test through the REST edge)
         run: scripts/car_check.sh
+      - name: Persona screens end to end (sign in as the project owner; projects, project page, CAR form, approval screen with chain and audit, inbox)
+        env:
+          PM_CORE_URL: http://127.0.0.1:8080
+          PM_FRONTEND_URL: http://127.0.0.1:3100
+          LOGIN_USER: alice.owner
+          SCREENS_EXPECT_CHAIN: "1"
+        run: cd services/pm-core && go test -tags integration -count=1 -run PersonaScreens ./tests/login/
       - name: UATS against the stub MDEMG (MDEMG field-shape pins)
         env:
           MDEMG_API_KEY: ci-stub-key

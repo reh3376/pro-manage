@@ -71,6 +71,10 @@ Slice 6 runs the whole envelope lifecycle against `Sigi_STUB`. `Sigi_DS` impleme
 
 Slice 5 enforces section-level grants. Still to come as the layers that need them arrive: document grants (`scope_kind = document`, with `document_tag:`), field grants with response projection (the reserved sensitive namespace of `§04`), contributor scoping by `Contract` across the package-family endpoints with USTS specs per endpoint, Postgres row-level security keyed on `project_id` as defense in depth, and the weekly expiring-grants notice to owners.
 
+### B-16 Persona screens: what slice 8 left for the layers
+
+The screens render server-side and re-render after every action, which is right for the spine but leaves: live refresh of the inbox and the chain over SSE (`§09`), team and grant management on the project page (members and grants are read-only there; the REST routes exist), the inbox naming a CAR by its code rather than its id (the open-stages query carries only the subject id), a content security policy and the hardened `pm-frontend-public` split (`§05`), the signed-PDF link going through the frontend rather than straight to pm-core, and a client-side error boundary that keeps the shell when pm-core is down. Pull each when a pilot persona asks for it.
+
 ### B-11 Re-key attribution to user_id
 
 Audit rows (`actor_user_id`), `projects.owner_user_id`, `approver_pools.user_id`, and stage assignees key on the login handle (`preferred_username`). The IdP subject is the stable identity (`users.external_id`, `users.user_id`). Before the pilot: a migration that adds `actor_id uuid` beside the handle, backfills from `users`, and makes the handle a display value, so a renamed account keeps its history.
