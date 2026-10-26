@@ -1,5 +1,5 @@
 # CodeQL static analysis for the public repository (backlog B-01).
-# Runs on pushes to main and pro-dev01, on pull requests, and weekly, over
+# Runs on pushes to main and pro-dev01 (once per commit; the bot-opened PR would only duplicate it) and weekly, over
 # Go, JavaScript/TypeScript, Python, and the Actions workflows themselves.
 # Made a required check once it has run clean on main.
 name: codeql
@@ -7,8 +7,6 @@ name: codeql
 on:
   push:
     branches: [main, pro-dev01]
-  pull_request:
-    branches: [main]
   schedule:
     - cron: "17 6 * * 1"   # Mondays 06:17 UTC
 

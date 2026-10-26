@@ -5,13 +5,14 @@
 # is a local pre-merge step (`make test-uats-live`, arriving with slice 0b).
 name: ci
 
-# Runs on every push (the PR is opened by github-actions[bot], whose
-# pull_request runs would otherwise wait for manual approval) and on
-# pull_request events. Checks attach to the commit, so the PR shows them.
+# Runs once per commit, on push to any branch. The PR is opened by
+# github-actions[bot], so a pull_request run would duplicate the push run
+# (and sit in "action required" until approved); checks attach to the commit,
+# so the PR shows the push run. Pull requests from forks are not expected in
+# this single-owner repository; if one arrives, re-add `pull_request` for it.
 on:
   push:
     branches: ["**"]
-  pull_request:
 
 concurrency:
   group: ci-${{ github.ref }}
