@@ -85,7 +85,7 @@ make hooks        # install the pre-commit gate (same checks as CI, before every
 make help         # everything else
 ```
 
-Then `make db-seed` loads the Northfield Spirits Co. data (two sites, five projects, the starter policy variables, the approver pools for the dev users, and one approved CAR of history). The API is at `http://localhost:8080/api/v1`. Sign in through the frontend's link or `http://localhost:8080/auth/login` (the dev Keycloak users, password `northfield-dev`); the `pm_session` cookie then authenticates every call. In development and CI the `X-Dev-Actor` header still names an acting user directly (`PM_DEV_ACTOR_HEADER`), which is what the examples below use:
+Then `make db-seed` loads the Northfield Spirits Co. data (two sites, five projects, the starter policy variables, the approver pools for the dev users, and one approved CAR of history). The API is at `http://localhost:8080/api/v1`. Sign in through the frontend's link or `http://localhost:8080/auth/login` (the dev Keycloak users, password `northfield-dev`); the `pm_session` cookie then authenticates every call. In development and CI the `X-Dev-Actor` header still names an acting user directly and `X-Dev-Roles` lists platform roles (`PM_DEV_ACTOR_HEADER`), which is what the examples below use. Access follows FSD §04: the project's owner sees everything, members see what their base role and grants allow, and `GET /api/v1/projects/{id}/access` shows the caller's effective permission per section:
 
 ```bash
 curl -s -H 'X-Dev-Actor: alice.owner' localhost:8080/api/v1/projects | jq '.items[].code'
@@ -93,6 +93,7 @@ curl -s -H 'X-Dev-Actor: alice.owner' localhost:8080/api/v1/projects/01900000-00
 curl -s -H 'X-Dev-Actor: alice.owner' localhost:8080/api/v1/audit/verify
 curl -s -H 'X-Dev-Actor: alice.owner' localhost:8080/api/v1/cars/01900000-0000-7000-8000-00000000e002/guidance | jq '.guidance.items, .preview.chain'
 curl -s -H 'X-Dev-Actor: bob.finance' localhost:8080/api/v1/inbox
+curl -s -H 'X-Dev-Actor: fay.ops' localhost:8080/api/v1/projects/01900000-0000-7000-8000-00000000b001/access | jq .sections
 ```
 
 The governed action today is the CAR (`POST /api/v1/projects/{id}/cars`, then `/cars/{id}/guidance`, `/preclassify`, `/submit`, `/decide`): guide on open from both MDEMG spaces, classify on submit under the kind's fail-closed tier (`mdemg.tier.approval.car`), the chain of §08 built from the policy snapshot, every decision audited, and the `GuidanceOutcome` written with the `AuditEvent`. `scripts/car_check.sh` walks it end to end and is what CI runs.
@@ -113,7 +114,7 @@ Layout: `services/pm-core` (Go: `cmd/pm-core`, `cmd/pm-workers`, `cmd/stub-mdemg
 
 ## Status
 
-The FSD and roadmap are ratified and the **thin spine** is being built under Scenario A (owner plus AI collaborator), one reviewed PR per slice on `pro-dev01`. Landed so far: the monorepo scaffold and compose stack (0a), the UxTS gates (0b), pm-core with Sites, Projects, policy variables and the hash-chained audit log (1a), the gRPC surface with UDTS (1b), `pkg/mdemgadapter` (2a), the Postgres outbox and pm-workers drain (2b), the toy CAR end to end with the governance gate (3), the connector contract with the `IdPi_OIDC` module against the dev Keycloak (4a), and SSO sign-in with just-in-time users, Redis sessions, and approver pools from IdP claims (4b). The roadmap's Phase 0 exit test (a CAR approval that renders a guidance card, classifies on submit, writes the AuditEvent with its GuidanceOutcome, and dispatches feedback) runs in CI against the stub MDEMG. Next on the spine: project membership and section-level ACL, Sigi, `ERPi_IFS`, Commsi nudges, and the persona screens.
+The FSD and roadmap are ratified and the **thin spine** is being built under Scenario A (owner plus AI collaborator), one reviewed PR per slice on `pro-dev01`. Landed so far: the monorepo scaffold and compose stack (0a), the UxTS gates (0b), pm-core with Sites, Projects, policy variables and the hash-chained audit log (1a), the gRPC surface with UDTS (1b), `pkg/mdemgadapter` (2a), the Postgres outbox and pm-workers drain (2b), the toy CAR end to end with the governance gate (3), the connector contract with the `IdPi_OIDC` module against the dev Keycloak (4a), SSO sign-in with just-in-time users, Redis sessions, and approver pools from IdP claims (4b), and project membership with the section-level ACL of §04 on every project route (5). The roadmap's Phase 0 exit test (a CAR approval that renders a guidance card, classifies on submit, writes the AuditEvent with its GuidanceOutcome, and dispatches feedback) runs in CI against the stub MDEMG. Next on the spine: Sigi (DocuSign envelope on CAR approval), `ERPi_IFS`, Commsi nudges, and the persona screens.
 
 The design keeps iterating under direct dialogue between the owner and an AI collaborator (Claude Code), with decisions captured in each FSD section's **Decisions on record** block and open items under **Open items for Section N**. See [`docs/fsd/roadmap.md`](./docs/fsd/roadmap.md) and [`docs/backlog.md`](./docs/backlog.md).
 

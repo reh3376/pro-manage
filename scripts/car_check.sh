@@ -69,7 +69,9 @@ status=$(printf '%s' "$dec" | j "['car']['status']")
 [[ "$status" == "approved" ]] || { echo "FAIL  CAR is $status after the chain" >&2; exit 1; }
 echo "      authorized_amount=$(printf '%s' "$dec" | j "['car']['authorized_amount']") cumulative=$(printf '%s' "$dec" | j "['cumulative_authorized']")"
 
-expect "second decide is 409" 409 "$(call POST "/api/v1/cars/$car_id/decide" evan.exec '{"decision":"approve"}')" >/dev/null
+expect "second decide by the owner is 409" 409 "$(call POST "/api/v1/cars/$car_id/decide" alice.owner '{"decision":"approve"}')" >/dev/null
+expect "former approver lost read once the chain closed (403)" 403 "$(call POST "/api/v1/cars/$car_id/decide" evan.exec '{"decision":"approve"}')" >/dev/null
+expect "non-member cannot read the CAR (403)" 403 "$(call GET "/api/v1/cars/$car_id" nobody.check)" >/dev/null
 expect "seeded draft without estimate is 422" 422 "$(call POST "/api/v1/cars/01900000-0000-7000-8000-00000000e002/submit" alice.owner)" >/dev/null
 expect "audit chain verifies" 200 "$(call GET "/api/v1/audit/verify" alice.owner)" >/dev/null
 

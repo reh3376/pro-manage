@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/reh3376/pro-manage/services/pm-core/internal/acl"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/domain"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
@@ -37,6 +38,9 @@ func (a *API) createEstimate(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
+	if _, ok := a.authorize(w, r, id, acl.Budget, acl.Write); !ok {
+		return
+	}
 	var in domain.CreateEstimateInput
 	if err := decode(r, &in); err != nil {
 		a.fail(w, r, err)
@@ -56,8 +60,7 @@ func (a *API) listPromises(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
-	if _, err := a.Domain.GetProject(r.Context(), id); err != nil {
-		a.fail(w, r, err)
+	if _, ok := a.authorize(w, r, id, acl.Budget, acl.Read); !ok {
 		return
 	}
 	items, err := a.Domain.ListPromises(r.Context(), id)
@@ -72,6 +75,9 @@ func (a *API) createPromise(w http.ResponseWriter, r *http.Request) {
 	id, err := pathUUID(r, "project_id")
 	if err != nil {
 		a.fail(w, r, err)
+		return
+	}
+	if _, ok := a.authorize(w, r, id, acl.Budget, acl.Write); !ok {
 		return
 	}
 	var in domain.CreatePromiseInput
@@ -93,8 +99,7 @@ func (a *API) listCARs(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
-	if _, err := a.Domain.GetProject(r.Context(), id); err != nil {
-		a.fail(w, r, err)
+	if _, ok := a.authorize(w, r, id, acl.Budget, acl.Read); !ok {
 		return
 	}
 	items, err := a.Domain.ListCARs(r.Context(), id)
@@ -109,6 +114,9 @@ func (a *API) createCAR(w http.ResponseWriter, r *http.Request) {
 	id, err := pathUUID(r, "project_id")
 	if err != nil {
 		a.fail(w, r, err)
+		return
+	}
+	if _, ok := a.authorize(w, r, id, acl.Budget, acl.Write); !ok {
 		return
 	}
 	var in domain.CreateCARInput
@@ -130,8 +138,7 @@ func (a *API) guidanceOutcomes(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
-	if _, err := a.Domain.GetProject(r.Context(), id); err != nil {
-		a.fail(w, r, err)
+	if _, ok := a.authorize(w, r, id, acl.Audit, acl.Read); !ok {
 		return
 	}
 	limit := int32(50)
@@ -154,6 +161,9 @@ func (a *API) getCAR(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
+	if _, ok := a.authorizeCAR(w, r, id, acl.Read); !ok {
+		return
+	}
 	v, err := a.Domain.GetCAR(r.Context(), id)
 	if err != nil {
 		a.fail(w, r, err)
@@ -170,6 +180,9 @@ func (a *API) carGuidance(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
+	if _, ok := a.authorizeCAR(w, r, id, acl.Read); !ok {
+		return
+	}
 	v, err := a.Domain.CARGuidance(r.Context(), actorFrom(r.Context()), id)
 	if err != nil {
 		a.fail(w, r, err)
@@ -182,6 +195,9 @@ func (a *API) preclassifyCAR(w http.ResponseWriter, r *http.Request) {
 	id, err := pathUUID(r, "car_id")
 	if err != nil {
 		a.fail(w, r, err)
+		return
+	}
+	if _, ok := a.authorizeCAR(w, r, id, acl.Write); !ok {
 		return
 	}
 	res, err := a.Domain.PreclassifyCAR(r.Context(), actorFrom(r.Context()), id)
@@ -199,6 +215,9 @@ func (a *API) submitCAR(w http.ResponseWriter, r *http.Request) {
 	id, err := pathUUID(r, "car_id")
 	if err != nil {
 		a.fail(w, r, err)
+		return
+	}
+	if _, ok := a.authorizeCAR(w, r, id, acl.Write); !ok {
 		return
 	}
 	var in domain.SubmitCARInput
@@ -231,6 +250,9 @@ func (a *API) decideCAR(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, err)
 		return
 	}
+	if _, ok := a.authorizeCAR(w, r, id, acl.Read); !ok {
+		return
+	}
 	var in domain.DecideInput
 	if err := decode(r, &in); err != nil {
 		a.fail(w, r, err)
@@ -260,6 +282,9 @@ type poolMemberBody struct {
 }
 
 func (a *API) addPoolMember(w http.ResponseWriter, r *http.Request) {
+	if _, ok := a.requirePlatformRole(w, r, acl.PlatformAdmin); !ok {
+		return
+	}
 	var in poolMemberBody
 	if err := decode(r, &in); err != nil {
 		a.fail(w, r, err)
@@ -279,4 +304,14 @@ func (a *API) addPoolMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"pool": in.Pool, "user_id": in.UserID, "site_id": in.SiteID})
+}
+
+// authorizeCAR resolves the CAR's project and asks for perm on the budget section.
+func (a *API) authorizeCAR(w http.ResponseWriter, r *http.Request, carID uuid.UUID, perm string) (domain.Actor, bool) {
+	v, err := a.Domain.GetCAR(r.Context(), carID)
+	if err != nil {
+		a.fail(w, r, err)
+		return domain.Actor{}, false
+	}
+	return a.authorize(w, r, v.CAR.ProjectID, acl.Budget, perm)
 }

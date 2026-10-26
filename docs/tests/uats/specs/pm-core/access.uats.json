@@ -1,0 +1,533 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core membership and section ACL",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "api",
+      "acl",
+      "membership"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-24",
+    "description": "FSD \u00a704 grant evaluation at the REST edge against the Northfield seed: the owner sees everything; a viewer reads the overview and the audit summary but not the budget unless granted; an editor's explicit deny masks a section; a non-member is forbidden; stage assignees and platform roles are covered by scripts/car_check.sh and the domain integration tests.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "05c890d443d7d8c920410347e84ea5ed360ff2e2b59ba84971278e6903b9c04e"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/access",
+    "headers": {
+      "X-Dev-Actor": "alice.owner",
+      "Content-Type": "application/json"
+    }
+  },
+  "variables": {
+    "run": {
+      "generator": "uuid"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "owner role",
+        "path": "$.base_role",
+        "op": "equals",
+        "expected": "owner"
+      },
+      {
+        "name": "owner writes budget",
+        "path": "$.sections.budget",
+        "op": "equals",
+        "expected": "write"
+      },
+      {
+        "name": "owner reads full audit",
+        "path": "$.sections.audit",
+        "op": "equals",
+        "expected": "read_full"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "viewer_access_map",
+      "request": {
+        "headers": {
+          "X-Dev-Actor": "fay.ops"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "viewer role",
+            "path": "$.base_role",
+            "op": "equals",
+            "expected": "viewer"
+          },
+          {
+            "name": "overview read",
+            "path": "$.sections.overview",
+            "op": "equals",
+            "expected": "read"
+          },
+          {
+            "name": "budget read by grant",
+            "path": "$.sections.budget",
+            "op": "equals",
+            "expected": "read"
+          },
+          {
+            "name": "settings read",
+            "path": "$.sections.settings",
+            "op": "equals",
+            "expected": "read"
+          },
+          {
+            "name": "audit summary only",
+            "path": "$.sections.audit",
+            "op": "equals",
+            "expected": "read"
+          },
+          {
+            "name": "team not writable",
+            "path": "$.sections.team",
+            "op": "equals",
+            "expected": "read"
+          }
+        ]
+      }
+    },
+    {
+      "name": "viewer_reads_project",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001",
+        "headers": {
+          "X-Dev-Actor": "fay.ops"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "code",
+            "path": "$.code",
+            "op": "equals",
+            "expected": "P-NF-KY-7"
+          }
+        ]
+      }
+    },
+    {
+      "name": "viewer_reads_cars_by_grant",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/cars",
+        "headers": {
+          "X-Dev-Actor": "fay.ops"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "items",
+            "path": "$.items",
+            "op": "type_is",
+            "expected": "array"
+          }
+        ]
+      }
+    },
+    {
+      "name": "viewer_cannot_draft_car_403",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/cars",
+        "headers": {
+          "X-Dev-Actor": "fay.ops"
+        },
+        "body": {
+          "kind": "fel_funding",
+          "amount_requested": "1.00",
+          "business_case": "x"
+        }
+      },
+      "expected": {
+        "status": 403,
+        "body_assertions": [
+          {
+            "name": "forbidden",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "forbidden"
+          }
+        ]
+      }
+    },
+    {
+      "name": "viewer_audit_is_summary",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/audit",
+        "headers": {
+          "X-Dev-Actor": "fay.ops"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "summary flag",
+            "path": "$.full",
+            "op": "equals",
+            "expected": false
+          },
+          {
+            "name": "no before_state in summary",
+            "path": "$.items[0].before_state",
+            "op": "not_exists"
+          }
+        ]
+      }
+    },
+    {
+      "name": "owner_audit_is_full",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/audit"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "full flag",
+            "path": "$.full",
+            "op": "equals",
+            "expected": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "viewer_cannot_invite_403",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/members",
+        "headers": {
+          "X-Dev-Actor": "fay.ops"
+        },
+        "body": {
+          "user_id": "someone",
+          "base_role": "viewer"
+        }
+      },
+      "expected": {
+        "status": 403,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "editor_deny_masks_documents",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b003/access",
+        "headers": {
+          "X-Dev-Actor": "gus.maint"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "editor role",
+            "path": "$.base_role",
+            "op": "equals",
+            "expected": "editor"
+          },
+          {
+            "name": "documents denied by grant",
+            "path": "$.sections.documents",
+            "op": "equals",
+            "expected": "none"
+          },
+          {
+            "name": "budget denied by default",
+            "path": "$.sections.budget",
+            "op": "equals",
+            "expected": "none"
+          },
+          {
+            "name": "scope read by role",
+            "path": "$.sections.scope",
+            "op": "equals",
+            "expected": "read"
+          }
+        ]
+      }
+    },
+    {
+      "name": "editor_cannot_read_budget_403",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b003/cars",
+        "headers": {
+          "X-Dev-Actor": "gus.maint"
+        }
+      },
+      "expected": {
+        "status": 403,
+        "body_assertions": [
+          {
+            "name": "forbidden",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "forbidden"
+          }
+        ]
+      }
+    },
+    {
+      "name": "contributor_overview_only",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/access",
+        "headers": {
+          "X-Dev-Actor": "hana.epcm"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "contributor",
+            "path": "$.base_role",
+            "op": "equals",
+            "expected": "contributor"
+          },
+          {
+            "name": "no audit",
+            "path": "$.sections.audit",
+            "op": "equals",
+            "expected": "none"
+          },
+          {
+            "name": "no team",
+            "path": "$.sections.team",
+            "op": "equals",
+            "expected": "none"
+          }
+        ]
+      }
+    },
+    {
+      "name": "non_member_forbidden_403",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b004",
+        "headers": {
+          "X-Dev-Actor": "nobody.uats"
+        }
+      },
+      "expected": {
+        "status": 403,
+        "body_assertions": [
+          {
+            "name": "forbidden",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "forbidden"
+          }
+        ]
+      }
+    },
+    {
+      "name": "non_member_sees_no_projects",
+      "request": {
+        "path": "/api/v1/projects",
+        "headers": {
+          "X-Dev-Actor": "nobody.uats"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "empty",
+            "path": "$.items",
+            "op": "length",
+            "expected": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "portfolio_executive_reads_across",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b004",
+        "headers": {
+          "X-Dev-Actor": "evan.exec",
+          "X-Dev-Roles": "portfolio_executive"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "code",
+            "path": "$.code",
+            "op": "equals",
+            "expected": "P-NF-ON-3"
+          }
+        ]
+      }
+    },
+    {
+      "name": "platform_admin_has_no_blanket_read_403",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b004",
+        "headers": {
+          "X-Dev-Actor": "carol.admin",
+          "X-Dev-Roles": "platform_admin"
+        }
+      },
+      "expected": {
+        "status": 403,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "owner_lists_members",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/members"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "owner plus viewer plus contributor",
+            "path": "$.items",
+            "op": "length_greater_than",
+            "expected": 2
+          }
+        ]
+      }
+    },
+    {
+      "name": "owner_lists_grants",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/grants"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "the seeded grant",
+            "path": "$.items[0].scope_target",
+            "op": "equals",
+            "expected": "section:budget"
+          }
+        ]
+      }
+    },
+    {
+      "name": "owner_invites_201",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/members",
+        "body": {
+          "user_id": "uats-{{run}}",
+          "base_role": "viewer"
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body_assertions": [
+          {
+            "name": "role",
+            "path": "$.base_role",
+            "op": "equals",
+            "expected": "viewer"
+          }
+        ]
+      }
+    },
+    {
+      "name": "bad_role_422",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/members",
+        "body": {
+          "user_id": "x",
+          "base_role": "god"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "grant_unknown_section_422",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/grants",
+        "body": {
+          "user_id": "fay.ops",
+          "scope_target": "section:payroll",
+          "permission": "read"
+        }
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "grant_201",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/grants",
+        "body": {
+          "user_id": "uats-{{run}}",
+          "scope_target": "section:schedule",
+          "permission": "write",
+          "reason": "uats"
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body_assertions": [
+          {
+            "name": "permission",
+            "path": "$.permission",
+            "op": "equals",
+            "expected": "write"
+          }
+        ]
+      }
+    },
+    {
+      "name": "remove_last_owner_422",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b002/members/alice.owner"
+      },
+      "expected": {
+        "status": 422,
+        "body_assertions": [
+          {
+            "name": "precondition",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "precondition_failed"
+          }
+        ]
+      }
+    }
+  ]
+}
