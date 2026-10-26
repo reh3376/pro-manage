@@ -114,7 +114,7 @@ services:
       start_period: 30s
 
   timescaledb:
-    image: timescale/timescaledb:2.30.2-pg16
+    image: timescale/timescaledb:2.31.0-pg16
     restart: unless-stopped
     ports:
       - "127.0.0.1:${PM_MDEMG_TSDB_PORT:-5435}:5432"
