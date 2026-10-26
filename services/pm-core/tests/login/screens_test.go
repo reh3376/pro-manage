@@ -77,7 +77,12 @@ func TestPersonaScreens(t *testing.T) {
 	}
 	body, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
-	if resp.StatusCode != 200 || resp.Request.URL.Path != "/inbox" {
+	// pm-core honours return_to only for the frontend origin it was configured with (PM_FRONTEND_URL);
+	// when this test names the frontend by another host (127.0.0.1 against a localhost stack, or the
+	// reverse) the callback lands on the frontend's home page instead. Either way it must be the
+	// signed-in frontend, and the walk continues on the host the cookie was issued for.
+	landed := string(body)
+	if resp.StatusCode != 200 || !(strings.Contains(landed, "<h1>Inbox</h1>") || strings.Contains(landed, "Signed in as")) {
 		t.Fatalf("after login: %d at %s: %.300s", resp.StatusCode, resp.Request.URL, body)
 	}
 	fe = resp.Request.URL.Scheme + "://" + resp.Request.URL.Host
