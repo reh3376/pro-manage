@@ -59,6 +59,10 @@ The toy compares the routing amount in the CAR's currency against thresholds res
 
 Pools from IdP claims landed in slice 4b (2026-10-23): every login refills the user's `source = idp` rows from `ResolveClaimsToRoles`; seed and manual rows stay. Still open: the admin override that `§06` offers after a Tier A refusal (`overridden_by_admin`, `blocked_false_positive` feedback). The actor now carries platform roles from the session, so the override can be gated on `platform_admin` once the ACL layer lands.
 
+### B-14 First USTS specs for the auth boundary
+
+The USTS runner is vendored and its spec directory is empty, while the boundary it exists for is now real: unauthenticated and wrong-role callers on every `/api/v1` route, the section-level ACL (viewer, editor-with-deny, contributor, non-member), the `/auth/*` edge, the platform-admin gates, and the Sigi webhook's signature check. Write the first specs from `access.uats.json`, `auth.uats.json`, and `signing.uats.json`, and make `make test-usts` merge-blocking inside the compose job; contributor contract scoping joins when B-12 lands.
+
 ### B-13 Sigi_DS: the DocuSign backend, cancellation, and the inbound webhook path
 
 Slice 6 runs the whole envelope lifecycle against `Sigi_STUB`. `Sigi_DS` implements the same `pm.connector.v1.SigiService` against DocuSign eSignature REST (JWT grant, envelope from a template or the rendered document, embedded or email signing, Connect webhooks verified with the HMAC key) once the account exists (OI-17 decides which workflow kinds sign). Also open: `CancelEnvelope` when a CAR is cancelled, voiding a pending envelope on a supplemental, and the reverse-proxy path for provider webhooks (OI-13); until then reconciliation on the worker tick is the only path, which the design already treats as authoritative.

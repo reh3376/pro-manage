@@ -65,15 +65,15 @@ The success criteria per phase apply to both; in scenario A they are read as "at
 - Monorepo with Go, Python, TS/Next.js layouts; `/docs/fsd/` already in place.
 - CI pipeline running UATS + UDTS + UNTS + Go/Python/TS unit tests on every PR, with no `continue-on-error` on any test step.
 - **UxTS scaffold:** vendored runner primitives and reference runners pinned to an MDEMG tag; `schema/`, `specs/`, `runners/` directories per framework; `docs/tests/UXTS_FRAMEWORK_MATRIX.md` with a CI disposition per framework; `add-hashes` / `verify-hashes` wired; UNTS registry; the five adjudication registries with their verifiers and the inventory pre-commit hook (`§12`).
-- `docker-compose.dev.yml` spins up Postgres, pm-TSDB, Redis, RustFS (S3), Keycloak, Mailpit, and (with `--profile stub`) the stub MDEMG, alongside pm-core, pm-sidecar, pm-workers, pm-frontend.
+- `docker-compose.dev.yml` spins up Postgres, pm-TSDB, Redis, RustFS (S3), Keycloak, Mailpit, and (with `--profile stub`) the stub MDEMG, alongside pm-core, pm-sidecar, pm-workers, pm-frontend. **Met 2026-10-20 (slice 0a)**, extended since with the `idpi-oidc` (4a) and `sigi-stub` (6) connector modules.
 - Vault wired for secrets; initial secrets provisioned.
 - `IdPi` module shell + one backend (OIDC generic) authenticating locally against Keycloak-dev; local break-glass admin flow working. **Module side met 2026-10-22 (slice 4a):** `connectors/idpi/oidc` serves the contract against the dev Keycloak with UDTS specs for every RPC and a live token test. **Login met 2026-10-23 (slice 4b):** pm-core signs users in through the module (`make check-login` drives Keycloak's login form over HTTP and runs in CI), provisions them just in time, fills pools from claims, and resolves the actor from a Redis session. The break-glass admin flow is still open (OI-19).
-- `pm-core` edge: auth middleware + ACL plumbing (section-level grants minimum).
-- `MDEMG` reachable from pm-core; `pkg/mdemgadapter` with `/guide`, `/classify`, `/feedback`, `/conversation/observe` wrappers; outbox worker drains to MDEMG.
+- `pm-core` edge: auth middleware + ACL plumbing (section-level grants minimum). **Met 2026-10-24:** the session actor (4b) and the section-level ACL with membership and grants on every project route (5).
+- `MDEMG` reachable from pm-core; `pkg/mdemgadapter` with `/guide`, `/classify`, `/feedback`, `/conversation/observe` wrappers; outbox worker drains to MDEMG. **Met 2026-10-22 (slices 2a, 2b)** against the stub in CI; the live run is B-02.
 - First governance space seeded (`space=org.pm_dev.governance`); 2–3 toy constraints authored.
-- `pm.core.v1.ProjectService` + `ApprovalWorkflow` plumbing, enough to run a toy CAR approval end-to-end.
+- `pm.core.v1.ProjectService` + `ApprovalWorkflow` plumbing, enough to run a toy CAR approval end-to-end. **Met 2026-10-22 (slice 3)** over REST; the gRPC `ProjectService` is not needed by any consumer yet and waits for one.
 - Prometheus/Grafana/Loki/Jaeger stack reachable; standard dashboards for RED metrics.
-- Connector framework: registry table, admin UI stub, standard `HealthCheck`/`Capabilities` RPCs implemented; the per-type gRPC contracts and their UDTS conformance specs (`§15` conformance kit, the part of the SDK that is the contract itself).
+- Connector framework: registry table, admin UI stub, standard `HealthCheck`/`Capabilities` RPCs implemented; the per-type gRPC contracts and their UDTS conformance specs (`§15` conformance kit, the part of the SDK that is the contract itself). **Contracts and conformance specs met for IdPi (4a) and Sigi (6)**; the `connector_instances` registry and admin stub are open (modules are addressed by configuration today).
 - `IdPi_OIDC` built as a plain Go module against the contract (no SDK yet); its auth, config, and retry code is written to be lifted later. `IdPi_SAML` only if the company's IdP needs it (owner intel).
 - First UATS, UDTS, UNTS specs for the thin surfaces that exist, including UATS specs against the pinned MDEMG for the field shapes `§06` relies on, and the recorded ULTS prompt hashes of the MDEMG tasks pro_manage consumes.
 

@@ -71,13 +71,13 @@ Prerequisites on the workstation: Docker Desktop, Go 1.26, `uv` (Python 3.14), N
 ```bash
 make env          # create deploy/compose/.env with generated dev keys
 make mdemg-up     # pro_manage's dedicated MDEMG stack (pinned v0.11.0-beta.3)
-make dev          # Postgres, TimescaleDB, Redis, RustFS, Keycloak, Mailpit, pm-core, pm-workers, pm-sidecar, pm-frontend
+make dev          # Postgres, TimescaleDB, Redis, RustFS, Keycloak, Mailpit, pm-core, pm-workers, pm-sidecar, pm-frontend, idpi-oidc, sigi-stub
 make dev-stub     # same stack but against the stub MDEMG, as PR CI runs it
 make test         # Go tests, sidecar tests, frontend type check
 make lint         # go vet, ruff, mypy, buf lint
 make uxts         # UxTS gates: spec hashes, UNTS registry, adjudication inventories, matrix currency
 make test-uats    # UATS contract specs against the running dev stack (and test-uats-stub, test-uats-live)
-make test-udts    # UDTS gRPC contract specs against pm-core and the IdPi_OIDC module
+make test-udts    # UDTS gRPC contract specs against pm-core, the IdPi_OIDC module, and the Sigi_STUB module
 make check-outbox # prove the outbox path: pm-core enqueue -> pm-workers drain -> MDEMG
 make check-car    # the Phase 0 exit test: a toy CAR end to end (guide card, classify, audit + GuidanceOutcome, four-stage chain, e-signature, feedback)
 make check-login  # SSO end to end: pm-core -> IdPi_OIDC -> Keycloak login form -> session cookie -> /api/v1 -> logout
@@ -96,11 +96,11 @@ curl -s -H 'X-Dev-Actor: bob.finance' localhost:8080/api/v1/inbox
 curl -s -H 'X-Dev-Actor: fay.ops' localhost:8080/api/v1/projects/01900000-0000-7000-8000-00000000b001/access | jq .sections
 ```
 
-The governed action today is the CAR (`POST /api/v1/projects/{id}/cars`, then `/cars/{id}/guidance`, `/preclassify`, `/submit`, `/decide`): guide on open from both MDEMG spaces, classify on submit under the kind's fail-closed tier (`mdemg.tier.approval.car`), the chain of §08 built from the policy snapshot, every decision audited, and the `GuidanceOutcome` written with the `AuditEvent`. `scripts/car_check.sh` walks it end to end and is what CI runs.
+The governed action today is the CAR (`POST /api/v1/projects/{id}/cars`, then `/cars/{id}/guidance`, `/preclassify`, `/submit`, `/decide`, `/signature`, `/signed-artifact`): guide on open from both MDEMG spaces, classify on submit under the kind's fail-closed tier (`mdemg.tier.approval.car`), the chain of §08 built from the policy snapshot, every decision audited, the `GuidanceOutcome` written with the `AuditEvent`, and on final approval either an e-signature envelope (at or above `car.esign.required_above`, signed through the `Sigi_STUB` module in dev, captured as a PDF with its SHA-256 in the audit row) or the audited approval as the attestation. `scripts/car_check.sh` walks it end to end and is what CI runs.
 
 Services on the host: frontend `:3100`, pm-core `:8080` (REST) and `:8090` (gRPC, reflection on in dev), pm-workers `:8081`, sidecar `:7070` (HTTP) and `:7071` (gRPC), IdPi_OIDC `:7080` (gRPC) and `:7081` (HTTP), Sigi_STUB `:7090` (gRPC) and `:7091` (HTTP, dev signing), Keycloak `:8180` (realm `northfield`, users such as `alice.owner` / `northfield-dev`), Mailpit `:8026`, RustFS console `:9101`, dedicated MDEMG `:9998`. The seed company is the fictional Northfield Spirits Co.
 
-Layout: `services/pm-core` (Go: `cmd/pm-core`, `cmd/pm-workers`, `cmd/stub-mdemg`), `services/pm-sidecar` (Python), `apps/pm-frontend` (Next.js), `connectors/<type>/<code>/` (connector modules, each its own Go module; `idpi/oidc` first), `proto/`, `deploy/compose/`, `docs/`.
+Layout: `services/pm-core` (Go: `cmd/pm-core`, `cmd/pm-workers`, `cmd/stub-mdemg`), `services/pm-sidecar` (Python), `apps/pm-frontend` (Next.js), `connectors/<type>/<code>/` (connector modules, each its own Go module: `idpi/oidc`, `sigi/stub`), `proto/` (buf; generated Go lives in `services/pm-core/gen` until the Connector SDK exists), `deploy/compose/`, `docs/`.
 
 ## Development workflow
 
