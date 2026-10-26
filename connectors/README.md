@@ -6,10 +6,11 @@ Connector modules, one directory per `connectors/<type>/<code>/` (FSD §15 "Pack
 |---|---|---|---|
 | `idpi/oidc` (`IdPi_OIDC`) | **built, slice 4a** | `pm.connector.v1.IdpiService` | Generic OpenID Connect against the dev Keycloak realm. Own Go module with a `replace` to `services/pm-core` for the generated contract. PKCE code flow in two RPCs, JWKS verification, refresh, logout with revocation, claims-to-roles mapping from `mapping.yaml`. pm-core's login, users, and sessions are slice 4b. |
 | `sigi/stub` (`Sigi_STUB`) | **built, slice 6** | `pm.connector.v1.SigiService` | Development and CI e-signature backend: in-memory envelopes, `POST /dev/envelopes/{id}/sign` stands in for a signer, a minimal PDF with a SHA-256 as the artifact. pm-core's envelope lifecycle, reconciliation, and capture run against it unchanged. |
+| `commsi/smtp` (`Commsi_SMTP`) | **built, slice 7** | `pm.connector.v1.CommsiService` | Notifications as email over SMTP (Mailpit in dev): plain or STARTTLS, PLAIN auth, a dedupe window per key, deep links prefixed with the frontend URL. pm-workers delivers the outbox's `commsi.send` rows through it. |
 | `sigi/ds` (`Sigi_DS`) | planned (B-13) | `pm.connector.v1.SigiService` | DocuSign eSignature REST once the account exists. |
 | `erpi/ifs` | planned | `pm.connector.v1.ErpiService` | Once the IFS items on the owner checklist are answered. |
 
-Build order (roadmap, decided 2026-10-20): `IdPi_OIDC`, then `ERPi_IFS`; the Connector SDK (`sdk/`) is extracted from those two and `Sigi_DS` and `Commsi_SMTP` are the first modules built on it. `Sigi_STUB` came earlier than planned (slice 6) because the spine's signed artifact needed a backend before any DocuSign account exists; it is deliberately small and will be re-based on the SDK with `Sigi_DS`. Until then each module keeps its own process plumbing (config, secrets, health listener) that the SDK will absorb.
+Build order (roadmap, decided 2026-10-20): `IdPi_OIDC`, then `ERPi_IFS`; the Connector SDK (`sdk/`) is extracted from those two and `Sigi_DS` and `Commsi_SMTP` are the first modules built on it. `Sigi_STUB` (slice 6) and `Commsi_SMTP` (slice 7) came earlier than planned because the spine's signed artifact and nudges needed backends; both are deliberately small and will be re-based on the SDK. Until then each module keeps its own process plumbing (config, secrets, health listener) that the SDK will absorb.
 
 ## Running Sigi_STUB
 
@@ -24,3 +25,7 @@ make test-udts        # UDTS specs against pm-core and against idpi-oidc
 make test-idpi-live   # tokens, claims to roles, refresh, logout against the dev Keycloak (password grant via pm-dev-cli)
 grpcurl -plaintext 127.0.0.1:7080 pm.connector.v1.ConnectorService/Capabilities
 ```
+
+## Running Commsi_SMTP
+
+The compose dev stack starts it as `commsi-smtp` (gRPC `:7100`, HTTP `:7101`) against Mailpit (`SMTP_HOST=mailpit`, port 1025, no TLS). Every notification pm-core queues (approval requests, outcomes, signature requests, nudges, overdue, escalation, expiry) lands in Mailpit's UI at `http://localhost:8026`. In CI the dedupe window is shortened to 2 s (`.env.ci`) so the CAR check's repeat kinds stay distinct.

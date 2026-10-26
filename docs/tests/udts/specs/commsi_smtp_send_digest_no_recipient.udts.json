@@ -1,0 +1,25 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.CommsiService",
+  "method": "SendDigest",
+  "request": {
+    "period": "daily",
+    "items": []
+  },
+  "expected": {
+    "status_code": "INVALID_ARGUMENT"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "d990c71e6d39f07cfc468457b91107361f05ee3a35f9f7cbbead67046013f8b4"
+  },
+  "metadata": {
+    "description": "SendDigest without a recipient is INVALID_ARGUMENT.",
+    "tags": [
+      "commsi-smtp",
+      "contract",
+      "commsi",
+      "digest"
+    ]
+  }
+}

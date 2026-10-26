@@ -34,7 +34,8 @@ const (
 	keyTierCARMinor  = "mdemg.tier.approval.car.minor"
 	keyClassifyTOms  = "mdemg.classify.timeout_ms"
 	keyESignAbove    = "car.esign.required_above"
-	carPolicyVersion = 2
+	keySLAGrace      = "sla.car.overdue_grace"
+	carPolicyVersion = 3
 )
 
 // carPolicyKeys is everything a CAR workflow snapshots at submission (§08 "Snapshot at start").
@@ -42,7 +43,7 @@ var carPolicyKeys = []string{
 	keyThrFinance, keyThrVPFinance, keyThrCFO, keyThrCEO, keyThrBasis, keyThrCurrency,
 	keyFELClass, keyFELCapPct, keyFullClass,
 	keySLAOwner, keySLAFinance, keySLAVPFinance, keySLACFO, keySLACEO,
-	keyTierCAR, keyTierCARMinor, keyClassifyTOms, keyESignAbove,
+	keyTierCAR, keyTierCARMinor, keyClassifyTOms, keyESignAbove, keySLAGrace,
 }
 
 // CARPolicy is the parsed snapshot the chain is built from.
@@ -58,7 +59,8 @@ type CARPolicy struct {
 	FELCapPct       *big.Rat                   `json:"-"`
 	ESignAbove      *big.Rat                   `json:"-"` // car.esign.required_above: DocuSign at or above, internal attestation below (§08)
 	FullClass       int                        `json:"full_required_aace_class"`
-	SLAHours        map[string]int             `json:"sla_hours"` // by role
+	SLAHours        map[string]int             `json:"sla_hours"`               // by role
+	OverdueGrace    int                        `json:"sla_overdue_grace_hours"` // §08 SLA tick: grace before escalation and before expiry
 	TierMajor       governance.Tier            `json:"tier_major"`
 	TierMinor       governance.Tier            `json:"tier_minor"`
 	ClassifyTimeout time.Duration              `json:"-"`
@@ -134,6 +136,9 @@ func resolveCARPolicy(ctx context.Context, q *db.Queries, project db.Project, no
 		if p.SLAHours[role], err = intOf(p.Resolved[k]); err != nil {
 			return p, err
 		}
+	}
+	if p.OverdueGrace, err = intOf(p.Resolved[keySLAGrace]); err != nil {
+		return p, err
 	}
 	tier, err := strOf(p.Resolved[keyTierCAR])
 	if err != nil {

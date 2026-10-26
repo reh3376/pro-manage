@@ -1,0 +1,33 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.CommsiService",
+  "method": "SendNotification",
+  "request": {
+    "kind": "approval.requested",
+    "subject_type": "capital_authorization",
+    "subject_id": "udts",
+    "subject": "UDTS",
+    "body_text": "x",
+    "recipients": [
+      {
+        "user_id": "nobody"
+      }
+    ]
+  },
+  "expected": {
+    "status_code": "INVALID_ARGUMENT"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "d990c71e6d39f07cfc468457b91107361f05ee3a35f9f7cbbead67046013f8b4"
+  },
+  "metadata": {
+    "description": "A recipient without an email is INVALID_ARGUMENT (pm-core's outbox dead-letters it rather than retrying); a deliverable send is covered by the notify integration test against Mailpit.",
+    "tags": [
+      "commsi-smtp",
+      "contract",
+      "commsi",
+      "send"
+    ]
+  }
+}

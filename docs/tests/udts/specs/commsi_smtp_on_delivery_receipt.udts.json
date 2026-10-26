@@ -1,0 +1,26 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.CommsiService",
+  "method": "OnDeliveryReceipt",
+  "request": {
+    "provider": "smtp",
+    "body": "e30="
+  },
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "accepted"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "d990c71e6d39f07cfc468457b91107361f05ee3a35f9f7cbbead67046013f8b4"
+  },
+  "metadata": {
+    "description": "OnDeliveryReceipt answers OK with accepted=false: SMTP delivery receipts are not consumed by this module (bounces arrive by mail).",
+    "tags": [
+      "commsi-smtp",
+      "contract",
+      "commsi",
+      "receipt"
+    ]
+  }
+}

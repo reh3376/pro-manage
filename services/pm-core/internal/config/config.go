@@ -74,6 +74,10 @@ type Config struct {
 	S3Bucket     string // S3_BUCKET
 	S3Region     string // S3_REGION
 
+	// Notifications (FSD §10 Commsi). pm-core only enqueues; pm-workers delivers through the module.
+	CommsiAddr           string // COMMSI_ADDR, the Commsi module's gRPC address (pm-workers)
+	NotifyFallbackDomain string // PM_NOTIFY_FALLBACK_DOMAIN: <handle>@domain for actors without a users row (dev and CI)
+
 	// Workers
 	WorkerTick        time.Duration
 	OutboxMaxAttempts int           // dead-letter after this many failed deliveries
@@ -83,33 +87,35 @@ type Config struct {
 // Load resolves configuration for the named service.
 func Load(ctx context.Context, service string, sp secrets.Provider) (Config, error) {
 	cfg := Config{
-		ServiceName:       service,
-		ListenAddr:        envOr("PM_"+upper(service)+"_LISTEN_ADDR", defaultAddr(service)),
-		LogFormat:         envOr("PM_LOG_FORMAT", "json"),
-		MDEMGBaseURL:      strings.TrimRight(envOr("MDEMG_BASE_URL", "http://127.0.0.1:9998"), "/"),
-		MDEMGTimeout:      durationOr("MDEMG_TIMEOUT", 10*time.Second),
-		GovernanceOrgID:   envOr("PM_GOVERNANCE_ORG_ID", "pm_dev"),
-		PreclassifyTTL:    durationOr("PM_PRECLASSIFY_TTL", 10*time.Minute),
-		WorkerTick:        durationOr("PM_WORKERS_TICK", 30*time.Second),
-		OutboxMaxAttempts: intOr("PM_OUTBOX_MAX_ATTEMPTS", 10),
-		OutboxBaseBackoff: durationOr("PM_OUTBOX_BASE_BACKOFF", 5*time.Second),
-		GRPCAddr:          envOr("PM_CORE_GRPC_ADDR", ":8090"),
-		GRPCReflection:    boolOr("PM_CORE_GRPC_REFLECTION", false),
-		DBAutoMigrate:     boolOr("PM_DB_AUTO_MIGRATE", false),
-		DevActorHeader:    boolOr("PM_DEV_ACTOR_HEADER", false),
-		TenantID:          envOr("PM_TENANT_ID", "default"),
-		IdPiAddr:          os.Getenv("IDPI_OIDC_ADDR"),
-		RedisURL:          os.Getenv("REDIS_URL"),
-		PublicURL:         strings.TrimRight(envOr("PM_PUBLIC_URL", "http://localhost:8080"), "/"),
-		FrontendURL:       strings.TrimRight(envOr("PM_FRONTEND_URL", "http://localhost:3100"), "/"),
-		SessionTTL:        durationOr("PM_SESSION_TTL", 8*time.Hour),
-		SessionMaxAge:     durationOr("PM_SESSION_MAX_AGE", 24*time.Hour),
-		CookieSecure:      boolOr("PM_COOKIE_SECURE", false),
-		SigiAddr:          os.Getenv("SIGI_ADDR"),
-		SigiProvider:      envOr("SIGI_PROVIDER", "stub"),
-		S3Endpoint:        os.Getenv("S3_ENDPOINT"),
-		S3Bucket:          envOr("S3_BUCKET", "pm-dev"),
-		S3Region:          envOr("S3_REGION", "us-east-1"),
+		ServiceName:          service,
+		ListenAddr:           envOr("PM_"+upper(service)+"_LISTEN_ADDR", defaultAddr(service)),
+		LogFormat:            envOr("PM_LOG_FORMAT", "json"),
+		MDEMGBaseURL:         strings.TrimRight(envOr("MDEMG_BASE_URL", "http://127.0.0.1:9998"), "/"),
+		MDEMGTimeout:         durationOr("MDEMG_TIMEOUT", 10*time.Second),
+		GovernanceOrgID:      envOr("PM_GOVERNANCE_ORG_ID", "pm_dev"),
+		PreclassifyTTL:       durationOr("PM_PRECLASSIFY_TTL", 10*time.Minute),
+		WorkerTick:           durationOr("PM_WORKERS_TICK", 30*time.Second),
+		OutboxMaxAttempts:    intOr("PM_OUTBOX_MAX_ATTEMPTS", 10),
+		OutboxBaseBackoff:    durationOr("PM_OUTBOX_BASE_BACKOFF", 5*time.Second),
+		GRPCAddr:             envOr("PM_CORE_GRPC_ADDR", ":8090"),
+		GRPCReflection:       boolOr("PM_CORE_GRPC_REFLECTION", false),
+		DBAutoMigrate:        boolOr("PM_DB_AUTO_MIGRATE", false),
+		DevActorHeader:       boolOr("PM_DEV_ACTOR_HEADER", false),
+		TenantID:             envOr("PM_TENANT_ID", "default"),
+		IdPiAddr:             os.Getenv("IDPI_OIDC_ADDR"),
+		RedisURL:             os.Getenv("REDIS_URL"),
+		PublicURL:            strings.TrimRight(envOr("PM_PUBLIC_URL", "http://localhost:8080"), "/"),
+		FrontendURL:          strings.TrimRight(envOr("PM_FRONTEND_URL", "http://localhost:3100"), "/"),
+		SessionTTL:           durationOr("PM_SESSION_TTL", 8*time.Hour),
+		SessionMaxAge:        durationOr("PM_SESSION_MAX_AGE", 24*time.Hour),
+		CookieSecure:         boolOr("PM_COOKIE_SECURE", false),
+		SigiAddr:             os.Getenv("SIGI_ADDR"),
+		SigiProvider:         envOr("SIGI_PROVIDER", "stub"),
+		S3Endpoint:           os.Getenv("S3_ENDPOINT"),
+		S3Bucket:             envOr("S3_BUCKET", "pm-dev"),
+		S3Region:             envOr("S3_REGION", "us-east-1"),
+		CommsiAddr:           os.Getenv("COMMSI_ADDR"),
+		NotifyFallbackDomain: os.Getenv("PM_NOTIFY_FALLBACK_DOMAIN"),
 	}
 
 	switch strings.ToLower(envOr("PM_LOG_LEVEL", "info")) {

@@ -15,7 +15,7 @@ func rat(s string) *big.Rat { x, _ := new(big.Rat).SetString(s); return x }
 func seedPolicy() CARPolicy {
 	return CARPolicy{
 		ThrFinance: rat("0"), ThrVPFinance: rat("5000000"), ThrCFO: rat("25000000"), ThrCEO: rat("100000000"),
-		Basis: "tic", Currency: "USD", FELClass: 5, FELCapPct: rat("5"), ESignAbove: rat("1000000"), FullClass: 3,
+		Basis: "tic", Currency: "USD", FELClass: 5, FELCapPct: rat("5"), ESignAbove: rat("1000000"), FullClass: 3, OverdueGrace: 24,
 		SLAHours:  map[string]int{"project_owner": 24, "finance_approver": 48, "vp_finance": 72, "cfo": 72, "ceo": 168},
 		TierMajor: governance.TierA, TierMinor: governance.TierB, ClassifyTimeout: 10 * time.Second,
 	}

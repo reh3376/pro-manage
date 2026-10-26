@@ -68,7 +68,7 @@ func setup(t *testing.T, client *mdemgadapter.Client) fixture {
 		{"sla.car.project_owner", "duration", "24"}, {"sla.car.finance_approver", "duration", "48"}, {"sla.car.vp_finance", "duration", "72"},
 		{"sla.car.cfo", "duration", "72"}, {"sla.car.ceo", "duration", "168"}, {"mdemg.tier.approval.car", "enum", `"A"`},
 		{"mdemg.tier.approval.car.minor", "enum", `"B"`}, {"mdemg.classify.timeout_ms", "integer", "10000"},
-		{"car.esign.required_above", "money", "1000000"},
+		{"car.esign.required_above", "money", "1000000"}, {"sla.car.overdue_grace", "duration", "24"},
 	}
 	for _, v := range seed {
 		if _, err := q.UpsertPolicyVariable(ctx, db.UpsertPolicyVariableParams{Key: v.key, Type: v.typ, Description: "integration seed", GlobalDefault: json.RawMessage(v.def), AllowedRange: json.RawMessage(`{}`), OverridableAt: []string{"site", "project"}, OwnerRole: "policy_owner", CreatedBy: "it-car"}); err != nil {

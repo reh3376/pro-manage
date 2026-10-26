@@ -1,9 +1,10 @@
 // pm-workers runs pro_manage's scheduled jobs and outbox dispatch (FSD §05).
 //
 // The outbox drainer (feedback and observe to MDEMG, envelope creation at the
-// Sigi module) and the e-signature reconciliation run on every tick, with
-// health, readiness, and a /stats view. SLA ticks, harvest triggers, and
-// Commsi delivery arrive with the features they serve.
+// Sigi module, notifications through the Commsi module), the e-signature
+// reconciliation, and the SLA tick (nudge, overdue, escalate, expire) run on
+// every tick, with health, readiness, and a /stats view. Harvest triggers
+// arrive with the features they serve.
 package main
 
 import (
@@ -19,11 +20,14 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/blobs"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/config"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/commsi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/sigi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/notify"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/outbox"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/secrets"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/signing"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/sla"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
 	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
@@ -109,6 +113,43 @@ func run() error {
 			log.Info("signing running", "sigi", cfg.SigiAddr, "provider", cfg.SigiProvider, "object_store", sign.Blobs != nil)
 		} else {
 			log.Warn("signing disabled: SIGI_ADDR and AUDIT_CHAIN_KEY are both required; sigi.envelope.create rows will wait")
+		}
+		// Notifications (FSD §10 Commsi) and the SLA tick (§08): the module delivers what
+		// the outbox holds; the tick nudges, flags overdue, escalates, and expires stages.
+		if cfg.CommsiAddr != "" {
+			cc, err := commsi.Dial(cfg.CommsiAddr)
+			if err != nil {
+				return err
+			}
+			defer cc.Close()
+			drainer.Notify = cc
+			log.Info("notifications running", "commsi", cfg.CommsiAddr)
+		} else {
+			log.Warn("notifications disabled: COMMSI_ADDR not set; commsi.send rows will wait")
+		}
+		if cfg.AuditChainKey != "" {
+			chain, err := audit.NewChain([]byte(cfg.AuditChainKey))
+			if err != nil {
+				return err
+			}
+			ticker := &sla.Ticker{Store: st, Chain: chain, Notifier: &notify.Notifier{Tenant: cfg.TenantID, FallbackDomain: cfg.NotifyFallbackDomain}, Tenant: cfg.TenantID, Log: log}
+			go func() {
+				t := time.NewTicker(cfg.WorkerTick)
+				defer t.Stop()
+				for {
+					if c, err := ticker.Tick(ctx); err != nil {
+						log.Error("sla tick", "err", err)
+					} else if c.Nudged+c.Overdue+c.Escalated+c.Expired > 0 {
+						log.Info("sla tick", "scanned", c.Scanned, "nudged", c.Nudged, "overdue", c.Overdue, "escalated", c.Escalated, "expired", c.Expired)
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case <-t.C:
+					}
+				}
+			}()
+			log.Info("sla tick running", "tick", cfg.WorkerTick.String())
 		}
 		go drainer.Run(ctx, cfg.WorkerTick)
 		log.Info("outbox drain running", "tick", cfg.WorkerTick.String(), "max_attempts", cfg.OutboxMaxAttempts, "mdemg", cfg.MDEMGBaseURL)

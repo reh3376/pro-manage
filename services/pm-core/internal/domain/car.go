@@ -24,6 +24,7 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/db"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/notify"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/outbox"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/signing"
 	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
@@ -802,6 +803,15 @@ func (s *Service) SubmitCAR(ctx context.Context, actor Actor, carID uuid.UUID, i
 				return err
 			}
 		}
+		firstDue := now.Add(time.Duration(sub.chain[0].SLAHours) * time.Hour)
+		if err := s.notifyTx(ctx, q, notify.Notification{
+			Kind: notify.KindApprovalRequested, SubjectType: "capital_authorization", SubjectID: car.CarID.String(), Recipients: assignees[0],
+			Subject:  fmt.Sprintf("CAR %s awaits your decision (stage 1, %s)", after.Code, sub.chain[0].Role),
+			Body:     fmt.Sprintf("%s submitted CAR %s (%s) for %s %s on project %s (%s). You are stage 1 of %d (%s). The stage is due %s.", actor.UserID, after.Code, after.Kind, after.AmountRequested, after.Currency, sub.project.Code, sub.project.Name, len(sub.chain), sub.chain[0].Role, firstDue.Format(time.RFC1123)),
+			DeepLink: "/cars/" + car.CarID.String(), Metadata: map[string]string{"code": after.Code, "project": sub.project.Code, "amount": after.AmountRequested + " " + after.Currency, "stage": "1"}, DueAt: &firstDue,
+		}); err != nil {
+			return err
+		}
 		return outbox.Enqueue(ctx, q, s.Tenant, outbox.KindMDEMGObserve, ev.AuditID.String(), mdemgadapter.ObserveRequest{
 			SpaceID: mdemgadapter.ProjectSpace(car.ProjectID.String()), SessionID: sessionID(actor, car.ProjectID),
 			Content: fmt.Sprintf("CAR %s (%s) for %s %s submitted on project %s by %s; routes %s; governance tier %s verdict %s (%s).", after.Code, after.Kind, after.AmountRequested, after.Currency, sub.project.Code, actor.UserID, roleList(sub.chain), sub.tier, res.Verdict, res.UserResponse),
@@ -949,6 +959,18 @@ func (s *Service) DecideCAR(ctx context.Context, actor Actor, carID uuid.UUID, i
 			if err := q.OpenStage(ctx, db.OpenStageParams{WorkflowID: wf.WorkflowID, StageOrder: next, EnteredAt: &now, StageDueAt: &due}); err != nil {
 				return err
 			}
+			for _, st := range stages {
+				if st.StageOrder == next {
+					if err := s.notifyTx(ctx, q, notify.Notification{
+						Kind: notify.KindApprovalRequested, SubjectType: "capital_authorization", SubjectID: car.CarID.String(), Recipients: st.Assignees,
+						Subject:  fmt.Sprintf("CAR %s awaits your decision (stage %d, %s)", car.Code, next, st.RoleRequired),
+						Body:     fmt.Sprintf("%s approved stage %d of CAR %s (%s %s). You are stage %d of %d (%s). The stage is due %s.", actor.UserID, current.StageOrder, car.Code, car.AmountRequested, car.Currency, next, len(stages), st.RoleRequired, due.Format(time.RFC1123)),
+						DeepLink: "/cars/" + car.CarID.String(), Metadata: map[string]string{"code": car.Code, "stage": fmt.Sprint(next)}, DueAt: &due,
+					}); err != nil {
+						return err
+					}
+				}
+			}
 		}
 		gid := ""
 		if in.GuidanceID != nil {
@@ -976,6 +998,19 @@ func (s *Service) DecideCAR(ctx context.Context, actor Actor, carID uuid.UUID, i
 				return err
 			}
 		}
+		// The owner hears the outcome (§08 workflow events).
+		verb := "approved"
+		if action == "car.reject" {
+			verb = "rejected"
+		}
+		if err := s.notifyTx(ctx, q, notify.Notification{
+			Kind: notify.KindApprovalDecided, SubjectType: "capital_authorization", SubjectID: car.CarID.String(), Recipients: []string{wf.InitiatedBy},
+			Subject:  fmt.Sprintf("CAR %s %s", car.Code, verb),
+			Body:     fmt.Sprintf("CAR %s (%s %s) was %s by %s at stage %d (%s).", car.Code, car.AmountRequested, car.Currency, verb, actor.UserID, current.StageOrder, current.RoleRequired),
+			DeepLink: "/cars/" + car.CarID.String(), Metadata: map[string]string{"code": car.Code, "outcome": after.Status},
+		}); err != nil {
+			return err
+		}
 		return outbox.Enqueue(ctx, q, s.Tenant, outbox.KindMDEMGObserve, ev.AuditID.String(), mdemgadapter.ObserveRequest{
 			SpaceID: mdemgadapter.ProjectSpace(car.ProjectID.String()), SessionID: sessionID(actor, car.ProjectID),
 			Content: fmt.Sprintf("CAR %s (%s) %s by %s at stage %d (%s); amount %s %s.", car.Code, car.Kind, after.Status, actor.UserID, current.StageOrder, current.RoleRequired, car.AmountRequested, car.Currency),
@@ -993,7 +1028,8 @@ func (s *Service) DecideCAR(ctx context.Context, actor Actor, carID uuid.UUID, i
 // InboxItem is one stage waiting on the actor.
 type InboxItem struct {
 	db.OpenStagesForUserRow
-	Overdue bool `json:"overdue"`
+	Overdue  bool   `json:"overdue"`
+	SLAState string `json:"sla_state"` // ok | nudged | overdue | escalated (§08 SLA tick)
 }
 
 // Inbox lists the open stages assigned to the actor, soonest due first.
@@ -1005,7 +1041,16 @@ func (s *Service) Inbox(ctx context.Context, actor Actor) ([]InboxItem, error) {
 	now := time.Now().UTC()
 	items := make([]InboxItem, 0, len(rows))
 	for _, r := range rows {
-		items = append(items, InboxItem{OpenStagesForUserRow: r, Overdue: r.StageDueAt != nil && r.StageDueAt.Before(now)})
+		state := "ok"
+		switch {
+		case r.EscalatedAt != nil:
+			state = "escalated"
+		case r.OverdueAt != nil || (r.StageDueAt != nil && r.StageDueAt.Before(now)):
+			state = "overdue"
+		case r.NudgedAt != nil:
+			state = "nudged"
+		}
+		items = append(items, InboxItem{OpenStagesForUserRow: r, Overdue: state == "overdue" || state == "escalated", SLAState: state})
 	}
 	return items, nil
 }
@@ -1081,6 +1126,18 @@ func (s *Service) signOrAttest(ctx context.Context, q *db.Queries, actor Actor, 
 	}
 	ref := "envelope:" + envID.String() + ":pending"
 	if err := q.SetCARSignedArtifact(ctx, db.SetCARSignedArtifactParams{TenantID: s.Tenant, CarID: car.CarID, SignedArtifactRef: &ref, UpdatedBy: actor.UserID}); err != nil {
+		return err
+	}
+	handles := make([]string, 0, len(signers))
+	for _, sg := range signers {
+		handles = append(handles, sg.UserID)
+	}
+	if err := s.notifyTx(ctx, q, notify.Notification{
+		Kind: notify.KindSignatureRequest, SubjectType: "capital_authorization", SubjectID: car.CarID.String(), Recipients: handles,
+		Subject:  fmt.Sprintf("Signature requested: CAR %s", car.Code),
+		Body:     fmt.Sprintf("CAR %s (%s %s, project %s) is approved and at or above the e-signature threshold. An envelope is being prepared with you as a signer; you will receive the provider's signing request.", car.Code, car.AmountRequested, car.Currency, project.Code),
+		DeepLink: "/cars/" + car.CarID.String(), Metadata: map[string]string{"code": car.Code, "envelope_id": envID.String()},
+	}); err != nil {
 		return err
 	}
 	car.SignedArtifactRef = &ref

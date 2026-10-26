@@ -247,7 +247,7 @@ func (q *Queries) CreatePromise(ctx context.Context, arg CreatePromiseParams) (B
 const createStage = `-- name: CreateStage :one
 INSERT INTO approval_stages (stage_id, workflow_id, stage_order, role_required, assignees, sla_minutes, entered_at, stage_due_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING stage_id, workflow_id, stage_order, role_required, assignees, sla_minutes, entered_at, stage_due_at, completed_at, completed_by, decision, comment, guidance_id, classification_verdict, fail_tier
+RETURNING stage_id, workflow_id, stage_order, role_required, assignees, sla_minutes, entered_at, stage_due_at, completed_at, completed_by, decision, comment, guidance_id, classification_verdict, fail_tier, nudged_at, overdue_at, escalated_at
 `
 
 type CreateStageParams struct {
@@ -289,6 +289,9 @@ func (q *Queries) CreateStage(ctx context.Context, arg CreateStageParams) (Appro
 		&i.GuidanceID,
 		&i.ClassificationVerdict,
 		&i.FailTier,
+		&i.NudgedAt,
+		&i.OverdueAt,
+		&i.EscalatedAt,
 	)
 	return i, err
 }
@@ -344,7 +347,7 @@ const decideStage = `-- name: DecideStage :one
 UPDATE approval_stages
 SET completed_at = now(), completed_by = $3, decision = $4, comment = $5, guidance_id = $6, classification_verdict = $7, fail_tier = $8
 WHERE workflow_id = $1 AND stage_order = $2 AND completed_at IS NULL
-RETURNING stage_id, workflow_id, stage_order, role_required, assignees, sla_minutes, entered_at, stage_due_at, completed_at, completed_by, decision, comment, guidance_id, classification_verdict, fail_tier
+RETURNING stage_id, workflow_id, stage_order, role_required, assignees, sla_minutes, entered_at, stage_due_at, completed_at, completed_by, decision, comment, guidance_id, classification_verdict, fail_tier, nudged_at, overdue_at, escalated_at
 `
 
 type DecideStageParams struct {
@@ -386,6 +389,9 @@ func (q *Queries) DecideStage(ctx context.Context, arg DecideStageParams) (Appro
 		&i.GuidanceID,
 		&i.ClassificationVerdict,
 		&i.FailTier,
+		&i.NudgedAt,
+		&i.OverdueAt,
+		&i.EscalatedAt,
 	)
 	return i, err
 }
@@ -465,7 +471,7 @@ func (q *Queries) GetEstimateArtifact(ctx context.Context, arg GetEstimateArtifa
 }
 
 const getStage = `-- name: GetStage :one
-SELECT stage_id, workflow_id, stage_order, role_required, assignees, sla_minutes, entered_at, stage_due_at, completed_at, completed_by, decision, comment, guidance_id, classification_verdict, fail_tier FROM approval_stages WHERE workflow_id = $1 AND stage_order = $2
+SELECT stage_id, workflow_id, stage_order, role_required, assignees, sla_minutes, entered_at, stage_due_at, completed_at, completed_by, decision, comment, guidance_id, classification_verdict, fail_tier, nudged_at, overdue_at, escalated_at FROM approval_stages WHERE workflow_id = $1 AND stage_order = $2
 `
 
 type GetStageParams struct {
@@ -492,6 +498,9 @@ func (q *Queries) GetStage(ctx context.Context, arg GetStageParams) (ApprovalSta
 		&i.GuidanceID,
 		&i.ClassificationVerdict,
 		&i.FailTier,
+		&i.NudgedAt,
+		&i.OverdueAt,
+		&i.EscalatedAt,
 	)
 	return i, err
 }
@@ -736,7 +745,7 @@ func (q *Queries) ListPromisesForProject(ctx context.Context, arg ListPromisesFo
 }
 
 const listStages = `-- name: ListStages :many
-SELECT stage_id, workflow_id, stage_order, role_required, assignees, sla_minutes, entered_at, stage_due_at, completed_at, completed_by, decision, comment, guidance_id, classification_verdict, fail_tier FROM approval_stages WHERE workflow_id = $1 ORDER BY stage_order
+SELECT stage_id, workflow_id, stage_order, role_required, assignees, sla_minutes, entered_at, stage_due_at, completed_at, completed_by, decision, comment, guidance_id, classification_verdict, fail_tier, nudged_at, overdue_at, escalated_at FROM approval_stages WHERE workflow_id = $1 ORDER BY stage_order
 `
 
 func (q *Queries) ListStages(ctx context.Context, workflowID uuid.UUID) ([]ApprovalStage, error) {
@@ -764,6 +773,9 @@ func (q *Queries) ListStages(ctx context.Context, workflowID uuid.UUID) ([]Appro
 			&i.GuidanceID,
 			&i.ClassificationVerdict,
 			&i.FailTier,
+			&i.NudgedAt,
+			&i.OverdueAt,
+			&i.EscalatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -808,7 +820,7 @@ func (q *Queries) OpenStage(ctx context.Context, arg OpenStageParams) error {
 }
 
 const openStagesForUser = `-- name: OpenStagesForUser :many
-SELECT s.stage_id, s.workflow_id, s.stage_order, s.role_required, s.assignees, s.sla_minutes, s.entered_at, s.stage_due_at, s.completed_at, s.completed_by, s.decision, s.comment, s.guidance_id, s.classification_verdict, s.fail_tier, w.kind AS workflow_kind, w.subject_type, w.subject_id, w.project_id
+SELECT s.stage_id, s.workflow_id, s.stage_order, s.role_required, s.assignees, s.sla_minutes, s.entered_at, s.stage_due_at, s.completed_at, s.completed_by, s.decision, s.comment, s.guidance_id, s.classification_verdict, s.fail_tier, s.nudged_at, s.overdue_at, s.escalated_at, w.kind AS workflow_kind, w.subject_type, w.subject_id, w.project_id
 FROM approval_stages s JOIN approval_workflows w ON w.workflow_id = s.workflow_id
 WHERE w.tenant_id = $1 AND w.status = 'in_flight' AND w.current_stage = s.stage_order
   AND s.completed_at IS NULL AND $2::text = ANY (s.assignees)
@@ -836,6 +848,9 @@ type OpenStagesForUserRow struct {
 	GuidanceID            *string    `json:"guidance_id"`
 	ClassificationVerdict *string    `json:"classification_verdict"`
 	FailTier              *string    `json:"fail_tier"`
+	NudgedAt              *time.Time `json:"nudged_at"`
+	OverdueAt             *time.Time `json:"overdue_at"`
+	EscalatedAt           *time.Time `json:"escalated_at"`
 	WorkflowKind          string     `json:"workflow_kind"`
 	SubjectType           string     `json:"subject_type"`
 	SubjectID             string     `json:"subject_id"`
@@ -868,6 +883,9 @@ func (q *Queries) OpenStagesForUser(ctx context.Context, arg OpenStagesForUserPa
 			&i.GuidanceID,
 			&i.ClassificationVerdict,
 			&i.FailTier,
+			&i.NudgedAt,
+			&i.OverdueAt,
+			&i.EscalatedAt,
 			&i.WorkflowKind,
 			&i.SubjectType,
 			&i.SubjectID,

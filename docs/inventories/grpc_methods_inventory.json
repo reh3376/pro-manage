@@ -2,14 +2,55 @@
   "surface": "grpc_methods",
   "description": "Every rpc declared under proto/ must have a UDTS spec and a consumer (FSD \u00a712, \u00a715). Key: 'package.Service/Rpc'.",
   "entries": {
+    "pm.connector.v1.CommsiService/OnDeliveryReceipt": {
+      "writers": [
+        "connectors/commsi/smtp/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/commsi_smtp_on_delivery_receipt.udts.json",
+        "connectors/commsi/smtp/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/commsi/client.go",
+        "services/pm-core/internal/notify/integration_test.go"
+      ],
+      "disposition": "planned",
+      "notes": "Delivery receipts for channels that have them; SMTP answers accepted=false; pm-core consumer planned with Teams or Slack."
+    },
+    "pm.connector.v1.CommsiService/SendDigest": {
+      "writers": [
+        "connectors/commsi/smtp/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/commsi_smtp_send_digest_no_recipient.udts.json",
+        "connectors/commsi/smtp/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/commsi/client.go",
+        "services/pm-core/internal/notify/integration_test.go"
+      ],
+      "disposition": "planned",
+      "notes": "Batched digest; pm-core consumer (the daily inbox digest, \u00a708) is planned."
+    },
+    "pm.connector.v1.CommsiService/SendNotification": {
+      "writers": [
+        "connectors/commsi/smtp/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/commsi_smtp_send_notification_no_recipient.udts.json",
+        "connectors/commsi/smtp/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/commsi/client.go",
+        "services/pm-core/internal/notify/integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Unified notification payload; pm-workers delivers outbox rows of kind commsi.send with it (approval requested, nudge, overdue, escalated, expired, decided, signature requested)."
+    },
     "pm.connector.v1.ConnectorService/Capabilities": {
       "writers": [
+        "connectors/commsi/smtp/internal/service/service.go",
         "connectors/idpi/oidc/internal/service/service.go",
         "connectors/sigi/stub/internal/service/service.go"
       ],
       "readers": [
         "connectors/idpi/oidc/tests/integration/keycloak_test.go",
         "connectors/idpi/oidc/tests/udts/contract_test.go",
+        "docs/tests/udts/specs/commsi_smtp_connector_capabilities.udts.json",
         "docs/tests/udts/specs/idpi_oidc_connector_capabilities.udts.json",
         "docs/tests/udts/specs/sigi_stub_connector_capabilities.udts.json"
       ],
@@ -18,12 +59,14 @@
     },
     "pm.connector.v1.ConnectorService/HealthCheck": {
       "writers": [
+        "connectors/commsi/smtp/internal/service/service.go",
         "connectors/idpi/oidc/internal/service/service.go",
         "connectors/sigi/stub/internal/service/service.go"
       ],
       "readers": [
         "connectors/idpi/oidc/tests/integration/keycloak_test.go",
         "connectors/idpi/oidc/tests/udts/contract_test.go",
+        "docs/tests/udts/specs/commsi_smtp_connector_healthcheck.udts.json",
         "docs/tests/udts/specs/idpi_oidc_connector_healthcheck.udts.json",
         "docs/tests/udts/specs/sigi_stub_connector_healthcheck.udts.json"
       ],

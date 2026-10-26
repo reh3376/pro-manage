@@ -42,6 +42,7 @@ INSERT INTO policy_variables (key, type, unit, description, global_default, allo
   ('sla.car.vp_finance', 'duration', 'hours', 'CAR stage 3 (VP Finance) SLA', '72', '{"min":1,"max":720}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
   ('sla.car.cfo', 'duration', 'hours', 'CAR stage 4 (CFO) SLA', '72', '{"min":1,"max":720}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
   ('sla.car.ceo', 'duration', 'hours', 'CAR stage 5 (CEO) SLA', '168', '{"min":1,"max":720}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
+  ('sla.car.overdue_grace', 'duration', 'hours', 'Grace after a CAR stage SLA passes before it is escalated, and again before it expires (§08 SLA tick)', '24', '{"min":1,"max":720}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
   ('mdemg.tier.approval.car', 'enum', NULL, 'Fail-closed tier for approval.car when the routing amount reaches car.threshold.vp_finance (full and supplemental)', '"A"', '{"values":["A","B","C"]}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
   ('mdemg.tier.approval.car.minor', 'enum', NULL, 'Fail-closed tier for approval.car below the VP Finance threshold and for every FEL-funding CAR', '"B"', '{"values":["A","B","C"]}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed')
 ON CONFLICT (key) DO NOTHING;

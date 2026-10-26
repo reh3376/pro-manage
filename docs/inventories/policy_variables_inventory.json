@@ -279,6 +279,17 @@
       "disposition": "active",
       "notes": "CAR stage 2 SLA (hours)"
     },
+    "sla.car.overdue_grace": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "services/pm-core/internal/domain/car_chain.go (resolveCARPolicy, snapshot at submission)",
+        "services/pm-core/internal/sla/sla.go (graceFrom the workflow snapshot)"
+      ],
+      "disposition": "active",
+      "notes": "Grace after a CAR stage SLA passes before escalation, and again before expiry (\u00a708 SLA tick)"
+    },
     "sla.car.project_owner": {
       "writers": [
         "services/pm-core/db/seeds/northfield.sql"

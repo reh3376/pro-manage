@@ -51,13 +51,13 @@ The spine's `governance.PreclassCache` is in-process (scoped to user and project
 
 The toy compares the routing amount in the CAR's currency against thresholds resolved for the project (the seed's site override expresses the Ontario threshold in CAD); `§08` wants conversion at `fx.rate.<from>.<to>` on submission with the rate in the snapshot. Stage SLAs run on the wall clock; `§08` wants business days of the site calendar. Both land with `ERPi_IFS` (rates) and the site calendar.
 
-### B-08 SLA tick, nudges, and the empty-pool pause
-
-`stage_due_at` is recorded and the inbox flags overdue stages, but nothing nudges yet. pm-workers gets the SLA tick (`§08`), Commsi_SMTP sends the nudge, and an empty approver pool pauses the workflow with a visible blocker instead of failing the submit as a precondition.
-
 ### B-09 Admin override of a Tier A refusal
 
 Pools from IdP claims landed in slice 4b (2026-10-23): every login refills the user's `source = idp` rows from `ResolveClaimsToRoles`; seed and manual rows stay. Still open: the admin override that `§06` offers after a Tier A refusal (`overridden_by_admin`, `blocked_false_positive` feedback). The actor now carries platform roles from the session, so the override can be gated on `platform_admin` once the ACL layer lands.
+
+### B-15 Delegation chains, out-of-office, the empty-pool pause, and the daily digest
+
+The SLA tick (slice 7) escalates a stage once by extending its clock, because there is no delegation chain to widen the assignees with. `§08` wants each eligible user to declare an active delegate with a duration, out-of-office windows that steer routing to available assignees, the owner's per-workflow override, and the escalation to walk that chain. The empty-pool case still fails the submit as a precondition instead of pausing the workflow with an alert to the platform admin. The daily inbox digest (`§08`, `SendDigest` in the Commsi contract) is unscheduled.
 
 ### B-14 First USTS specs for the auth boundary
 
@@ -80,3 +80,4 @@ Audit rows (`actor_user_id`), `projects.owner_user_id`, `approver_pools.user_id`
 | Id | Item | Closed in |
 |---|---|---|
 | B-10 | pm-core login on IdPi_OIDC (slice 4b): login and callback routes, just-in-time users, Redis sessions, actor from the session, pools from claims | 2026-10-23 |
+| B-08 | SLA tick, nudges, escalation, and expiry through Commsi (slice 7); the empty-pool pause moved to B-15 | 2026-10-26 |
