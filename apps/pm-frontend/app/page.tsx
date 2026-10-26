@@ -1,4 +1,6 @@
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
+import Link from "next/link";
+import { whoAmI } from "./lib/api";
 
 type Probe = { name: string; url: string };
 
@@ -18,49 +20,30 @@ async function probe(p: Probe): Promise<{ name: string; ok: boolean; detail: str
   }
 }
 
-type Me = { user: { username: string; display_name: string }; platform_roles: string[]; pools: string[] } | null;
-
-// The session cookie is host-scoped (ports do not matter), so the browser sends pm-core's cookie
-// here too; forwarding it to /auth/me tells the page who is signed in (FSD §04 session model).
-async function whoAmI(): Promise<Me> {
-  const jar = await cookies();
-  const session = jar.get("pm_session")?.value;
-  if (!session) return null;
-  try {
-    const res = await fetch(`${probes[0].url}/auth/me`, { cache: "no-store", headers: { cookie: `pm_session=${session}` }, signal: AbortSignal.timeout(2000) });
-    return res.ok ? ((await res.json()) as Me) : null;
-  } catch {
-    return null;
-  }
-}
-
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   await headers(); // opt into request-time rendering
   const [results, me] = await Promise.all([Promise.all(probes.map(probe)), whoAmI()]);
-  const corePublic = process.env.PM_CORE_PUBLIC_URL ?? "http://localhost:8080";
   return (
     <main>
       <h1>pro_manage</h1>
-      <p className="muted">
-        Spine development. Seed company: Northfield Spirits Co. (NF-KY, NF-ON).
-      </p>
-      <section className="status" aria-label="Sign-in">
+      <p className="muted">Spine development. Seed company: Northfield Spirits Co. (NF-KY, NF-ON).</p>
+      <section className="card" aria-label="Start">
         {me ? (
           <p>
-            Signed in as <strong>{me.user.display_name || me.user.username}</strong> ({me.user.username}); roles:{" "}
-            {me.platform_roles.length ? me.platform_roles.join(", ") : "none"}; pools: {me.pools.length ? me.pools.join(", ") : "none"}.{" "}
-            <a href={`${corePublic}/auth/me`}>session</a>
+            Signed in as <strong>{me.user.display_name || me.user.username}</strong>. Roles: {me.platform_roles.length ? me.platform_roles.join(", ") : "none"}; pools:{" "}
+            {me.pools.length ? me.pools.join(", ") : "none"}. Go to your <Link href="/inbox">inbox</Link> or the <Link href="/projects">projects</Link> you can see.
           </p>
         ) : (
           <p>
-            <a href={`${corePublic}/auth/login?return_to=${encodeURIComponent("http://localhost:3100/")}`}>Sign in</a> with the company
-            identity provider (dev realm: alice.owner, bob.finance, carol.admin, dana.policy, evan.exec, fay.ops, gus.maint, hana.epcm / northfield-dev).
+            Sign in with the company identity provider (top right). Dev realm users: alice.owner, bob.finance, carol.admin, dana.policy, evan.exec, fay.ops, gus.maint,
+            hana.epcm, password northfield-dev.
           </p>
         )}
       </section>
-      <section className="status" aria-label="Service status">
+      <section className="card" aria-label="Service status">
+        <h2>Services</h2>
         <table>
           <tbody>
             {results.map((r) => (

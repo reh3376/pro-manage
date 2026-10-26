@@ -1,6 +1,6 @@
 {
   "surface": "routes",
-  "description": "Every HTTP route shipped by pro_manage services must be adjudicated here (FSD \u00a712, DORMANT-CENSUS pattern). Key: '<binary> <METHOD> <path>'.",
+  "description": "Every HTTP route shipped by pro_manage services must be adjudicated here (FSD §12, DORMANT-CENSUS pattern). Key: '<binary> <METHOD> <path>'.",
   "entries": {
     "pm-core DELETE /api/v1/projects/{project_id}/grants/{grant_id}": {
       "writers": [
@@ -33,7 +33,7 @@
         "services/pm-core/internal/store/integration_test.go"
       ],
       "disposition": "active",
-      "notes": "Recomputes the tenant's audit hash chain; 409 when broken. The nightly verification job (FSD \u00a708) will call this."
+      "notes": "Recomputes the tenant's audit hash chain; 409 when broken. The nightly verification job (FSD §08) will call this."
     },
     "pm-core GET /api/v1/cars/{car_id}": {
       "writers": [
@@ -57,7 +57,7 @@
         "services/pm-core/internal/domain/car_integration_test.go"
       ],
       "disposition": "active",
-      "notes": "Guide on open (\u00a706 GUIDE: warm both spaces, read latest, merge) plus the chain/tier preview; never fails on MDEMG trouble."
+      "notes": "Guide on open (§06 GUIDE: warm both spaces, read latest, merge) plus the chain/tier preview; never fails on MDEMG trouble."
     },
     "pm-core GET /api/v1/cars/{car_id}/signature": {
       "writers": [
@@ -115,7 +115,7 @@
         "scripts/outbox_check.sh"
       ],
       "disposition": "active",
-      "notes": "Outbox depth by kind and status (ops dashboard 'outbox depth', FSD \u00a711)."
+      "notes": "Outbox depth by kind and status (ops dashboard 'outbox depth', FSD §11)."
     },
     "pm-core GET /api/v1/policy-variables": {
       "writers": [
@@ -156,7 +156,7 @@
         "services/pm-core/internal/domain/membership_integration_test.go"
       ],
       "disposition": "active",
-      "notes": "The caller's effective permission per section (\u00a704 grant evaluation), base role, grants, stage assignment; for the UI and the ACL specs."
+      "notes": "The caller's effective permission per section (§04 grant evaluation), base role, grants, stage assignment; for the UI and the ACL specs."
     },
     "pm-core GET /api/v1/projects/{project_id}/audit": {
       "writers": [
@@ -201,7 +201,7 @@
         "services/pm-core/internal/domain/car_integration_test.go"
       ],
       "disposition": "active",
-      "notes": "GuidanceOutcome rows (what users saw and did at governed actions, \u00a706 audit coupling)."
+      "notes": "GuidanceOutcome rows (what users saw and did at governed actions, §06 audit coupling)."
     },
     "pm-core GET /api/v1/projects/{project_id}/members": {
       "writers": [
@@ -223,7 +223,7 @@
         "services/pm-core/internal/store/integration_test.go"
       ],
       "disposition": "active",
-      "notes": "Effective policy value for the project (FSD \u00a708 resolution order)."
+      "notes": "Effective policy value for the project (FSD §08 resolution order)."
     },
     "pm-core GET /api/v1/projects/{project_id}/promises": {
       "writers": [
@@ -245,7 +245,7 @@
         "docs/tests/uats/specs/pm-core/sites.uats.json"
       ],
       "disposition": "active",
-      "notes": "List sites for the tenant (FSD \u00a703 Site)."
+      "notes": "List sites for the tenant (FSD §03 Site)."
     },
     "pm-core GET /api/v1/sites/{site_id}": {
       "writers": [
@@ -281,7 +281,7 @@
         "apps/pm-frontend/app/page.tsx"
       ],
       "disposition": "active",
-      "notes": "Starts the SSO code flow through IdPi_OIDC (\u00a704): mints the nonce, stores the pending login (state, verifier, return_to) in Redis, 302 to the IdP. 503 idp_unavailable when the module or IdP is down."
+      "notes": "Starts the SSO code flow through IdPi_OIDC (§04): mints the nonce, stores the pending login (state, verifier, return_to) in Redis, 302 to the IdP. 503 idp_unavailable when the module or IdP is down."
     },
     "pm-core GET /auth/me": {
       "writers": [
@@ -340,7 +340,7 @@
         "services/pm-core/internal/domain/car_integration_test.go"
       ],
       "disposition": "active",
-      "notes": "Dev/admin path to add a pool member until IdPi claims mapping fills pools (\u00a704); audited."
+      "notes": "Dev/admin path to add a pool member until IdPi claims mapping fills pools (§04); audited."
     },
     "pm-core POST /api/v1/cars/{car_id}/decide": {
       "writers": [
@@ -364,7 +364,7 @@
         "services/pm-core/internal/domain/car_integration_test.go"
       ],
       "disposition": "active",
-      "notes": "Pre-classification of the settled form (\u00a706): runs classify and caches the verdict by sha256(action_kind, payload, policy_snapshot)."
+      "notes": "Pre-classification of the settled form (§06): runs classify and caches the verdict by sha256(action_kind, payload, policy_snapshot)."
     },
     "pm-core POST /api/v1/cars/{car_id}/submit": {
       "writers": [
@@ -376,7 +376,7 @@
         "services/pm-core/internal/domain/car_integration_test.go"
       ],
       "disposition": "active",
-      "notes": "The governed action approval.car (\u00a706 CLASSIFY under the tier; \u00a708 chain and policy snapshot). 200 in flight, 409 governance_denied, 503 governance_unavailable (Tier A), 422 precondition_failed."
+      "notes": "The governed action approval.car (§06 CLASSIFY under the tier; §08 chain and policy snapshot). 200 in flight, 409 governance_denied, 503 governance_unavailable (Tier A), 422 precondition_failed."
     },
     "pm-core POST /api/v1/outbox/requeue-failed": {
       "writers": [
@@ -421,7 +421,7 @@
         "services/pm-core/internal/domain/car_integration_test.go"
       ],
       "disposition": "active",
-      "notes": "EstimateArtifact behind a CAR (\u00a703): AACE class, as-of, TIC, contingency, basis-of-estimate document; audited."
+      "notes": "EstimateArtifact behind a CAR (§03): AACE class, as-of, TIC, contingency, basis-of-estimate document; audited."
     },
     "pm-core POST /api/v1/projects/{project_id}/grants": {
       "writers": [
@@ -455,7 +455,7 @@
         "services/pm-core/internal/domain/car_integration_test.go"
       ],
       "disposition": "active",
-      "notes": "BusinessCasePromise; committed requires metric, baseline, period, promised value, measurement basis (\u00a703); audited."
+      "notes": "BusinessCasePromise; committed requires metric, baseline, period, promised value, measurement basis (§03); audited."
     },
     "pm-core POST /api/v1/sites": {
       "writers": [
@@ -493,6 +493,18 @@
       "disposition": "active",
       "notes": "Provider webhook: forwarded to the Sigi module for signature verification, then the named envelope is reconciled; 401 when the module rejects it. No session (the provider signs the payload)."
     },
+    "pm-frontend GET /": {
+      "source": "manual",
+      "writers": [
+        "apps/pm-frontend/app/page.tsx"
+      ],
+      "readers": [
+        "services/pm-core/tests/login/screens_test.go",
+        "docs/tests/uats/specs/pm-frontend/projects_signin.uats.json"
+      ],
+      "disposition": "active",
+      "notes": "Home: service status and the signed-in user's starting points; sign-in link to pm-core /auth/login."
+    },
     "pm-frontend GET /api/healthz": {
       "writers": [
         "apps/pm-frontend/app/api/healthz/route.ts"
@@ -503,6 +515,63 @@
       ],
       "disposition": "active",
       "notes": "Frontend liveness."
+    },
+    "pm-frontend GET /cars/{id}": {
+      "source": "manual",
+      "writers": [
+        "apps/pm-frontend/app/cars/[id]/page.tsx"
+      ],
+      "readers": [
+        "services/pm-core/tests/login/screens_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Approval screen: request, guidance rail (GUIDE on open, routing preview), pre-classify and submit, the chain with SLA state, decide panel for the current assignee, signature, audit trail (FSD §06, §08, §10)."
+    },
+    "pm-frontend GET /inbox": {
+      "source": "manual",
+      "writers": [
+        "apps/pm-frontend/app/inbox/page.tsx"
+      ],
+      "readers": [
+        "services/pm-core/tests/login/screens_test.go",
+        "docs/tests/uats/specs/pm-frontend/projects_signin.uats.json"
+      ],
+      "disposition": "active",
+      "notes": "Workflow inbox: open stages waiting on the session user with sla_state (FSD §08)."
+    },
+    "pm-frontend GET /projects": {
+      "source": "manual",
+      "writers": [
+        "apps/pm-frontend/app/projects/page.tsx"
+      ],
+      "readers": [
+        "services/pm-core/tests/login/screens_test.go",
+        "docs/tests/uats/specs/pm-frontend/projects_signin.uats.json"
+      ],
+      "disposition": "active",
+      "notes": "Projects visible to the session user (pm-core GET /api/v1/projects with the forwarded pm_session cookie); anonymous callers redirect to sign-in."
+    },
+    "pm-frontend GET /projects/{id}": {
+      "source": "manual",
+      "writers": [
+        "apps/pm-frontend/app/projects/[id]/page.tsx"
+      ],
+      "readers": [
+        "services/pm-core/tests/login/screens_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Project page: overview, the caller's access map, CARs, promises, team, audit; sections absent when the ACL says no (FSD §04)."
+    },
+    "pm-frontend GET /projects/{id}/cars/new": {
+      "source": "manual",
+      "writers": [
+        "apps/pm-frontend/app/projects/[id]/cars/new/page.tsx"
+      ],
+      "readers": [
+        "services/pm-core/tests/login/screens_test.go"
+      ],
+      "disposition": "active",
+      "notes": "CAR form: drafts a CAR (and optionally its estimate) through server actions; submission is on the CAR page."
     },
     "pm-sidecar GET /healthz": {
       "source": "manual",

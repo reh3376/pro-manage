@@ -66,8 +66,12 @@
       "recorded_at": "2026-10-26T15:29:54Z"
     },
     "docs/inventories/routes_inventory.json": {
-      "sha256": "561bfbfe3831a582d2c4cb01cfb6fc79e10da40411671833e2d5b27719686dc6",
+      "sha256": "790614edcf30c8fb9505a7ab6ecdeee557ad44b72296ff7c939046b029a17c38",
       "history": [
+        {
+          "sha256": "561bfbfe3831a582d2c4cb01cfb6fc79e10da40411671833e2d5b27719686dc6",
+          "recorded_at": "2026-10-26T14:53:39Z"
+        },
         {
           "sha256": "bf2c0785de9b649099605e172b8c6a2524ed5cb21512f77acd5e2f24af2499e4",
           "recorded_at": "2026-10-24T15:45:29Z"
@@ -75,13 +79,9 @@
         {
           "sha256": "d224a4354611aec91a82bbfd39d383a8fb555a540d473d5fa580bf9c7be451ff",
           "recorded_at": "2026-10-23T20:24:40Z"
-        },
-        {
-          "sha256": "ea6e27d34eeed5b4c10304c80c42a072ddbeb9fa4e858b52b9f7eaaee21d448a",
-          "recorded_at": "2026-10-22T18:04:54Z"
         }
       ],
-      "recorded_at": "2026-10-26T14:53:39Z"
+      "recorded_at": "2026-10-26T16:09:28Z"
     },
     "docs/tests/uats/runners/uats_runner.py": {
       "sha256": "2ae714b57d7ec2692389aabbdc9208d47981c1aaa95ecfbceebea8ea07c945fb",
@@ -196,6 +196,16 @@
       "sha256": "17417ad493493111e941ea17666927333b658ccda7a0b22d45588d7dc2cb8628",
       "history": [],
       "recorded_at": "2026-10-22T13:29:40Z"
+    },
+    "docs/tests/uats/specs/pm-frontend/projects_signin.uats.json": {
+      "sha256": "b6ff5e878c4d47cda6177619c42404169d668b85110f5f39f7f96785c264d99c",
+      "history": [
+        {
+          "sha256": "d41ce27907b5c42b14004e30851959aad0162fc80b30e9adba568d55d012ccf5",
+          "recorded_at": "2026-10-26T16:09:28Z"
+        }
+      ],
+      "recorded_at": "2026-10-26T16:11:52Z"
     },
     "docs/tests/uats/specs/pm-sidecar/healthz.uats.json": {
       "sha256": "a42a7e0efe2c739f725ff242c2da21b1f43fdfc97527e80bbc7c0b9dee9e592c",
@@ -448,6 +458,6 @@
       "recorded_at": "2026-10-22T13:29:40Z"
     }
   },
-  "updated_at": "2026-10-26T15:29:54Z",
-  "count": 69
+  "updated_at": "2026-10-26T16:11:52Z",
+  "count": 70
 }
