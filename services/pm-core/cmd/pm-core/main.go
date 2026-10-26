@@ -19,14 +19,17 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/api"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/auth"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/blobs"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/config"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/idpi"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/sigi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/domain"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/grpcserver"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/secrets"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/sessions"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/signing"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
 	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
@@ -78,8 +81,27 @@ func run() error {
 		log.Info("postgres configured", "auto_migrate", cfg.DBAutoMigrate, "dev_actor_header", cfg.DevActorHeader)
 
 		gate := &governance.Gate{OrgID: cfg.GovernanceOrgID, Log: log, Cache: governance.NewPreclassCache(cfg.PreclassifyTTL)}
-		svc := &domain.Service{Store: st, Chain: chain, Tenant: cfg.TenantID, Gate: gate, Log: log}
-		a := &api.API{Log: log, Domain: svc, Chain: chain, DevActorHeader: cfg.DevActorHeader, MDEMGBaseURL: cfg.MDEMGBaseURL}
+		sign := &signing.Service{Store: st, Chain: chain, Tenant: cfg.TenantID, Log: log}
+		if cfg.SigiAddr != "" {
+			sc, err := sigi.Dial(cfg.SigiAddr, cfg.SigiProvider)
+			if err != nil {
+				return err
+			}
+			defer sc.Close()
+			sign.Sigi = sc
+		}
+		if cfg.S3Endpoint != "" {
+			bs, err := blobs.Open(ctx, blobs.Config{Endpoint: cfg.S3Endpoint, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey, Bucket: cfg.S3Bucket, Region: cfg.S3Region})
+			if err != nil {
+				log.Warn("object store not available; signed artifacts cannot be served", "endpoint", cfg.S3Endpoint, "err", err)
+			} else {
+				sign.Blobs = bs
+				checks["s3"] = bs.Ping
+			}
+		}
+		log.Info("signing configured", "sigi", cfg.SigiAddr, "provider", cfg.SigiProvider, "object_store", sign.Blobs != nil)
+		svc := &domain.Service{Store: st, Chain: chain, Tenant: cfg.TenantID, Gate: gate, Log: log, Signing: sign}
+		a := &api.API{Log: log, Domain: svc, Chain: chain, DevActorHeader: cfg.DevActorHeader, MDEMGBaseURL: cfg.MDEMGBaseURL, Signing: sign}
 		if cfg.MDEMGBaseURL != "" {
 			mc, err := mdemgadapter.New(mdemgadapter.Options{BaseURL: cfg.MDEMGBaseURL, APIKey: cfg.MDEMGAPIKey, ClassifyTimeout: cfg.MDEMGTimeout, UserAgent: "pro-manage/pm-core " + config.Version})
 			if err != nil {

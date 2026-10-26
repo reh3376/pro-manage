@@ -9,6 +9,7 @@ package domain
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -24,6 +25,7 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/outbox"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/signing"
 	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
 
@@ -962,6 +964,18 @@ func (s *Service) DecideCAR(ctx context.Context, actor Actor, carID uuid.UUID, i
 		if action == "car.stage.approve" {
 			return nil
 		}
+		if action == "car.approve" {
+			// §08: DocuSign at or above car.esign.required_above (from the workflow's policy
+			// snapshot), the audited approval itself as the attestation of record below it.
+			// Re-read the stages so the decision just recorded is among the signers.
+			signed, err := q.ListStages(ctx, wf.WorkflowID)
+			if err != nil {
+				return err
+			}
+			if err := s.signOrAttest(ctx, q, actor, &after, wf, signed, ev); err != nil {
+				return err
+			}
+		}
 		return outbox.Enqueue(ctx, q, s.Tenant, outbox.KindMDEMGObserve, ev.AuditID.String(), mdemgadapter.ObserveRequest{
 			SpaceID: mdemgadapter.ProjectSpace(car.ProjectID.String()), SessionID: sessionID(actor, car.ProjectID),
 			Content: fmt.Sprintf("CAR %s (%s) %s by %s at stage %d (%s); amount %s %s.", car.Code, car.Kind, after.Status, actor.UserID, current.StageOrder, current.RoleRequired, car.AmountRequested, car.Currency),
@@ -1017,4 +1031,78 @@ func (s *Service) AddPoolMember(ctx context.Context, actor Actor, pool, userID s
 		})
 		return err
 	})
+}
+
+// signOrAttest decides the signature path for an approved CAR (FSD §08).
+func (s *Service) signOrAttest(ctx context.Context, q *db.Queries, actor Actor, car *db.CapitalAuthorization, wf db.ApprovalWorkflow, stages []db.ApprovalStage, approval db.AuditEvent) error {
+	threshold := esignThreshold(wf.PolicySnapshot)
+	amount, _ := new(big.Rat).SetString(car.AmountRequested)
+	if s.Signing == nil || threshold == nil || amount.Cmp(threshold) < 0 {
+		// Internal attestation: the approval's audit row is the record.
+		ref := "attestation:" + approval.AuditID.String()
+		if err := q.SetCARSignedArtifact(ctx, db.SetCARSignedArtifactParams{TenantID: s.Tenant, CarID: car.CarID, SignedArtifactRef: &ref, UpdatedBy: actor.UserID}); err != nil {
+			return err
+		}
+		car.SignedArtifactRef = &ref
+		_, err := s.Chain.Append(ctx, q, audit.Event{
+			TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActionType: "car.attested", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
+			After: map[string]any{"attestation": ref, "amount": car.AmountRequested, "threshold_esign": money(threshold)}, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
+		})
+		return err
+	}
+	// E-signature: every approver signs, in stage order.
+	project, err := q.GetProject(ctx, db.GetProjectParams{TenantID: s.Tenant, ProjectID: car.ProjectID})
+	if err != nil {
+		return err
+	}
+	var signers []signing.Signer
+	for _, st := range stages {
+		if st.CompletedBy == nil || st.Decision == nil || *st.Decision != "approve" {
+			continue
+		}
+		name, email := *st.CompletedBy, ""
+		if u, err := q.GetUserByUsername(ctx, db.GetUserByUsernameParams{TenantID: s.Tenant, Username: *st.CompletedBy}); err == nil {
+			name, email = u.DisplayName, u.Email
+		}
+		signers = append(signers, signing.Signer{UserID: *st.CompletedBy, Email: email, Name: name, Order: st.StageOrder, Role: st.RoleRequired})
+	}
+	title := fmt.Sprintf("CAR %s (%s) %s %s, project %s", car.Code, car.Kind, car.AmountRequested, car.Currency, project.Code)
+	doc := fmt.Sprintf("Capital Authorization Request %s\nProject %s: %s\nKind: %s\nAmount: %s %s (basis %s)\nApproved %s\n\nBusiness case:\n%s",
+		car.Code, project.Code, project.Name, car.Kind, car.AmountRequested, car.Currency, car.Basis, approval.At.UTC().Format(time.RFC3339), car.BusinessCase)
+	pid := car.ProjectID
+	envID, err := s.Signing.Request(ctx, q, signing.Request{
+		ProjectID: &pid, SubjectType: "capital_authorization", SubjectID: car.CarID.String(), Title: title, Document: doc, Signers: signers,
+		Metadata: map[string]string{"project": project.Code, "car": car.Code, "amount": car.AmountRequested + " " + car.Currency}, RequestedBy: actor.UserID, AuditID: approval.AuditID,
+	}, func(kind, sourceRef string, payload any) error {
+		return outbox.Enqueue(ctx, q, s.Tenant, kind, sourceRef, payload)
+	})
+	if err != nil {
+		return err
+	}
+	ref := "envelope:" + envID.String() + ":pending"
+	if err := q.SetCARSignedArtifact(ctx, db.SetCARSignedArtifactParams{TenantID: s.Tenant, CarID: car.CarID, SignedArtifactRef: &ref, UpdatedBy: actor.UserID}); err != nil {
+		return err
+	}
+	car.SignedArtifactRef = &ref
+	_, err = s.Chain.Append(ctx, q, audit.Event{
+		TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActionType: "car.signature_requested", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
+		After: map[string]any{"envelope_id": envID, "signers": signers, "amount": car.AmountRequested, "threshold_esign": money(threshold)}, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
+	})
+	return err
+}
+
+// esignThreshold reads car.esign.required_above from a workflow's policy snapshot;
+// nil when the snapshot predates the key (then the approval is attested).
+func esignThreshold(snapshot []byte) *big.Rat {
+	var m struct {
+		ThresholdESign string `json:"threshold_esign"`
+	}
+	if err := json.Unmarshal(snapshot, &m); err != nil || m.ThresholdESign == "" {
+		return nil
+	}
+	x, ok := new(big.Rat).SetString(m.ThresholdESign)
+	if !ok {
+		return nil
+	}
+	return x
 }

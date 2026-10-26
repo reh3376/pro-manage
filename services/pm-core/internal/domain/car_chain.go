@@ -33,7 +33,8 @@ const (
 	keyTierCAR       = "mdemg.tier.approval.car"
 	keyTierCARMinor  = "mdemg.tier.approval.car.minor"
 	keyClassifyTOms  = "mdemg.classify.timeout_ms"
-	carPolicyVersion = 1
+	keyESignAbove    = "car.esign.required_above"
+	carPolicyVersion = 2
 )
 
 // carPolicyKeys is everything a CAR workflow snapshots at submission (§08 "Snapshot at start").
@@ -41,7 +42,7 @@ var carPolicyKeys = []string{
 	keyThrFinance, keyThrVPFinance, keyThrCFO, keyThrCEO, keyThrBasis, keyThrCurrency,
 	keyFELClass, keyFELCapPct, keyFullClass,
 	keySLAOwner, keySLAFinance, keySLAVPFinance, keySLACFO, keySLACEO,
-	keyTierCAR, keyTierCARMinor, keyClassifyTOms,
+	keyTierCAR, keyTierCARMinor, keyClassifyTOms, keyESignAbove,
 }
 
 // CARPolicy is the parsed snapshot the chain is built from.
@@ -55,6 +56,7 @@ type CARPolicy struct {
 	Currency        string                     `json:"currency"`
 	FELClass        int                        `json:"fel_funding_required_aace_class"`
 	FELCapPct       *big.Rat                   `json:"-"`
+	ESignAbove      *big.Rat                   `json:"-"` // car.esign.required_above: DocuSign at or above, internal attestation below (§08)
 	FullClass       int                        `json:"full_required_aace_class"`
 	SLAHours        map[string]int             `json:"sla_hours"` // by role
 	TierMajor       governance.Tier            `json:"tier_major"`
@@ -73,8 +75,9 @@ func (p CARPolicy) MarshalJSON() ([]byte, error) {
 		ThrCFO            string `json:"threshold_cfo"`
 		ThrCEO            string `json:"threshold_ceo"`
 		FELCapPct         string `json:"fel_funding_cap_pct"`
+		ESignAbove        string `json:"threshold_esign"`
 		ClassifyTimeoutMs int64  `json:"classify_timeout_ms"`
-	}{alias(p), money(p.ThrFinance), money(p.ThrVPFinance), money(p.ThrCFO), money(p.ThrCEO), p.FELCapPct.FloatString(2), p.ClassifyTimeout.Milliseconds()})
+	}{alias(p), money(p.ThrFinance), money(p.ThrVPFinance), money(p.ThrCFO), money(p.ThrCEO), p.FELCapPct.FloatString(2), money(p.ESignAbove), p.ClassifyTimeout.Milliseconds()})
 }
 
 // resolveCARPolicy resolves every key for the project at now. A key that is not
@@ -110,6 +113,9 @@ func resolveCARPolicy(ctx context.Context, q *db.Queries, project db.Project, no
 		return p, err
 	}
 	if p.FELCapPct, err = ratOf(p.Resolved[keyFELCapPct]); err != nil {
+		return p, err
+	}
+	if p.ESignAbove, err = ratOf(p.Resolved[keyESignAbove]); err != nil {
 		return p, err
 	}
 	if p.Basis, err = strOf(p.Resolved[keyThrBasis]); err != nil {

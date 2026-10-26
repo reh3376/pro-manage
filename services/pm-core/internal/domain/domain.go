@@ -20,6 +20,7 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/outbox"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/signing"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
 	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
@@ -71,6 +72,9 @@ type Service struct {
 	// governed actions refuse, Tier B proceed with a recorded warning.
 	Gate *governance.Gate
 	Log  *slog.Logger
+	// Signing requests e-signature envelopes on final approvals (§08, §10); nil means
+	// every approval is attested by its audit row alone.
+	Signing *signing.Service
 }
 
 func (s *Service) gate() *governance.Gate {

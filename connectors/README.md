@@ -5,9 +5,15 @@ Connector modules, one directory per `connectors/<type>/<code>/` (FSD §15 "Pack
 | Module | Status | Contract | Notes |
 |---|---|---|---|
 | `idpi/oidc` (`IdPi_OIDC`) | **built, slice 4a** | `pm.connector.v1.IdpiService` | Generic OpenID Connect against the dev Keycloak realm. Own Go module with a `replace` to `services/pm-core` for the generated contract. PKCE code flow in two RPCs, JWKS verification, refresh, logout with revocation, claims-to-roles mapping from `mapping.yaml`. pm-core's login, users, and sessions are slice 4b. |
+| `sigi/stub` (`Sigi_STUB`) | **built, slice 6** | `pm.connector.v1.SigiService` | Development and CI e-signature backend: in-memory envelopes, `POST /dev/envelopes/{id}/sign` stands in for a signer, a minimal PDF with a SHA-256 as the artifact. pm-core's envelope lifecycle, reconciliation, and capture run against it unchanged. |
+| `sigi/ds` (`Sigi_DS`) | planned (B-13) | `pm.connector.v1.SigiService` | DocuSign eSignature REST once the account exists. |
 | `erpi/ifs` | planned | `pm.connector.v1.ErpiService` | Once the IFS items on the owner checklist are answered. |
 
-Build order (roadmap, decided 2026-10-20): `IdPi_OIDC`, then `ERPi_IFS`; the Connector SDK (`sdk/`) is extracted from those two and `Sigi_DS` and `Commsi_SMTP` are the first modules built on it. Until then each module keeps a small `internal/runtime` (config, secrets, health listener) that the SDK will absorb.
+Build order (roadmap, decided 2026-10-20): `IdPi_OIDC`, then `ERPi_IFS`; the Connector SDK (`sdk/`) is extracted from those two and `Sigi_DS` and `Commsi_SMTP` are the first modules built on it. `Sigi_STUB` came earlier than planned (slice 6) because the spine's signed artifact needed a backend before any DocuSign account exists; it is deliberately small and will be re-based on the SDK with `Sigi_DS`. Until then each module keeps its own process plumbing (config, secrets, health listener) that the SDK will absorb.
+
+## Running Sigi_STUB
+
+The compose dev stack starts it as `sigi-stub` (gRPC `:7090`, HTTP `:7091`). pm-workers creates envelopes there when a CAR at or above `car.esign.required_above` is approved; `POST http://127.0.0.1:7091/dev/envelopes/{provider_ref}/sign?user_id=<signer>` stands in for each signer (`decline=1` declines), and pm-workers captures the resulting PDF to RustFS. `make check-car` drives the whole lifecycle.
 
 ## Running IdPi_OIDC
 

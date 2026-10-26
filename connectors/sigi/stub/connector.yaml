@@ -1,0 +1,27 @@
+# Module manifest (FSD §15). Sigi_STUB is the development and CI e-signature backend: it keeps
+# envelopes in memory, lets a test "sign" them through a dev HTTP endpoint, and produces a real
+# (minimal) PDF artifact with a SHA-256, so pm-core's envelope lifecycle, polling, artifact
+# capture, and audit run exactly as they will against Sigi_DS (DocuSign) once credentials exist.
+module: Sigi_STUB
+type: Sigi
+code: STUB
+version: 0.1.0
+contract: pm.connector.v1.SigiService >= 1.0, < 2.0
+runtime: go
+image: pm-sigi-stub
+capabilities:
+  - envelope_create
+  - envelope_status
+  - envelope_cancel
+  - signed_artifact
+  - webhook
+  - dev_sign          # the stub only: POST /dev/envelopes/{id}/sign completes a signer
+config_schema:
+  webhook_secret:    { type: string, required: false }   # HMAC key for OnWebhook bodies (dev default when unset)
+  auto_sign_after:   { type: duration, default: 0s }     # when set, envelopes complete themselves after this delay (dev convenience)
+secrets: []
+egress: []
+inbound:
+  - name: dev_sign
+    auth: none
+    enabled_by: always   # dev only; never deployed outside the compose stack

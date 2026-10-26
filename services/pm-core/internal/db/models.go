@@ -260,6 +260,30 @@ type ProjectMember struct {
 	ExpiresAt   *time.Time `json:"expires_at"`
 }
 
+type SignatureEnvelope struct {
+	EnvelopeID     uuid.UUID       `json:"envelope_id"`
+	TenantID       string          `json:"tenant_id"`
+	ProjectID      *uuid.UUID      `json:"project_id"`
+	SubjectType    string          `json:"subject_type"`
+	SubjectID      string          `json:"subject_id"`
+	Provider       string          `json:"provider"`
+	ProviderRef    *string         `json:"provider_ref"`
+	Status         string          `json:"status"`
+	Title          string          `json:"title"`
+	Signers        json.RawMessage `json:"signers"`
+	RequestedBy    string          `json:"requested_by"`
+	RequestedAt    time.Time       `json:"requested_at"`
+	AuditID        *uuid.UUID      `json:"audit_id"`
+	SentAt         *time.Time      `json:"sent_at"`
+	CompletedAt    *time.Time      `json:"completed_at"`
+	ArtifactRef    *string         `json:"artifact_ref"`
+	ArtifactSha256 *string         `json:"artifact_sha256"`
+	ArtifactBytes  *int64          `json:"artifact_bytes"`
+	LastCheckedAt  *time.Time      `json:"last_checked_at"`
+	LastError      *string         `json:"last_error"`
+	Detail         string          `json:"detail"`
+}
+
 type Site struct {
 	SiteID             uuid.UUID       `json:"site_id"`
 	TenantID           string          `json:"tenant_id"`

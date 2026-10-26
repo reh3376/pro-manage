@@ -79,6 +79,78 @@
       ],
       "disposition": "active",
       "notes": "ValidateToken against the IdP JWKS; pm-core consumer: session validation (slice 4b)."
+    },
+    "sigi/stub:dev_sign": {
+      "writers": [
+        "connectors/sigi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/sigi/client.go",
+        "services/pm-core/internal/signing/signing.go",
+        "docs/tests/udts/specs/sigi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "Stub only: POST /dev/envelopes/{id}/sign completes a signer; consumed by scripts/car_check.sh and the signing integration test."
+    },
+    "sigi/stub:envelope_cancel": {
+      "writers": [
+        "connectors/sigi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/sigi/client.go",
+        "services/pm-core/internal/signing/signing.go",
+        "docs/tests/udts/specs/sigi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "planned",
+      "notes": "CancelEnvelope; pm-core consumer arrives with CAR cancellation (planned)."
+    },
+    "sigi/stub:envelope_create": {
+      "writers": [
+        "connectors/sigi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/sigi/client.go",
+        "services/pm-core/internal/signing/signing.go",
+        "docs/tests/udts/specs/sigi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "CreateEnvelope; consumed by internal/signing.CreateAtProvider through the outbox."
+    },
+    "sigi/stub:envelope_status": {
+      "writers": [
+        "connectors/sigi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/sigi/client.go",
+        "services/pm-core/internal/signing/signing.go",
+        "docs/tests/udts/specs/sigi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "GetEnvelopeStatus; consumed by internal/signing.Reconcile in pm-workers."
+    },
+    "sigi/stub:signed_artifact": {
+      "writers": [
+        "connectors/sigi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/sigi/client.go",
+        "services/pm-core/internal/signing/signing.go",
+        "docs/tests/udts/specs/sigi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "DownloadSignedArtifact; consumed by internal/signing.Reconcile (capture to the object store, SHA-256 in the audit row)."
+    },
+    "sigi/stub:webhook": {
+      "writers": [
+        "connectors/sigi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/sigi/client.go",
+        "services/pm-core/internal/signing/signing.go",
+        "docs/tests/udts/specs/sigi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "OnWebhook; consumed by POST /webhooks/sigi/{provider}."
     }
   }
 }

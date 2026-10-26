@@ -1,0 +1,24 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.SigiService",
+  "method": "CreateEnvelope",
+  "request": {
+    "title": "no subject"
+  },
+  "expected": {
+    "status_code": "INVALID_ARGUMENT"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "aee080832009bccefd1c605de8c2995103045b4029013303d4523d974b3164a6"
+  },
+  "metadata": {
+    "description": "CreateEnvelope without subject_type and subject_id is INVALID_ARGUMENT (pm-core's outbox dead-letters it rather than retrying).",
+    "tags": [
+      "sigi-stub",
+      "contract",
+      "sigi",
+      "envelope"
+    ]
+  }
+}

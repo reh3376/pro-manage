@@ -25,6 +25,7 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/policy"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/signing"
 	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
 
@@ -38,6 +39,8 @@ type API struct {
 	DevActorHeader bool // when true, X-Dev-Actor names the acting user (development and CI only)
 	// Auth resolves the actor from the session cookie (FSD §04); nil when login is not configured.
 	Auth *auth.Handler
+	// Signing serves e-signature state and artifacts (FSD §10 Sigi); nil when not configured.
+	Signing *signing.Service
 }
 
 type ctxKey int
@@ -61,6 +64,7 @@ func (a *API) Mount(mux *http.ServeMux) {
 	a.mountOutbox(mux, wrap)
 	a.mountCAR(mux, wrap)
 	a.mountAccess(mux, wrap)
+	a.mountSigning(mux, wrap, a.requestID)
 }
 
 // ---------------------------------------------------------------- middleware

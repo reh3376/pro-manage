@@ -1,0 +1,134 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core e-signature surface",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "api",
+      "sigi",
+      "signature"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-26",
+    "description": "The signature state of a CAR and the webhook edge against the Northfield seed: the seeded history CAR predates signing (mode none, no artifact), a non-member is forbidden, and the provider webhook is refused without a valid signature. The full lifecycle (request, create at the stub, sign, capture, download) runs in scripts/car_check.sh and the signing integration test.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "ba7b611769b2c040c9505c0ec53673845997b708a7130edaf00c3fc64f3e4f7b"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/cars/01900000-0000-7000-8000-00000000e001/signature",
+    "headers": {
+      "X-Dev-Actor": "alice.owner",
+      "Content-Type": "application/json"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "approved",
+        "path": "$.status",
+        "op": "equals",
+        "expected": "approved"
+      },
+      {
+        "name": "predates signing",
+        "path": "$.mode",
+        "op": "equals",
+        "expected": "none"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "no_artifact_404",
+      "request": {
+        "path": "/api/v1/cars/01900000-0000-7000-8000-00000000e001/signed-artifact"
+      },
+      "expected": {
+        "status": 404,
+        "body_assertions": [
+          {
+            "name": "not found",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "not_found"
+          }
+        ]
+      }
+    },
+    {
+      "name": "non_member_403",
+      "request": {
+        "headers": {
+          "X-Dev-Actor": "nobody.uats"
+        }
+      },
+      "expected": {
+        "status": 403,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "unknown_car_404",
+      "request": {
+        "path": "/api/v1/cars/01900000-0000-7000-8000-0000000000ff/signature"
+      },
+      "expected": {
+        "status": 404,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "webhook_bad_signature_401",
+      "request": {
+        "method": "POST",
+        "path": "/webhooks/sigi/stub",
+        "headers": {
+          "X-Dev-Actor": "",
+          "X-Stub-Signature": "bad"
+        },
+        "body": {
+          "envelope_id": "uats"
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": [
+          {
+            "name": "rejected",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "webhook_rejected"
+          }
+        ]
+      }
+    },
+    {
+      "name": "webhook_unknown_provider_401",
+      "request": {
+        "method": "POST",
+        "path": "/webhooks/sigi/docusign",
+        "headers": {
+          "X-Dev-Actor": ""
+        },
+        "body": {
+          "event": "envelope-completed"
+        }
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": []
+      }
+    }
+  ]
+}

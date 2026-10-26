@@ -4,24 +4,28 @@
   "entries": {
     "pm.connector.v1.ConnectorService/Capabilities": {
       "writers": [
-        "connectors/idpi/oidc/internal/service/service.go"
+        "connectors/idpi/oidc/internal/service/service.go",
+        "connectors/sigi/stub/internal/service/service.go"
       ],
       "readers": [
-        "docs/tests/udts/specs/idpi_oidc_connector_capabilities.udts.json",
+        "connectors/idpi/oidc/tests/integration/keycloak_test.go",
         "connectors/idpi/oidc/tests/udts/contract_test.go",
-        "connectors/idpi/oidc/tests/integration/keycloak_test.go"
+        "docs/tests/udts/specs/idpi_oidc_connector_capabilities.udts.json",
+        "docs/tests/udts/specs/sigi_stub_connector_capabilities.udts.json"
       ],
       "disposition": "active",
       "notes": "Manifest echo (\u00a715): module, type, code, contract, adjudicated capabilities."
     },
     "pm.connector.v1.ConnectorService/HealthCheck": {
       "writers": [
-        "connectors/idpi/oidc/internal/service/service.go"
+        "connectors/idpi/oidc/internal/service/service.go",
+        "connectors/sigi/stub/internal/service/service.go"
       ],
       "readers": [
-        "docs/tests/udts/specs/idpi_oidc_connector_healthcheck.udts.json",
+        "connectors/idpi/oidc/tests/integration/keycloak_test.go",
         "connectors/idpi/oidc/tests/udts/contract_test.go",
-        "connectors/idpi/oidc/tests/integration/keycloak_test.go"
+        "docs/tests/udts/specs/idpi_oidc_connector_healthcheck.udts.json",
+        "docs/tests/udts/specs/sigi_stub_connector_healthcheck.udts.json"
       ],
       "disposition": "active",
       "notes": "Common connector probe (\u00a710): SERVING, DEGRADED (IdP discovery failing), NOT_SERVING; pm-core routes around DEGRADED instances once the registry lands (slice 4b)."
@@ -97,6 +101,71 @@
       ],
       "disposition": "active",
       "notes": "Signature, issuer, expiry, audience; OK with valid=false for a bad token."
+    },
+    "pm.connector.v1.SigiService/CancelEnvelope": {
+      "writers": [
+        "connectors/sigi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/sigi_stub_cancel_envelope_unknown.udts.json",
+        "connectors/sigi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/sigi/client.go",
+        "services/pm-core/internal/signing/integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Voids an open envelope; pm-core consumer arrives with CAR cancellation."
+    },
+    "pm.connector.v1.SigiService/CreateEnvelope": {
+      "writers": [
+        "connectors/sigi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/sigi_stub_create_envelope.udts.json",
+        "connectors/sigi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/sigi/client.go",
+        "services/pm-core/internal/signing/integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Creates the envelope at the provider; pm-core calls it from the outbox (sigi.envelope.create) with the audit-keyed idempotency key."
+    },
+    "pm.connector.v1.SigiService/DownloadSignedArtifact": {
+      "writers": [
+        "connectors/sigi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/sigi_stub_download_signed_artifact_unknown.udts.json",
+        "connectors/sigi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/sigi/client.go",
+        "services/pm-core/internal/signing/integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Server-streamed signed artifact; pm-workers captures it to the object store, hashes it, and audits the hash."
+    },
+    "pm.connector.v1.SigiService/GetEnvelopeStatus": {
+      "writers": [
+        "connectors/sigi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/sigi_stub_get_envelope_status_unknown.udts.json",
+        "connectors/sigi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/sigi/client.go",
+        "services/pm-core/internal/signing/integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Status and per-signer state; pm-workers reconciles open envelopes with it every tick (\u00a710 lost webhooks)."
+    },
+    "pm.connector.v1.SigiService/OnWebhook": {
+      "writers": [
+        "connectors/sigi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/sigi_stub_on_webhook_bad_signature.udts.json",
+        "connectors/sigi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/sigi/client.go",
+        "services/pm-core/internal/signing/integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Provider webhook verification; POST /webhooks/sigi/{provider} on pm-core forwards the raw payload and reconciles on accept."
     },
     "pm.core.v1.VersionService/GetVersion": {
       "writers": [

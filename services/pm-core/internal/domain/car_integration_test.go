@@ -22,10 +22,12 @@ import (
 	"time"
 
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/sigi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/db"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/domain"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/signing"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/store"
 	"github.com/reh3376/pro-manage/services/pm-core/pkg/mdemgadapter"
 )
@@ -56,7 +58,7 @@ func setup(t *testing.T, client *mdemgadapter.Client) fixture {
 	t.Cleanup(st.Close)
 	chain, _ := audit.NewChain([]byte("integration-test-chain-key-0123456789"))
 	gate := &governance.Gate{Client: client, OrgID: "it", Log: log, Cache: governance.NewPreclassCache(0)}
-	svc := &domain.Service{Store: st, Chain: chain, Tenant: tenant, Gate: gate, Log: log}
+	svc := &domain.Service{Store: st, Chain: chain, Tenant: tenant, Gate: gate, Log: log, Signing: &signing.Service{Store: st, Chain: chain, Tenant: tenant, Log: log, Sigi: stubSigi(t)}}
 
 	q := st.Queries()
 	seed := []struct{ key, typ, def string }{
@@ -66,6 +68,7 @@ func setup(t *testing.T, client *mdemgadapter.Client) fixture {
 		{"sla.car.project_owner", "duration", "24"}, {"sla.car.finance_approver", "duration", "48"}, {"sla.car.vp_finance", "duration", "72"},
 		{"sla.car.cfo", "duration", "72"}, {"sla.car.ceo", "duration", "168"}, {"mdemg.tier.approval.car", "enum", `"A"`},
 		{"mdemg.tier.approval.car.minor", "enum", `"B"`}, {"mdemg.classify.timeout_ms", "integer", "10000"},
+		{"car.esign.required_above", "money", "1000000"},
 	}
 	for _, v := range seed {
 		if _, err := q.UpsertPolicyVariable(ctx, db.UpsertPolicyVariableParams{Key: v.key, Type: v.typ, Description: "integration seed", GlobalDefault: json.RawMessage(v.def), AllowedRange: json.RawMessage(`{}`), OverridableAt: []string{"site", "project"}, OwnerRole: "policy_owner", CreatedBy: "it-car"}); err != nil {
@@ -88,6 +91,21 @@ func setup(t *testing.T, client *mdemgadapter.Client) fixture {
 		t.Fatal(err)
 	}
 	return fixture{svc: svc, project: project, owner: owner}
+}
+
+// stubSigi dials the Sigi_STUB module when SIGI_TEST_ADDR is set (the request path only needs the provider name).
+func stubSigi(t *testing.T) *sigi.Client {
+	t.Helper()
+	addr := os.Getenv("SIGI_TEST_ADDR")
+	if addr == "" {
+		addr = "127.0.0.1:7090"
+	}
+	c, err := sigi.Dial(addr, "stub")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = c.Close() })
+	return c
 }
 
 func contains(list []string, s string) bool {
@@ -222,6 +240,24 @@ func TestCARHappyPathTierA(t *testing.T) {
 	if v.CAR.Status != "approved" || v.CAR.AuthorizedAmount == nil || *v.CAR.AuthorizedAmount != "42000000.00" || v.Workflow.Status != "approved" || v.CumulativeAuthorized != "42000000.00" {
 		t.Fatalf("final: %+v", v.CAR)
 	}
+	// 42M is above car.esign.required_above: an envelope was requested with the four approvers as signers.
+	if v.CAR.SignedArtifactRef == nil || !strings.HasPrefix(*v.CAR.SignedArtifactRef, "envelope:") {
+		t.Fatalf("signature should be requested: %v", v.CAR.SignedArtifactRef)
+	}
+	env, err := f.svc.Signing.Latest(ctx, "capital_authorization", car.CAR.CarID.String())
+	if err != nil || env == nil || env.Status != "requested" {
+		t.Fatalf("envelope row: %+v %v", env, err)
+	}
+	var signers []map[string]any
+	_ = json.Unmarshal(env.Signers, &signers)
+	if len(signers) != 4 || signers[0]["user_id"] != "it-owner" || signers[3]["role"] != "cfo" {
+		t.Fatalf("signers: %+v", signers)
+	}
+	var n int
+	_ = f.svc.Store.Pool.QueryRow(ctx, "SELECT count(*) FROM outbox WHERE tenant_id=$1 AND kind='sigi.envelope.create' AND source_ref=$2", tenant, "envelope:"+env.EnvelopeID.String()).Scan(&n)
+	if n != 1 {
+		t.Fatalf("envelope creation should be queued once, found %d", n)
+	}
 
 	// A supplemental routes on the cumulative amount (42M + 1M crosses nothing new but stays Tier A).
 	prev := car.CAR.CarID.String()
@@ -297,6 +333,19 @@ func TestCARTiersWhenMDEMGDown(t *testing.T) {
 	outcomes, _ := f.svc.GuidanceOutcomes(ctx, f.project.ProjectID, 10)
 	if len(outcomes) != 2 {
 		t.Fatalf("both attempts leave a GuidanceOutcome: %d", len(outcomes))
+	}
+	// 640000 is below car.esign.required_above: the audited approval is the attestation.
+	for _, user := range []string{"it-owner", "it-finance"} {
+		if _, err := f.svc.DecideCAR(ctx, domain.Actor{UserID: user}, small.CAR.CarID, domain.DecideInput{Decision: "approve"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	v, _ := f.svc.GetCAR(ctx, small.CAR.CarID)
+	if v.CAR.Status != "approved" || v.CAR.SignedArtifactRef == nil || !strings.HasPrefix(*v.CAR.SignedArtifactRef, "attestation:") {
+		t.Fatalf("attestation expected: %+v", v.CAR.SignedArtifactRef)
+	}
+	if env, _ := f.svc.Signing.Latest(ctx, "capital_authorization", small.CAR.CarID.String()); env != nil {
+		t.Fatal("no envelope below the threshold")
 	}
 }
 

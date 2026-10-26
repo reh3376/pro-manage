@@ -1,0 +1,24 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.SigiService",
+  "method": "GetEnvelopeStatus",
+  "request": {
+    "envelope_id": "udts-unknown"
+  },
+  "expected": {
+    "status_code": "NOT_FOUND"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "aee080832009bccefd1c605de8c2995103045b4029013303d4523d974b3164a6"
+  },
+  "metadata": {
+    "description": "GetEnvelopeStatus of an unknown envelope is NOT_FOUND.",
+    "tags": [
+      "sigi-stub",
+      "contract",
+      "sigi",
+      "envelope"
+    ]
+  }
+}

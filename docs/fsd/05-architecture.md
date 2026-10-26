@@ -259,7 +259,7 @@ pm-core.Service.Workflow ──► MDEMG /v1/jiminy/classify (REST) x2 in parall
                               [cached pre-classified verdict if payload unchanged;
                                else budget = mdemg.classify.timeout_ms]
 pm-core.Service.Workflow ──► Sigi.CreateEnvelope (gRPC)
-Sigi backend ─webhook──► pm-core.Edge (/sigi/webhook)           [later: user signs]
+Sigi backend ─webhook──► pm-core.Edge (/webhooks/sigi/{provider}) [later: user signs]
 pm-core.Service.Workflow ──► MDEMG /v1/jiminy/feedback (REST async via outbox)
 pm-core ──► postgres (AuditEvent + GuidanceOutcome in same txn)
 pm-core ──► Commsi.SendNotification (gRPC)                      [notify next approver]

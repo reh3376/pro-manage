@@ -161,14 +161,17 @@ The contract is `proto/pm/connector/v1/idpi.proto` (`pm.connector.v1.IdpiService
 Formal e-signature on CAR approvals, change requests, closeout, and other configured workflow kinds. Envelope lifecycle, status polling, webhook ingestion, signed-artifact capture.
 
 ### gRPC interface (summary)
-- `HealthCheck`, `Capabilities`
-- `CreateEnvelope(EnvelopeSpec) → Envelope`
-- `GetEnvelopeStatus(EnvelopeRef) → EnvelopeStatus`
-- `CancelEnvelope(EnvelopeRef) → CancelResponse`
-- `DownloadSignedArtifact(EnvelopeRef) → stream FileChunk`
-- `OnWebhook(Webhook) → WebhookAck` (backend → connector → pm-core)
+The contract is `proto/pm/connector/v1/sigi.proto` (`pm.connector.v1.SigiService`, slice 6, 2026-10-26); message names follow buf's standard.
+- `HealthCheck`, `Capabilities` (ConnectorService)
+- `CreateEnvelope` (subject, title, document, signers in order, provider template, metadata, and pm-core's idempotency key so a retried outbox row returns the same envelope)
+- `GetEnvelopeStatus` (status, per-signer state, completion time, and the artifact's SHA-256 once completed)
+- `CancelEnvelope`
+- `DownloadSignedArtifact` (server stream)
+- `OnWebhook` (the raw provider payload and headers; the module verifies the provider's signature and names the envelope; pm-core then reconciles with `GetEnvelopeStatus`, so a webhook is a nudge, never the record)
 
 ### Year-one backends
+- `Sigi_STUB` (development and CI: in-memory envelopes, a dev endpoint that completes a signer, a real minimal PDF as the artifact; `connectors/sigi/stub`)
+
 - `Sigi_DS` (DocuSign eSignature REST)
 - `Sigi_AS` (Adobe Acrobat Sign)
 - `Sigi_OS` (OneSpan Sign)

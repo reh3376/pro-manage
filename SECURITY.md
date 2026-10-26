@@ -11,7 +11,8 @@ If the report concerns MDEMG rather than pro_manage, report it in the [MDEMG rep
 ## Scope notes
 
 - Credentials in this repository (`deploy/compose/.env.ci`, the Keycloak realm's seeded users and the `pm-core-dev-secret` client secret, `northfield-dev` passwords) are throwaway development values for the compose stack and CI. They grant nothing anywhere else. Reporting them is not necessary.
-- The `X-Dev-Actor` header accepted by pm-core is a development-only mechanism gated by `PM_DEV_ACTOR_HEADER`; with it off, every `/api/v1` request is rejected until SSO (IdPi_OIDC) lands. A deployment with that flag on outside a developer's machine is a misconfiguration, not a vulnerability in the code.
+- The `X-Dev-Actor` and `X-Dev-Roles` headers accepted by pm-core are a development and CI mechanism gated by `PM_DEV_ACTOR_HEADER`; with it off, only an SSO session (`pm_session` cookie issued after sign-in through the `IdPi_OIDC` module) authenticates a request. A deployment with that flag on outside a developer's machine or CI is a misconfiguration, not a vulnerability in the code.
+- The `Sigi_STUB` module's `/dev/envelopes/{id}/sign` endpoint completes an e-signature without a signer. It is the development and CI stand-in for a provider and is never deployed; the real backend (`Sigi_DS`) has no such endpoint.
 - Dependency and action updates arrive through Dependabot; secret scanning with push protection is enabled on the repository.
 
 ## Supported versions
