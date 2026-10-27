@@ -22,6 +22,7 @@ import (
 
 	connectorv1 "github.com/reh3376/pro-manage/services/pm-core/gen/pm/connector/v1"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/commsi"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/erpi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/sigi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/db"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
@@ -35,6 +36,7 @@ const (
 	KindMDEMGFeedback = "mdemg.feedback"
 	KindSigiCreate    = "sigi.envelope.create" // internal/signing.OutboxKind
 	KindCommsiSend    = "commsi.send"          // internal/notify payload: a SendNotificationRequest in proto JSON
+	KindErpiRelease   = "erpi.budget.release"  // internal/budget.OutboxKind
 )
 
 // Statuses.
@@ -78,12 +80,19 @@ type Notify interface {
 	Send(ctx context.Context, req *connectorv1.SendNotificationRequest) (*connectorv1.SendNotificationResponse, error)
 }
 
+// Budget releases an approved CAR's budget at the ERP through the ERPi module; nil leaves
+// erpi.budget.release rows waiting.
+type Budget interface {
+	ReleaseAtERP(ctx context.Context, payload json.RawMessage) error
+}
+
 // Drainer delivers pending rows.
 type Drainer struct {
 	Store       *store.Store
 	Sink        Sink
 	Signing     Signing
 	Notify      Notify
+	Budget      Budget
 	Log         *slog.Logger
 	Worker      string        // locked_by identity (hostname:pid)
 	Batch       int32         // rows per claim (default 50)
@@ -204,7 +213,8 @@ func (d *Drainer) deliver(ctx context.Context, row db.Outbox) {
 
 // permanent reports errors that retrying cannot fix: a payload the target rejects or a bad key.
 func permanent(err error) bool {
-	return errors.Is(err, mdemgadapter.ErrBadRequest) || errors.Is(err, mdemgadapter.ErrUnauthorized) || errors.Is(err, sigi.ErrRejected) || errors.Is(err, commsi.ErrRejected) || errors.Is(err, errUnknownKind)
+	return errors.Is(err, mdemgadapter.ErrBadRequest) || errors.Is(err, mdemgadapter.ErrUnauthorized) || errors.Is(err, sigi.ErrRejected) || errors.Is(err, commsi.ErrRejected) ||
+		errors.Is(err, erpi.ErrRejected) || errors.Is(err, erpi.ErrNotSupported) || errors.Is(err, erpi.ErrNotFound) || errors.Is(err, errUnknownKind)
 }
 
 var errUnknownKind = errors.New("outbox: unknown kind")
@@ -234,6 +244,11 @@ func (d *Drainer) dispatch(ctx context.Context, row db.Outbox) error {
 			return errors.New("outbox: no signing service configured (retrying)")
 		}
 		return d.Signing.CreateAtProvider(ctx, row.Payload)
+	case KindErpiRelease:
+		if d.Budget == nil {
+			return errors.New("outbox: no budget service configured (retrying)")
+		}
+		return d.Budget.ReleaseAtERP(ctx, row.Payload)
 	case KindCommsiSend:
 		if d.Notify == nil {
 			return errors.New("outbox: no notification module configured (retrying)")

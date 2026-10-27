@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { api, tryApi, money, when, type Access, type AuditRow, type CAR, type Member, type Project, type Promise_ } from "../../lib/api";
+import { api, tryApi, money, when, type Access, type AuditRow, type BudgetSummary, type CAR, type Member, type Project, type Promise_ } from "../../lib/api";
 import { PromiseForm } from "./promise-form";
 
 export const dynamic = "force-dynamic";
@@ -13,12 +13,13 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   const returnTo = `/projects/${id}`;
   const project = await tryApi<Project>(`/api/v1/projects/${id}`, { returnTo });
   if (!project) notFound();
-  const [access, cars, members, audit, promises] = await Promise.all([
+  const [access, cars, members, audit, promises, budget] = await Promise.all([
     api<Access>(`/api/v1/projects/${id}/access`, { returnTo }),
     tryApi<{ items: CAR[] }>(`/api/v1/projects/${id}/cars`, { returnTo }),
     tryApi<{ items: Member[] }>(`/api/v1/projects/${id}/members`, { returnTo }),
     tryApi<{ items: AuditRow[]; full: boolean }>(`/api/v1/projects/${id}/audit?limit=15`, { returnTo }),
     tryApi<{ items: Promise_[] }>(`/api/v1/projects/${id}/promises`, { returnTo }),
+    tryApi<{ summary: BudgetSummary; erp_configured: boolean }>(`/api/v1/projects/${id}/budget`, { returnTo }),
   ]);
   const canWriteBudget = access.sections.budget === "write";
 
@@ -105,6 +106,67 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                     </td>
                     <td className="muted">{c.signed_artifact_ref ? c.signed_artifact_ref.split(":")[0] : ""}</td>
                     <td className="muted">{when(c.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+      )}
+
+      {budget && (
+        <section className="card">
+          <div className="row">
+            <h2>Budget</h2>
+            <span className="muted small">
+              {budget.erp_configured && budget.summary.erp_project_ref
+                ? `Mirrored from the ERP (${budget.summary.erp_instance}, project ${budget.summary.erp_project_ref})${budget.summary.synced_at ? `, pulled ${when(budget.summary.synced_at)}` : ", not pulled yet"}`
+                : "No ERP mirror for this project; the numbers below are pro_manage's own."}
+              {budget.summary.sync_error ? <span className="fail"> Last pull failed.</span> : null}
+            </span>
+          </div>
+          <dl className="kpis">
+            <dt>Baseline</dt>
+            <dd>{budget.summary.baseline ? `${money(budget.summary.baseline.total, budget.summary.currency)} (${budget.summary.baseline.name})` : "none"}</dd>
+            <dt>Forecast</dt>
+            <dd>{budget.summary.forecast ? `${money(budget.summary.forecast.total, budget.summary.currency)} (${budget.summary.forecast.name})` : "none"}</dd>
+            <dt>EAC</dt>
+            <dd>{budget.summary.eac ? money(budget.summary.eac.total, budget.summary.currency) : "none"}</dd>
+            <dt>Authorized (CARs)</dt>
+            <dd>{money(budget.summary.authorized_total, budget.summary.currency)}</dd>
+            <dt>Released in the ERP</dt>
+            <dd>{money(budget.summary.released_total, budget.summary.currency)}</dd>
+            <dt>Actuals</dt>
+            <dd>{money(budget.summary.actuals_total, budget.summary.currency)}</dd>
+            <dt>Open commitments</dt>
+            <dd>{money(budget.summary.commitments_open, budget.summary.currency)}</dd>
+            <dt>Remaining to spend</dt>
+            <dd>{budget.summary.remaining_to_spend ? money(budget.summary.remaining_to_spend, budget.summary.currency) : "needs a baseline"}</dd>
+          </dl>
+          {budget.summary.releases.length > 0 && (
+            <table>
+              <thead>
+                <tr>
+                  <th>Release</th>
+                  <th className="num">Amount</th>
+                  <th>Status</th>
+                  <th>ERP budget ref</th>
+                  <th>When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {budget.summary.releases.map((r) => (
+                  <tr key={r.release_id}>
+                    <td>
+                      <Link href={`/cars/${r.car_id}`}>CAR {r.car_id.slice(0, 8)}</Link>
+                    </td>
+                    <td className="num">{money(r.amount, r.currency)}</td>
+                    <td>
+                      <span className={`badge ${r.status}`}>{r.status}</span>
+                      {r.status === "failed" && r.last_error ? <span className="muted small"> {r.last_error}</span> : null}
+                    </td>
+                    <td className="muted">{r.erp_budget_ref ?? ""}</td>
+                    <td className="muted">{when(r.released_at ?? r.requested_at)}</td>
                   </tr>
                 ))}
               </tbody>

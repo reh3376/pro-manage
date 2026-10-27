@@ -1,0 +1,34 @@
+# Module manifest (FSD §15). ERPi_STUB is the development and CI ERP backend: an in-memory projects
+# ledger seeded with the Northfield projects (keyed on pro_manage's project code) that answers the
+# spine subset of the ERPi contract (structure, budget and forecast versions, EAC, actuals,
+# commitments) and performs ReleaseBudget idempotently on car_id, so pm-core's mirror, release path,
+# and audit run exactly as they will against ERPi_IFS once the IFS items on the owner checklist land.
+module: ERPi_STUB
+type: ERPi
+code: STUB
+version: 0.1.0
+contract: pm.connector.v1.ErpiService >= 1.0, < 2.0
+runtime: go
+image: pm-erpi-stub
+tiers:
+  - financials
+  - project_controls
+  - budget_release
+capabilities:
+  - project_structure
+  - budget_versions
+  - forecast_versions
+  - eac
+  - actuals
+  - commitments
+  - budget_release
+  - dev_ledger        # the stub only: /dev/projects and /dev/releases on the HTTP port
+config_schema:
+  tiers:   { type: string, required: false }   # ERPI_TIERS narrows the declared tiers (comma list) to play a smaller ERP
+  seed:    { type: string, default: northfield } # ERPI_SEED: northfield | none
+secrets: []
+egress: []
+inbound:
+  - name: dev_ledger
+    auth: none
+    enabled_by: always   # dev only; never deployed outside the compose stack

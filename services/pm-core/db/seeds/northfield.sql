@@ -90,3 +90,8 @@ INSERT INTO acl_grants (grant_id, project_id, user_id, scope_kind, scope_target,
   ('01900000-0000-7000-8000-00000000f001', '01900000-0000-7000-8000-00000000b003', 'gus.maint', 'section', 'section:documents', 'deny', 'alice.owner', 'vendor drawings under NDA until award'),
   ('01900000-0000-7000-8000-00000000f002', '01900000-0000-7000-8000-00000000b001', 'fay.ops',   'section', 'section:budget',    'read', 'alice.owner', 'operations lead reviews the CAR')
 ON CONFLICT (project_id, user_id, scope_kind, scope_target, permission) DO NOTHING;
+
+-- ERP mirror (FSD §10 ERPi, slice 9). The dev stack's ERPi_STUB keys its ledger on the project code,
+-- so every seed project follows the mirror; pm-workers pulls budget versions, actuals, and commitments
+-- and releases approved CARs there.
+UPDATE projects SET erp_project_ref = code WHERE created_by = 'seed' AND erp_project_ref IS NULL;

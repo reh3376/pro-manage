@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/budget"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/db"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
@@ -78,6 +79,9 @@ type Service struct {
 	Signing *signing.Service
 	// Notifier enqueues Commsi notifications for workflow events (§08, §10); nil means none are sent.
 	Notifier *notify.Notifier
+	// Budget requests the ERP budget release on final CAR approval (§08 "ERP-led profile", §10 ERPi);
+	// nil or unconfigured means the pro_manage-led profile, where the approval is the whole record.
+	Budget *budget.Service
 }
 
 // notifyTx enqueues a notification inside q's transaction; recipients without an email are logged, never fatal.

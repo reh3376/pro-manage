@@ -90,6 +90,79 @@ type AuditEvent struct {
 	SignedHash            string          `json:"signed_hash"`
 }
 
+type BudgetActual struct {
+	ActualID     uuid.UUID  `json:"actual_id"`
+	TenantID     string     `json:"tenant_id"`
+	ProjectID    uuid.UUID  `json:"project_id"`
+	ErpInstance  string     `json:"erp_instance"`
+	ActualRef    string     `json:"actual_ref"`
+	WbsPath      string     `json:"wbs_path"`
+	AccountCode  string     `json:"account_code"`
+	Period       string     `json:"period"`
+	Amount       string     `json:"amount"`
+	Currency     string     `json:"currency"`
+	SourceDocRef *string    `json:"source_doc_ref"`
+	PostedAt     *time.Time `json:"posted_at"`
+	PulledAt     time.Time  `json:"pulled_at"`
+}
+
+type BudgetCommitment struct {
+	CommitmentID   uuid.UUID  `json:"commitment_id"`
+	TenantID       string     `json:"tenant_id"`
+	ProjectID      uuid.UUID  `json:"project_id"`
+	ErpInstance    string     `json:"erp_instance"`
+	CommitmentRef  string     `json:"commitment_ref"`
+	WbsPath        string     `json:"wbs_path"`
+	AccountCode    string     `json:"account_code"`
+	VendorRef      *string    `json:"vendor_ref"`
+	PoRef          *string    `json:"po_ref"`
+	Amount         string     `json:"amount"`
+	InvoicedToDate string     `json:"invoiced_to_date"`
+	Currency       string     `json:"currency"`
+	Status         string     `json:"status"`
+	CreatedAt      *time.Time `json:"created_at"`
+	PulledAt       time.Time  `json:"pulled_at"`
+}
+
+type BudgetRelease struct {
+	ReleaseID    uuid.UUID  `json:"release_id"`
+	TenantID     string     `json:"tenant_id"`
+	ProjectID    uuid.UUID  `json:"project_id"`
+	CarID        uuid.UUID  `json:"car_id"`
+	ErpInstance  string     `json:"erp_instance"`
+	ProjectRef   string     `json:"project_ref"`
+	Amount       string     `json:"amount"`
+	Currency     string     `json:"currency"`
+	Status       string     `json:"status"`
+	ErpBudgetRef *string    `json:"erp_budget_ref"`
+	RequestedBy  string     `json:"requested_by"`
+	RequestedAt  time.Time  `json:"requested_at"`
+	AuditID      *uuid.UUID `json:"audit_id"`
+	ReleasedAt   *time.Time `json:"released_at"`
+	Attempts     int32      `json:"attempts"`
+	LastError    *string    `json:"last_error"`
+	Detail       string     `json:"detail"`
+}
+
+type BudgetVersion struct {
+	VersionID   uuid.UUID       `json:"version_id"`
+	TenantID    string          `json:"tenant_id"`
+	ProjectID   uuid.UUID       `json:"project_id"`
+	Kind        string          `json:"kind"`
+	Source      string          `json:"source"`
+	ErpInstance string          `json:"erp_instance"`
+	VersionRef  string          `json:"version_ref"`
+	Name        string          `json:"name"`
+	Status      string          `json:"status"`
+	Total       string          `json:"total"`
+	Currency    string          `json:"currency"`
+	AsOf        *time.Time      `json:"as_of"`
+	ApprovedAt  *time.Time      `json:"approved_at"`
+	Lines       json.RawMessage `json:"lines"`
+	Attributes  json.RawMessage `json:"attributes"`
+	PulledAt    time.Time       `json:"pulled_at"`
+}
+
 type BusinessCasePromise struct {
 	PromiseID          uuid.UUID  `json:"promise_id"`
 	TenantID           string     `json:"tenant_id"`
@@ -251,6 +324,9 @@ type Project struct {
 	UpdatedAt                   time.Time  `json:"updated_at"`
 	UpdatedBy                   string     `json:"updated_by"`
 	Version                     int32      `json:"version"`
+	ErpProjectRef               *string    `json:"erp_project_ref"`
+	ErpSyncedAt                 *time.Time `json:"erp_synced_at"`
+	ErpSyncError                *string    `json:"erp_sync_error"`
 }
 
 type ProjectMember struct {

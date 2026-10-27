@@ -21,6 +21,7 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/acl"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/auth"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/budget"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/domain"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
@@ -41,6 +42,8 @@ type API struct {
 	Auth *auth.Handler
 	// Signing serves e-signature state and artifacts (FSD §10 Sigi); nil when not configured.
 	Signing *signing.Service
+	// Budget serves the ERP mirror and the release state (FSD §10 ERPi); nil when not configured.
+	Budget *budget.Service
 }
 
 type ctxKey int
@@ -65,6 +68,7 @@ func (a *API) Mount(mux *http.ServeMux) {
 	a.mountCAR(mux, wrap)
 	a.mountAccess(mux, wrap)
 	a.mountSigning(mux, wrap, a.requestID)
+	a.mountBudget(mux, wrap)
 }
 
 // ---------------------------------------------------------------- middleware

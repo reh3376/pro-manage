@@ -1,6 +1,6 @@
 {
   "surface": "connector_capabilities",
-  "description": "Every capability a connector manifest declares (connectors/<type>/<code>/connector.yaml) must have a pm-core consumer that routes on it (FSD \u00a715, \u00a712). Key: '<type>/<code>:<capability>'.",
+  "description": "Every capability a connector manifest declares (connectors/<type>/<code>/connector.yaml) must have a pm-core consumer that routes on it (FSD §15, §12). Key: '<type>/<code>:<capability>'.",
   "entries": {
     "commsi/smtp:dedupe_window": {
       "writers": [
@@ -12,7 +12,7 @@
         "docs/tests/udts/specs/commsi_smtp_connector_capabilities.udts.json"
       ],
       "disposition": "active",
-      "notes": "Repeats of a dedupe_key inside the window are dropped (\u00a710); pm-core keys on kind, subject, and recipient set."
+      "notes": "Repeats of a dedupe_key inside the window are dropped (§10); pm-core keys on kind, subject, and recipient set."
     },
     "commsi/smtp:deep_links": {
       "writers": [
@@ -36,7 +36,7 @@
         "docs/tests/udts/specs/commsi_smtp_connector_capabilities.udts.json"
       ],
       "disposition": "planned",
-      "notes": "SendDigest; the daily inbox digest (\u00a708) is not scheduled yet."
+      "notes": "SendDigest; the daily inbox digest (§08) is not scheduled yet."
     },
     "commsi/smtp:notification_send": {
       "writers": [
@@ -49,6 +49,102 @@
       ],
       "disposition": "active",
       "notes": "SendNotification; consumed by the outbox kind commsi.send from pm-workers."
+    },
+    "erpi/stub:actuals": {
+      "writers": [
+        "connectors/erpi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go",
+        "docs/tests/udts/specs/erpi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "FetchActuals; consumed by internal/budget.SyncProject."
+    },
+    "erpi/stub:budget_release": {
+      "writers": [
+        "connectors/erpi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go",
+        "docs/tests/udts/specs/erpi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "ReleaseBudget; consumed by internal/budget.ReleaseAtERP through the outbox on CAR approval."
+    },
+    "erpi/stub:budget_versions": {
+      "writers": [
+        "connectors/erpi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go",
+        "docs/tests/udts/specs/erpi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "FetchBudgetVersions; consumed by internal/budget.SyncProject."
+    },
+    "erpi/stub:commitments": {
+      "writers": [
+        "connectors/erpi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go",
+        "docs/tests/udts/specs/erpi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "FetchCommitments; consumed by internal/budget.SyncProject."
+    },
+    "erpi/stub:dev_ledger": {
+      "writers": [
+        "connectors/erpi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go",
+        "docs/tests/udts/specs/erpi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "Stub only: /dev/projects, /dev/projects/{ref}/actuals, /dev/releases on the HTTP port; the integration test and the CAR check use them."
+    },
+    "erpi/stub:eac": {
+      "writers": [
+        "connectors/erpi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go",
+        "docs/tests/udts/specs/erpi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "FetchEac; consumed by internal/budget.SyncProject."
+    },
+    "erpi/stub:forecast_versions": {
+      "writers": [
+        "connectors/erpi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go",
+        "docs/tests/udts/specs/erpi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "FetchForecastVersions; consumed by internal/budget.SyncProject."
+    },
+    "erpi/stub:project_structure": {
+      "writers": [
+        "connectors/erpi/stub/connector.yaml"
+      ],
+      "readers": [
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go",
+        "docs/tests/udts/specs/erpi_stub_connector_capabilities.udts.json"
+      ],
+      "disposition": "active",
+      "notes": "FetchProjectStructure; drained by the pm-core client (tree mirroring is a layer)."
     },
     "idpi/oidc:claims_to_roles": {
       "writers": [

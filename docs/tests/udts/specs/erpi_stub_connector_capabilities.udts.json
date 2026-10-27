@@ -1,0 +1,23 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.ConnectorService",
+  "method": "Capabilities",
+  "request": {},
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "tiers"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "b9b449c0bb0d2ba6926562bdfa7fca73daa7f902ba4ad3370f15a68499b6bc7c"
+  },
+  "metadata": {
+    "description": "Capabilities names ERPi_STUB, the ErpiService contract, its capabilities, and the three spine tiers (financials, project_controls, budget_release).",
+    "tags": [
+      "erpi-stub",
+      "contract",
+      "erpi",
+      "capabilities"
+    ]
+  }
+}

@@ -159,6 +159,7 @@ export type CARView = {
   workflow?: Workflow;
   stages: Stage[];
   cumulative_authorized: string;
+  budget_release?: BudgetRelease;
 };
 
 export type GuidanceItem = { type: string; priority: string; content: string; confidence: number; constraint_code?: string; escalation_level?: string; tier?: number };
@@ -192,6 +193,29 @@ export type Signature = {
   mode: "none" | "attestation" | "esignature";
   envelope?: { envelope_id: string; provider: string; provider_ref: string | null; status: string; signers: { user_id: string; role: string; status: string; signed_at?: string }[]; artifact_sha256: string | null; completed_at: string | null };
   artifact_available?: boolean;
+};
+
+export type BudgetVersion = { version_id: string; kind: string; version_ref: string; name: string; status: string; total: string; currency: string; as_of: string | null; approved_at: string | null; pulled_at: string };
+export type BudgetRelease = { release_id: string; car_id: string; project_ref: string; amount: string; currency: string; status: string; erp_budget_ref: string | null; requested_at: string; released_at: string | null; last_error: string | null };
+export type BudgetSummary = {
+  erp_project_ref: string | null;
+  erp_instance: string;
+  synced_at: string | null;
+  sync_error: string | null;
+  currency: string;
+  baseline: BudgetVersion | null;
+  forecast: BudgetVersion | null;
+  eac: BudgetVersion | null;
+  versions: BudgetVersion[];
+  actuals_total: string;
+  actuals_rows: number;
+  commitments_open: string;
+  invoiced_total: string;
+  commitments_rows: number;
+  authorized_total: string;
+  releases: BudgetRelease[];
+  released_total: string;
+  remaining_to_spend: string;
 };
 
 export type Promise_ = { promise_id: string; kind: string; metric_id: string; status: string; promised_value: string | null; measurement_basis: string };

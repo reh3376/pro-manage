@@ -1,0 +1,206 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-core ERP mirror (budget section)",
+    "base_url": "${PM_CORE_URL:-http://127.0.0.1:8080}",
+    "service": "pm-core",
+    "tags": [
+      "pm-core",
+      "budget",
+      "erpi"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-10-27",
+    "description": "The ERP mirror of FSD \u00a703 Budget and \u00a710 ERPi: GET /projects/{id}/budget is the budget section's read (owner, or a member with a budget read grant); POST .../budget/sync pulls the project's feeds from the ERPi instance now (budget write). Shapes pin what the project page renders: the latest baseline, forecast, and EAC, actuals and open-commitment totals, the releases pm-core made, and the freshness of the pull. Seeded project P-NF-KY-12 carries the stub ledger's baseline, forecast, EAC, actuals, and commitments.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 20000,
+    "sha256": "eb25991b656d64258d3cac3983795695a9b83ca3ccc24ea232d614b269e0cbc3"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b002/budget/sync",
+    "headers": {
+      "X-Dev-Actor": "alice.owner"
+    }
+  },
+  "expected": {
+    "status": 200,
+    "body_assertions": [
+      {
+        "name": "project ref is the code",
+        "path": "$.project_ref",
+        "op": "equals",
+        "expected": "P-NF-KY-12"
+      },
+      {
+        "name": "baseline pulled",
+        "path": "$.baselines",
+        "op": "greater_than",
+        "expected": 0
+      },
+      {
+        "name": "actuals pulled",
+        "path": "$.actuals",
+        "op": "greater_than",
+        "expected": 0
+      },
+      {
+        "name": "commitments pulled",
+        "path": "$.commitments",
+        "op": "greater_than",
+        "expected": 0
+      },
+      {
+        "name": "eac pulled",
+        "path": "$.eac",
+        "op": "equals",
+        "expected": true
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "summary_for_owner",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b002/budget",
+        "headers": {
+          "X-Dev-Actor": "alice.owner"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "erp configured",
+            "path": "$.erp_configured",
+            "op": "equals",
+            "expected": true
+          },
+          {
+            "name": "instance named",
+            "path": "$.summary.erp_instance",
+            "op": "equals",
+            "expected": "stub"
+          },
+          {
+            "name": "baseline total",
+            "path": "$.summary.baseline.total",
+            "op": "equals",
+            "expected": "1850000.00"
+          },
+          {
+            "name": "baseline currency",
+            "path": "$.summary.baseline.currency",
+            "op": "equals",
+            "expected": "USD"
+          },
+          {
+            "name": "forecast present",
+            "path": "$.summary.forecast.kind",
+            "op": "equals",
+            "expected": "forecast"
+          },
+          {
+            "name": "eac present",
+            "path": "$.summary.eac.kind",
+            "op": "equals",
+            "expected": "eac"
+          },
+          {
+            "name": "actuals total is a decimal string",
+            "path": "$.summary.actuals_total",
+            "op": "matches",
+            "expected": "^[0-9]+\\.[0-9]{2}$"
+          },
+          {
+            "name": "open commitments is a decimal string",
+            "path": "$.summary.commitments_open",
+            "op": "matches",
+            "expected": "^[0-9]+\\.[0-9]{2}$"
+          },
+          {
+            "name": "authorized total is pm-core's own number",
+            "path": "$.summary.authorized_total",
+            "op": "equals",
+            "expected": "1850000.00"
+          },
+          {
+            "name": "releases is a list",
+            "path": "$.summary.releases",
+            "op": "type_is",
+            "expected": "array"
+          },
+          {
+            "name": "synced",
+            "path": "$.summary.synced_at",
+            "op": "type_is",
+            "expected": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "non_member_forbidden",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b002/budget",
+        "headers": {
+          "X-Dev-Actor": "nobody.uats"
+        }
+      },
+      "expected": {
+        "status": 403,
+        "body_assertions": [
+          {
+            "name": "forbidden code",
+            "path": "$.error.code",
+            "op": "equals",
+            "expected": "forbidden"
+          }
+        ]
+      }
+    },
+    {
+      "name": "budget_read_grant_reads_mirror",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/budget",
+        "headers": {
+          "X-Dev-Actor": "fay.ops"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "summary present",
+            "path": "$.summary.project_id",
+            "op": "equals",
+            "expected": "01900000-0000-7000-8000-00000000b001"
+          }
+        ]
+      }
+    },
+    {
+      "name": "viewer_cannot_sync",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/budget/sync",
+        "headers": {
+          "X-Dev-Actor": "fay.ops"
+        }
+      },
+      "expected": {
+        "status": 403,
+        "body_assertions": []
+      }
+    }
+  ]
+}

@@ -4,7 +4,7 @@ Development and CI stacks for pro_manage (FSD §05 "local dev"; roadmap Phase 0)
 
 | File | What it runs |
 |---|---|
-| `docker-compose.dev.yml` | Postgres, TimescaleDB, Redis, RustFS (S3), Keycloak (Northfield realm), Mailpit, pm-core, pm-workers, pm-sidecar, pm-frontend, idpi-oidc (the `IdPi_OIDC` connector module against Keycloak), sigi-stub (the `Sigi_STUB` e-signature module; signed PDFs land in RustFS under `envelopes/`), commsi-smtp (the `Commsi_SMTP` notification module into Mailpit); `--profile stub` adds the stub MDEMG used by CI. |
+| `docker-compose.dev.yml` | Postgres, TimescaleDB, Redis, RustFS (S3), Keycloak (Northfield realm), Mailpit, pm-core, pm-workers, pm-sidecar, pm-frontend, idpi-oidc (the `IdPi_OIDC` connector module against Keycloak), sigi-stub (the `Sigi_STUB` e-signature module; signed PDFs land in RustFS under `envelopes/`), commsi-smtp (the `Commsi_SMTP` notification module into Mailpit), erpi-stub (the `ERPi_STUB` ERP module: the Northfield ledger pm-workers mirrors and releases budgets into); `--profile stub` adds the stub MDEMG used by CI. |
 | `docker-compose.mdemg.yml` | pro_manage's dedicated MDEMG stack, pinned by digest (FSD §06). |
 | `.env.example` | Template for the developer's `.env` (`make env` fills the generated keys). |
 | `.env.ci` | Values PR CI uses. Committed on purpose. |
