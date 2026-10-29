@@ -168,6 +168,18 @@
       "disposition": "active",
       "notes": "Newest AuditEvents for a project (UC-12 retrieval, first cut)."
     },
+    "pm-core GET /api/v1/projects/{project_id}/budget": {
+      "writers": [
+        "services/pm-core/internal/api/budget.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/budget.uats.json",
+        "scripts/car_check.sh",
+        "apps/pm-frontend/app/projects/[id]/page.tsx"
+      ],
+      "disposition": "active",
+      "notes": "ERP mirror summary (budget read): latest baseline, forecast, EAC, actuals and open-commitment totals, releases, freshness (FSD §03 Budget, §10 ERPi)."
+    },
     "pm-core GET /api/v1/projects/{project_id}/cars": {
       "writers": [
         "services/pm-core/internal/api/car.go"
@@ -398,6 +410,17 @@
       ],
       "disposition": "active",
       "notes": "Create a project at Initiate; AuditEvent project.create in the same transaction."
+    },
+    "pm-core POST /api/v1/projects/{project_id}/budget/sync": {
+      "writers": [
+        "services/pm-core/internal/api/budget.go"
+      ],
+      "readers": [
+        "docs/tests/uats/specs/pm-core/budget.uats.json",
+        "scripts/car_check.sh"
+      ],
+      "disposition": "active",
+      "notes": "Pull the project's feeds from the ERPi instance now (budget write); pm-workers does the same on PM_ERP_SYNC_INTERVAL."
     },
     "pm-core POST /api/v1/projects/{project_id}/cars": {
       "writers": [

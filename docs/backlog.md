@@ -1,6 +1,6 @@
 # Engineering backlog
 
-Status: **Living list** · Last updated: 2026-10-26
+Status: **Living list** · Last updated: 2026-10-27
 
 Work the owner has asked for that is not a spine slice or an FSD open item. Ordered by priority within each group; each item names what "done" looks like. Owner decisions live in [open-items.md](./fsd/open-items.md); the delivery order lives in the [roadmap](./fsd/roadmap.md).
 
@@ -70,6 +70,10 @@ Slice 6 runs the whole envelope lifecycle against `Sigi_STUB`. `Sigi_DS` impleme
 ### B-12 Document and field grants, contributor contract scoping, row security
 
 Slice 5 enforces section-level grants. Still to come as the layers that need them arrive: document grants (`scope_kind = document`, with `document_tag:`), field grants with response projection (the reserved sensitive namespace of `§04`), contributor scoping by `Contract` across the package-family endpoints with USTS specs per endpoint, Postgres row-level security keyed on `project_id` as defense in depth, and the weekly expiring-grants notice to owners.
+
+### B-17 ERPi_IFS on the contract, and what the stub leaves open
+
+Slice 9 shipped the `ErpiService` contract (spine subset), the mirror, and the release against `ERPi_STUB`. `ERPi_IFS` builds against the same contract and UDTS specs once OI-10 to OI-13 are answered: OAuth client credentials through IFS IAM, OData projections named from the API Explorer, ETags on `ReleaseBudget`, polling with the push switch when IT approves an inbound path. Also open on the pm-core side: persisting the tree from `FetchProjectStructure` (drained today, not stored), the remaining §10 RPCs (invoices, purchase orders and receipts for `ProcurementItem`, earned value, subcontracts, change orders, payment applications, capitalization status for closeout), an operational alert when a release fails (the audit row and the CAR page flag exist; nobody is notified), per-site instance routing from the registry, and the pro_manage-led budget entry (manual baselines, the baseline-change chain) for projects not in the ERP.
 
 ### B-16 Persona screens: what slice 8 left for the layers
 

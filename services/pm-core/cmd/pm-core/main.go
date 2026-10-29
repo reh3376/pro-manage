@@ -20,7 +20,9 @@ import (
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/auth"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/blobs"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/budget"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/config"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/erpi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/idpi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/sigi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/domain"
@@ -101,8 +103,21 @@ func run() error {
 			}
 		}
 		log.Info("signing configured", "sigi", cfg.SigiAddr, "provider", cfg.SigiProvider, "object_store", sign.Blobs != nil)
-		svc := &domain.Service{Store: st, Chain: chain, Tenant: cfg.TenantID, Gate: gate, Log: log, Signing: sign, Notifier: &notify.Notifier{Tenant: cfg.TenantID, FallbackDomain: cfg.NotifyFallbackDomain}}
-		a := &api.API{Log: log, Domain: svc, Chain: chain, DevActorHeader: cfg.DevActorHeader, MDEMGBaseURL: cfg.MDEMGBaseURL, Signing: sign}
+		// ERP mirror (FSD §10 ERPi): pm-core reads the mirror and requests releases; pm-workers pulls and releases.
+		bud := &budget.Service{Store: st, Chain: chain, Tenant: cfg.TenantID, Log: log}
+		if cfg.ErpiAddr != "" {
+			ec, err := erpi.Dial(cfg.ErpiAddr, cfg.ErpiProvider)
+			if err != nil {
+				return err
+			}
+			defer ec.Close()
+			bud.Erpi = ec
+			log.Info("erp mirror configured", "erpi", cfg.ErpiAddr, "provider", cfg.ErpiProvider)
+		} else {
+			log.Info("erp mirror not configured (ERPI_ADDR unset): pro_manage-led profile")
+		}
+		svc := &domain.Service{Store: st, Chain: chain, Tenant: cfg.TenantID, Gate: gate, Log: log, Signing: sign, Notifier: &notify.Notifier{Tenant: cfg.TenantID, FallbackDomain: cfg.NotifyFallbackDomain}, Budget: bud}
+		a := &api.API{Log: log, Domain: svc, Chain: chain, DevActorHeader: cfg.DevActorHeader, MDEMGBaseURL: cfg.MDEMGBaseURL, Signing: sign, Budget: bud}
 		if cfg.MDEMGBaseURL != "" {
 			mc, err := mdemgadapter.New(mdemgadapter.Options{BaseURL: cfg.MDEMGBaseURL, APIKey: cfg.MDEMGAPIKey, ClassifyTimeout: cfg.MDEMGTimeout, UserAgent: "pro-manage/pm-core " + config.Version})
 			if err != nil {

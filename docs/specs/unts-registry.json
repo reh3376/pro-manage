@@ -2,8 +2,12 @@
   "unts_version": "1.0.0",
   "artifacts": {
     "docs/inventories/connector_capabilities_inventory.json": {
-      "sha256": "dae6d0449cf694c48da520ab16f401fa06f2a3819a534f516812bfb38e2998c3",
+      "sha256": "4a7e77a08fbac553473fb27f091e27aa2d029ec0e0c485a4fb427ada56c1bc05",
       "history": [
+        {
+          "sha256": "dae6d0449cf694c48da520ab16f401fa06f2a3819a534f516812bfb38e2998c3",
+          "recorded_at": "2026-10-26T15:29:54Z"
+        },
         {
           "sha256": "ee3ebf7af881735c7a5811a73192c2ec10dc313421a1e2ba417c0d8b6ca5dd4c",
           "recorded_at": "2026-10-26T14:53:39Z"
@@ -11,17 +15,17 @@
         {
           "sha256": "e1c0c247b178b263a7c3a6fb224e0e661c07c580b47ba8a292479b1109e605e0",
           "recorded_at": "2026-10-23T20:24:40Z"
-        },
-        {
-          "sha256": "5c2295af9bb8753dbb04e2c451f827884064fa4ac9bed8c037669c0c507800d2",
-          "recorded_at": "2026-10-22T18:29:08Z"
         }
       ],
-      "recorded_at": "2026-10-26T15:29:54Z"
+      "recorded_at": "2026-10-27T14:16:50Z"
     },
     "docs/inventories/grpc_methods_inventory.json": {
-      "sha256": "b5c03f2c5a73d1951d36e39f1f136782f8e438c28f71b0be83dd8f84059d33db",
+      "sha256": "00bbfe9ddb3ca186f77ca5569628b97d76eaf7b1c7d86e9c8863320c02356566",
       "history": [
+        {
+          "sha256": "b5c03f2c5a73d1951d36e39f1f136782f8e438c28f71b0be83dd8f84059d33db",
+          "recorded_at": "2026-10-26T15:29:54Z"
+        },
         {
           "sha256": "33944e0787b5fb8708a00ea0b290cc5160c42369f055d63165f0ab9aa4296cda",
           "recorded_at": "2026-10-26T14:53:39Z"
@@ -29,13 +33,9 @@
         {
           "sha256": "3544ae8779d83774325624046c6a76c63a0dc39dd3eb9e82d8d545f1e78ee61e",
           "recorded_at": "2026-10-23T18:49:50Z"
-        },
-        {
-          "sha256": "16558d17590e5fce1bab611e24207225b8906ab09214910d3382068ffc0294f0",
-          "recorded_at": "2026-10-22T18:29:08Z"
         }
       ],
-      "recorded_at": "2026-10-26T15:29:54Z"
+      "recorded_at": "2026-10-27T14:16:50Z"
     },
     "docs/inventories/loss_categories_inventory.json": {
       "sha256": "7d1b5310a2e59d03b86b7ac8f68df79427d26df1231538ca4a7d657799aaba53",
@@ -66,8 +66,12 @@
       "recorded_at": "2026-10-26T15:29:54Z"
     },
     "docs/inventories/routes_inventory.json": {
-      "sha256": "790614edcf30c8fb9505a7ab6ecdeee557ad44b72296ff7c939046b029a17c38",
+      "sha256": "c22741014b6c7c2af16e867108dd42dc8efec347aa7157b70a2d1dab29830e8b",
       "history": [
+        {
+          "sha256": "790614edcf30c8fb9505a7ab6ecdeee557ad44b72296ff7c939046b029a17c38",
+          "recorded_at": "2026-10-26T16:09:28Z"
+        },
         {
           "sha256": "561bfbfe3831a582d2c4cb01cfb6fc79e10da40411671833e2d5b27719686dc6",
           "recorded_at": "2026-10-26T14:53:39Z"
@@ -75,13 +79,9 @@
         {
           "sha256": "bf2c0785de9b649099605e172b8c6a2524ed5cb21512f77acd5e2f24af2499e4",
           "recorded_at": "2026-10-24T15:45:29Z"
-        },
-        {
-          "sha256": "d224a4354611aec91a82bbfd39d383a8fb555a540d473d5fa580bf9c7be451ff",
-          "recorded_at": "2026-10-23T20:24:40Z"
         }
       ],
-      "recorded_at": "2026-10-26T16:09:28Z"
+      "recorded_at": "2026-10-27T14:16:50Z"
     },
     "docs/tests/uats/runners/uats_runner.py": {
       "sha256": "2ae714b57d7ec2692389aabbdc9208d47981c1aaa95ecfbceebea8ea07c945fb",
@@ -132,6 +132,16 @@
       "sha256": "ed1976c09e899fa68479ea1a64305fa37d80127948cd210e4d9cbdfd4f8da561",
       "history": [],
       "recorded_at": "2026-10-23T20:24:40Z"
+    },
+    "docs/tests/uats/specs/pm-core/budget.uats.json": {
+      "sha256": "7601c03f27252f07609e8ac45ff024a2c66e054b680ed830e97104b04851aa23",
+      "history": [
+        {
+          "sha256": "5e0e221f478fb2960d1092bfaf3e23c49e85b5df5bb88ef0dee54af1f5b60055",
+          "recorded_at": "2026-10-27T14:16:50Z"
+        }
+      ],
+      "recorded_at": "2026-10-27T14:19:23Z"
     },
     "docs/tests/uats/specs/pm-core/car.uats.json": {
       "sha256": "c3825be2c80a6e99ff0020c3c8f2769cf4cfec4a2c9f98593dab5f27b3ec6ca8",
@@ -276,6 +286,61 @@
       "sha256": "4d08f3900399224970c5b1f8e9ea85dd93120570c75fabfa571720c16d7f5663",
       "history": [],
       "recorded_at": "2026-10-26T15:29:54Z"
+    },
+    "docs/tests/udts/specs/erpi_stub_connector_capabilities.udts.json": {
+      "sha256": "4614fdb291241fbc80fe5c1bfa861f9a9cbd8d2c9bf56f0dad3366c7a8c569d2",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
+    },
+    "docs/tests/udts/specs/erpi_stub_connector_healthcheck.udts.json": {
+      "sha256": "ff69daa1cd73e2488bc3eeacd51b3240aa8f793c4d1e94789de074c50fbff97a",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
+    },
+    "docs/tests/udts/specs/erpi_stub_fetch_actuals.udts.json": {
+      "sha256": "8d247fee9ed5623d72368fdcbff41aa1fad09b84146fa98a916dc05692a1285e",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
+    },
+    "docs/tests/udts/specs/erpi_stub_fetch_budget_versions.udts.json": {
+      "sha256": "a9f737c9bb86fff6430725aff37a619b5268f44b833b0d940ee7e97f2a93b19d",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
+    },
+    "docs/tests/udts/specs/erpi_stub_fetch_budget_versions_unknown_project.udts.json": {
+      "sha256": "63ac9f2e577e520de8666f760a670c729c2ec3e3c098bc2440dc480647ea5b9e",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
+    },
+    "docs/tests/udts/specs/erpi_stub_fetch_commitments.udts.json": {
+      "sha256": "98fe94bf1749cb822008566da5f63978cd44e71ed8adad96c41a3cc60933aad7",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
+    },
+    "docs/tests/udts/specs/erpi_stub_fetch_eac.udts.json": {
+      "sha256": "4941080bb4a61d2ff5dcc84e5479db0377a2a7bf97c9489293d83d28102d17a7",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
+    },
+    "docs/tests/udts/specs/erpi_stub_fetch_forecast_versions.udts.json": {
+      "sha256": "57b2363602e85ed3c07757342a4f25269ef59561694905c128384acd09461f76",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
+    },
+    "docs/tests/udts/specs/erpi_stub_fetch_project_structure.udts.json": {
+      "sha256": "abf59586d8e009ca2e7778cca4e7318f47a1701e83b603ac18acd7440a9e3094",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
+    },
+    "docs/tests/udts/specs/erpi_stub_release_budget.udts.json": {
+      "sha256": "72f6ae2e00b8f7dbf9a0d8c68ed2e09dc8eeb5e5cadd949206015a7fc3814d5c",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
+    },
+    "docs/tests/udts/specs/erpi_stub_release_budget_missing_car.udts.json": {
+      "sha256": "3f4eeb3fd79003e6d06b2a5ce2131251f600ae65a2e953f0c51986480ed5fa64",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
     },
     "docs/tests/udts/specs/idpi_oidc_authenticate_interactive.udts.json": {
       "sha256": "be03803c884910c82d3778f51106322a94be2da1b300421336d3938170b94c4f",
@@ -437,6 +502,11 @@
       "history": [],
       "recorded_at": "2026-10-22T18:29:08Z"
     },
+    "proto/pm/connector/v1/erpi.proto": {
+      "sha256": "6764d39c3d9afa9f9271da83543cb1be82da4efdd05b1b6dc09c81fa564346ce",
+      "history": [],
+      "recorded_at": "2026-10-27T14:16:50Z"
+    },
     "proto/pm/connector/v1/idpi.proto": {
       "sha256": "2d6711ce82cd50fd710e778f57cf9dc0b9b7e9ef2385d77674d5548a3365d139",
       "history": [
@@ -458,6 +528,6 @@
       "recorded_at": "2026-10-22T13:29:40Z"
     }
   },
-  "updated_at": "2026-10-26T16:11:52Z",
-  "count": 70
+  "updated_at": "2026-10-27T14:19:23Z",
+  "count": 83
 }

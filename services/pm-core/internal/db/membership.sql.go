@@ -279,7 +279,7 @@ func (q *Queries) ListProjectMembers(ctx context.Context, projectID uuid.UUID) (
 }
 
 const listVisibleProjects = `-- name: ListVisibleProjects :many
-SELECT p.project_id, p.tenant_id, p.code, p.name, p.description, p.portfolio_id, p.site_id, p.currency, p.owner_user_id, p.lifecycle_state, p.fel_stage, p.project_type, p.tpm_pillar_tags, p.hazardous_area_classification, p.regulatory_stamps, p.onboarding_level, p.imported, p.import_batch_id, p.start_date, p.target_end_date, p.baseline_budget_total, p.baseline_duration_days, p.tags, p.created_at, p.created_by, p.updated_at, p.updated_by, p.version FROM projects p
+SELECT p.project_id, p.tenant_id, p.code, p.name, p.description, p.portfolio_id, p.site_id, p.currency, p.owner_user_id, p.lifecycle_state, p.fel_stage, p.project_type, p.tpm_pillar_tags, p.hazardous_area_classification, p.regulatory_stamps, p.onboarding_level, p.imported, p.import_batch_id, p.start_date, p.target_end_date, p.baseline_budget_total, p.baseline_duration_days, p.tags, p.created_at, p.created_by, p.updated_at, p.updated_by, p.version, p.erp_project_ref, p.erp_synced_at, p.erp_sync_error FROM projects p
 WHERE p.tenant_id = $1
   AND ($2::uuid IS NULL OR p.site_id = $2::uuid)
   AND (
@@ -342,6 +342,9 @@ func (q *Queries) ListVisibleProjects(ctx context.Context, arg ListVisibleProjec
 			&i.UpdatedAt,
 			&i.UpdatedBy,
 			&i.Version,
+			&i.ErpProjectRef,
+			&i.ErpSyncedAt,
+			&i.ErpSyncError,
 		); err != nil {
 			return nil, err
 		}

@@ -68,6 +68,19 @@ export default async function CARPage({ params }: { params: Promise<{ id: string
                 </dd>
               </>
             )}
+            {view.budget_release && (
+              <>
+                <dt>ERP budget</dt>
+                <dd>
+                  <span className={`badge ${view.budget_release.status}`}>{view.budget_release.status}</span>{" "}
+                  {view.budget_release.status === "released"
+                    ? `${view.budget_release.erp_budget_ref} on ${view.budget_release.project_ref}, ${when(view.budget_release.released_at)}`
+                    : view.budget_release.status === "failed"
+                      ? `release refused by the ERP: ${view.budget_release.last_error ?? ""}`
+                      : "release pending at the ERP"}
+                </dd>
+              </>
+            )}
           </dl>
         </div>
 

@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/budget"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/db"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
@@ -232,7 +233,8 @@ type CARView struct {
 	Estimate             *db.EstimateArtifact    `json:"estimate,omitempty"`
 	Workflow             *db.ApprovalWorkflow    `json:"workflow,omitempty"`
 	Stages               []db.ApprovalStage      `json:"stages"`
-	CumulativeAuthorized string                  `json:"cumulative_authorized"` // approved CARs on the project, this one included once approved
+	CumulativeAuthorized string                  `json:"cumulative_authorized"`    // approved CARs on the project, this one included once approved
+	BudgetRelease        *db.BudgetRelease       `json:"budget_release,omitempty"` // the ERP release (§08 ERP-led profile), once requested
 }
 
 // CreateCAR drafts a CAR. Nothing is governed yet: a draft is the user's own.
@@ -369,6 +371,11 @@ func (s *Service) view(ctx context.Context, car db.CapitalAuthorization) (CARVie
 		return v, err
 	}
 	v.CumulativeAuthorized = sum
+	if s.Budget.Configured() {
+		if rel, err := s.Budget.ReleaseForCAR(ctx, car.CarID); err == nil && rel != nil {
+			v.BudgetRelease = rel
+		}
+	}
 	return v, nil
 }
 
@@ -997,6 +1004,11 @@ func (s *Service) DecideCAR(ctx context.Context, actor Actor, carID uuid.UUID, i
 			if err := s.signOrAttest(ctx, q, actor, &after, wf, signed, ev); err != nil {
 				return err
 			}
+			// §08 "On final approval (ERP-led profile)": release the authorized budget in the ERP,
+			// keyed on the CAR id so retries are safe; the CAR stays approved if the release fails.
+			if err := s.requestBudgetRelease(ctx, q, actor, &after, ev); err != nil {
+				return err
+			}
 		}
 		// The owner hears the outcome (§08 workflow events).
 		verb := "approved"
@@ -1144,6 +1156,42 @@ func (s *Service) signOrAttest(ctx context.Context, q *db.Queries, actor Actor, 
 	_, err = s.Chain.Append(ctx, q, audit.Event{
 		TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActionType: "car.signature_requested", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
 		After: map[string]any{"envelope_id": envID, "signers": signers, "amount": car.AmountRequested, "threshold_esign": money(threshold)}, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
+	})
+	return err
+}
+
+// requestBudgetRelease records the ERP budget release for an approved CAR and
+// enqueues it (FSD §08 "On final approval (ERP-led profile)", §10 ERPi). A
+// project without an ERP reference, or a deployment without an ERPi instance,
+// is the pro_manage-led profile: nothing is released and the approval stands.
+func (s *Service) requestBudgetRelease(ctx context.Context, q *db.Queries, actor Actor, car *db.CapitalAuthorization, approval db.AuditEvent) error {
+	if !s.Budget.Configured() {
+		return nil
+	}
+	project, err := q.GetProject(ctx, db.GetProjectParams{TenantID: s.Tenant, ProjectID: car.ProjectID})
+	if err != nil {
+		return err
+	}
+	if project.ErpProjectRef == nil || *project.ErpProjectRef == "" {
+		s.Log.Debug("no ERP reference on the project; budget not released", "project", project.Code, "car", car.Code)
+		return nil
+	}
+	amount := car.AmountRequested
+	if car.AuthorizedAmount != nil && *car.AuthorizedAmount != "" {
+		amount = *car.AuthorizedAmount
+	}
+	releaseID, err := s.Budget.RequestRelease(ctx, q, budget.ReleaseRequest{
+		ProjectID: car.ProjectID, ProjectRef: *project.ErpProjectRef, CARID: car.CarID, CARCode: car.Code, Amount: amount, Currency: car.Currency,
+		Description: fmt.Sprintf("CAR %s (%s) %s", car.Code, car.Kind, project.Name), RequestedBy: actor.UserID, AuditID: approval.AuditID,
+	}, func(kind, sourceRef string, payload any) error {
+		return outbox.Enqueue(ctx, q, s.Tenant, kind, sourceRef, payload)
+	})
+	if err != nil {
+		return err
+	}
+	_, err = s.Chain.Append(ctx, q, audit.Event{
+		TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActionType: "car.budget_release_requested", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
+		After: map[string]any{"release_id": releaseID, "project_ref": *project.ErpProjectRef, "amount": amount, "currency": car.Currency}, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 	})
 	return err
 }

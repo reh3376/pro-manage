@@ -3,7 +3,8 @@
 # running dev stack: estimate -> committed promise -> full CAR -> guide on open renders a card ->
 # preclassify -> submit (classify round-trip, AuditEvent + GuidanceOutcome written) -> every stage
 # approved by its pool -> CAR approved -> envelope at the Sigi module, signed, captured as a PDF ->
-# approval request and outcome mails through Commsi_SMTP into Mailpit -> feedback and observe rows drained.
+# approval request and outcome mails through Commsi_SMTP into Mailpit -> budget released at the ERPi module and
+# mirrored back -> feedback and observe rows drained.
 # Needs the Northfield seed (make db-seed) and a stub or live MDEMG behind pm-core.
 set -euo pipefail
 CORE="http://127.0.0.1:${PM_CORE_PORT:-8080}"
@@ -118,6 +119,29 @@ printf '%s' "$hdr" | grep -q "200" || { echo "FAIL  signed-artifact download: $h
 head -c 8 /tmp/car-check-signed.pdf | grep -q "%PDF" || { echo "FAIL  artifact is not a PDF" >&2; exit 1; }
 echo "ok    signed PDF downloaded and verified against the recorded hash"
 expect "non-member cannot fetch the artifact (403)" 403 "$(call GET "/api/v1/cars/$car_id/signed-artifact" nobody.check)" >/dev/null
+# ERP mirror and budget release (FSD §08 "On final approval (ERP-led profile)", §10 ERPi): the approval
+# requested a release keyed on the CAR id; pm-workers performs it at the ERPi module and records the
+# ERP's budget reference on the CAR; the next pull shows the release as an approved budget version.
+ERPI="http://127.0.0.1:${PM_ERPI_HTTP_PORT:-7111}"
+deadline=$((SECONDS + TIMEOUT)); bref=""
+while [[ -z "$bref" || "$bref" == "None" ]]; do
+  (( SECONDS < deadline )) || { echo "FAIL  budget not released at the ERP within ${TIMEOUT}s" >&2; exit 1; }
+  sleep 2
+  view=$(call GET "/api/v1/cars/$car_id" alice.owner | sed '$d')
+  bref=$(printf '%s' "$view" | j "['car'].get('erp_budget_ref')")
+done
+[[ "$(printf '%s' "$view" | j "['budget_release']['status']")" == "released" ]] || { echo "FAIL  release row not marked released: $view" >&2; exit 1; }
+echo "ok    budget released at the ERP (erp_budget_ref $bref)"
+curl -fsS "$ERPI/dev/releases" | grep -q "\"car_id\": *\"$car_id\"" || { echo "FAIL  the ERP ledger does not show the release for $car_id" >&2; exit 1; }
+echo "ok    ERP ledger holds the release"
+expect "budget sync by the owner" 200 "$(call POST "/api/v1/projects/$PROJECT/budget/sync" alice.owner)" >/dev/null
+budget=$(expect "budget mirror" 200 "$(call GET "/api/v1/projects/$PROJECT/budget" alice.owner)")
+[[ "$(printf '%s' "$budget" | j "['summary']['released_total']")" != "0.00" ]] || { echo "FAIL  released_total is zero: $budget" >&2; exit 1; }
+printf '%s' "$budget" | grep -q "\"version_ref\": *\"$bref\"" || { echo "FAIL  the mirror does not show the released budget version $bref" >&2; exit 1; }
+echo "      actuals=$(printf '%s' "$budget" | j "['summary']['actuals_total']") commitments_open=$(printf '%s' "$budget" | j "['summary']['commitments_open']") released=$(printf '%s' "$budget" | j "['summary']['released_total']")"
+expect "non-member cannot read the budget mirror (403)" 403 "$(call GET "/api/v1/projects/$PROJECT/budget" nobody.check)" >/dev/null
+expect "viewer with a budget read grant can read the mirror" 200 "$(call GET "/api/v1/projects/$PROJECT/budget" fay.ops)" >/dev/null
+expect "viewer cannot sync (403)" 403 "$(call POST "/api/v1/projects/$PROJECT/budget/sync" fay.ops)" >/dev/null
 expect "seeded draft without estimate is 422" 422 "$(call POST "/api/v1/cars/01900000-0000-7000-8000-00000000e002/submit" alice.owner)" >/dev/null
 expect "audit chain verifies" 200 "$(call GET "/api/v1/audit/verify" alice.owner)" >/dev/null
 

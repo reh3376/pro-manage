@@ -19,8 +19,10 @@ import (
 
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/blobs"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/budget"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/config"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/commsi"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/erpi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/connectors/sigi"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/httpx"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/notify"
@@ -113,6 +115,40 @@ func run() error {
 			log.Info("signing running", "sigi", cfg.SigiAddr, "provider", cfg.SigiProvider, "object_store", sign.Blobs != nil)
 		} else {
 			log.Warn("signing disabled: SIGI_ADDR and AUDIT_CHAIN_KEY are both required; sigi.envelope.create rows will wait")
+		}
+		// ERP mirror (FSD §10 ERPi): release approved budgets from the outbox and pull every project's
+		// budget versions, actuals, and commitments on the sync interval.
+		if cfg.ErpiAddr != "" && cfg.AuditChainKey != "" {
+			chain, err := audit.NewChain([]byte(cfg.AuditChainKey))
+			if err != nil {
+				return err
+			}
+			ec, err := erpi.Dial(cfg.ErpiAddr, cfg.ErpiProvider)
+			if err != nil {
+				return err
+			}
+			defer ec.Close()
+			bud := &budget.Service{Store: st, Chain: chain, Erpi: ec, Tenant: cfg.TenantID, Log: log}
+			drainer.Budget = bud
+			go func() {
+				t := time.NewTicker(cfg.ErpSyncInterval)
+				defer t.Stop()
+				for {
+					if n, err := bud.SyncDue(ctx, 50); err != nil {
+						log.Warn("erp sync", "synced", n, "err", err)
+					} else if n > 0 {
+						log.Info("erp sync", "synced", n)
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case <-t.C:
+					}
+				}
+			}()
+			log.Info("erp mirror running", "erpi", cfg.ErpiAddr, "provider", cfg.ErpiProvider, "sync_interval", cfg.ErpSyncInterval.String())
+		} else {
+			log.Warn("erp mirror disabled: ERPI_ADDR and AUDIT_CHAIN_KEY are both required; erpi.budget.release rows will wait")
 		}
 		// Notifications (FSD §10 Commsi) and the SLA tick (§08): the module delivers what
 		// the outbox holds; the tick nudges, flags overdue, escalates, and expires stages.

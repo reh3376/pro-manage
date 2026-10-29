@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   go:
-    name: Go (pm-core, pm-workers, stub-mdemg, IdPi_OIDC, Sigi_STUB, Commsi_SMTP)
+    name: Go (pm-core, pm-workers, stub-mdemg, IdPi_OIDC, Sigi_STUB, Commsi_SMTP, ERPi_STUB)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -38,6 +38,7 @@ jobs:
             connectors/idpi/oidc/go.sum
             connectors/sigi/stub/go.sum
             connectors/commsi/smtp/go.sum
+            connectors/erpi/stub/go.sum
       - run: go mod verify
       - run: go build ./...
       - run: go vet ./...
@@ -58,6 +59,13 @@ jobs:
           go test -race -count=1 ./...
       - name: Commsi_SMTP connector module
         working-directory: connectors/commsi/smtp
+        run: |
+          go mod verify
+          go build ./...
+          go vet ./... && test -z "$(gofmt -l .)"
+          go test -race -count=1 ./...
+      - name: ERPi_STUB connector module
+        working-directory: connectors/erpi/stub
         run: |
           go mod verify
           go build ./...
@@ -182,6 +190,16 @@ jobs:
         env:
           UDTS_COMMSI_TARGET: 127.0.0.1:7100
         run: cd connectors/commsi/smtp && go test -count=1 ./tests/udts/
+      - name: UDTS gRPC contracts against ERPi_STUB
+        env:
+          UDTS_ERPI_TARGET: 127.0.0.1:7110
+        run: cd connectors/erpi/stub && go test -count=1 ./tests/udts/
+      - name: ERP mirror and budget release integration tests (ERPi_STUB + Postgres)
+        env:
+          TEST_DATABASE_URL: postgres://pm:ci-postgres@127.0.0.1:5440/pm_core?sslmode=disable
+          ERPI_TEST_ADDR: 127.0.0.1:7110
+          ERPI_TEST_HTTP: http://127.0.0.1:7111
+        run: cd services/pm-core && go test -tags integration -count=1 ./internal/budget/
       - name: Notification and SLA tick integration tests (Commsi_SMTP + Mailpit + Postgres)
         env:
           TEST_DATABASE_URL: postgres://pm:ci-postgres@127.0.0.1:5440/pm_core?sslmode=disable

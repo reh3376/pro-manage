@@ -1,0 +1,25 @@
+{
+  "udts_version": "1.0.0",
+  "service": "pm.connector.v1.ErpiService",
+  "method": "FetchForecastVersions",
+  "request": {
+    "project_ref": "P-NF-KY-12"
+  },
+  "expected": {
+    "status_code": "OK",
+    "response_has_field": "version"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "proto_sha256": "6764d39c3d9afa9f9271da83543cb1be82da4efdd05b1b6dc09c81fa564346ce"
+  },
+  "metadata": {
+    "description": "FetchForecastVersions streams forecast versions for a known project.",
+    "tags": [
+      "erpi-stub",
+      "contract",
+      "erpi",
+      "forecast"
+    ]
+  }
+}

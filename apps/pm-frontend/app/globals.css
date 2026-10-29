@@ -132,3 +132,7 @@ details.sub { margin-top: 0.75rem; }
 details.sub summary { cursor: pointer; color: var(--accent); }
 .ok { color: var(--ok); }
 .fail { color: var(--fail); }
+dl.kpis { grid-template-columns: repeat(4, max-content 1fr); gap: 0.35rem 1rem; margin-bottom: 0.75rem; }
+@media (max-width: 56rem) { dl.kpis { grid-template-columns: max-content 1fr; } }
+.badge.released, .badge.open { border-color: var(--ok); color: var(--ok); }
+.badge.pending { border-color: var(--accent); color: var(--accent); }

@@ -1,0 +1,183 @@
+syntax = "proto3";
+
+package pm.connector.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// ErpiService is the ERP connector contract (FSD §10 "ERPi"). This file holds
+// the spine subset (roadmap "ERP mirror": read-only pulls of structure,
+// budgets, forecasts, EAC, actuals, and commitments, plus the one controlled
+// financial write, ReleaseBudget on CAR approval). The remaining RPCs of the
+// §10 summary (invoices, chart of accounts, vendors, purchase orders and
+// receipts, earned value, subcontracts, change orders, payment applications,
+// project events, operational write-back, capitalization status) are added to
+// this service when a layer pulls them; adding RPCs is not a breaking change.
+//
+// Which RPCs an instance answers follows its declared tiers (Capabilities):
+// financials (actuals, commitments), project_controls (structure, budget and
+// forecast versions, EAC), budget_release (ReleaseBudget). An undeclared tier
+// answers FAILED_PRECONDITION. Amounts are decimal strings in the ERP's
+// currency; pm-core never rounds them.
+service ErpiService {
+  // project_controls tier: the ERP's project tree for one project reference.
+  rpc FetchProjectStructure(FetchProjectStructureRequest) returns (stream FetchProjectStructureResponse);
+  // project_controls tier: budget versions (baselines) the ERP holds for the project.
+  rpc FetchBudgetVersions(FetchBudgetVersionsRequest) returns (stream FetchBudgetVersionsResponse);
+  // project_controls tier: forecast versions.
+  rpc FetchForecastVersions(FetchForecastVersionsRequest) returns (stream FetchForecastVersionsResponse);
+  // project_controls tier: the current estimate at completion.
+  rpc FetchEac(FetchEacRequest) returns (FetchEacResponse);
+  // financials tier: posted actuals, optionally bounded by posting time (backfill in chunks of 90 days).
+  rpc FetchActuals(FetchActualsRequest) returns (stream FetchActualsResponse);
+  // financials tier: open and closed commitments (purchase orders, contracts).
+  rpc FetchCommitments(FetchCommitmentsRequest) returns (stream FetchCommitmentsResponse);
+  // budget_release tier: release the authorized amount of an approved CAR in the ERP. Idempotent on car_id.
+  rpc ReleaseBudget(ReleaseBudgetRequest) returns (ReleaseBudgetResponse);
+}
+
+// ProjectNode is one node of the ERP's project tree.
+message ProjectNode {
+  string node_ref = 1;              // ERP id of this node
+  string parent_ref = 2;            // empty for the project itself
+  string kind = 3;                  // project | sub_project | activity | milestone
+  string code = 4;                  // human-readable id (the project's maps to pro_manage project.code)
+  string name = 5;
+  string status = 6;                // ERP status, verbatim
+  google.protobuf.Timestamp planned_start = 7;
+  google.protobuf.Timestamp planned_finish = 8;
+  map<string, string> attributes = 9;  // ERP fields pm-core keeps but does not interpret
+}
+
+message FetchProjectStructureRequest {
+  string project_ref = 1;           // ERP project id (from the instance's project-code mapping)
+}
+
+message FetchProjectStructureResponse {
+  ProjectNode node = 1;
+}
+
+// BudgetLine is one WBS or account line of a version.
+message BudgetLine {
+  string wbs_path = 1;
+  string account_code = 2;
+  string amount = 3;                // decimal string
+}
+
+// BudgetVersion is a baseline or forecast version as the ERP holds it (§03
+// BudgetBaseline and BudgetForecast are the mirrors).
+message BudgetVersion {
+  string version_ref = 1;           // ERP id of the version
+  string project_ref = 2;
+  string name = 3;                  // e.g. "Baseline 1", "Forecast 2026-Q4"
+  string status = 4;                // draft | approved | superseded (normalized by the module)
+  string total = 5;                 // decimal string
+  string currency = 6;
+  google.protobuf.Timestamp as_of = 7;
+  google.protobuf.Timestamp approved_at = 8;
+  repeated BudgetLine lines = 9;
+  map<string, string> attributes = 10;
+}
+
+message FetchBudgetVersionsRequest {
+  string project_ref = 1;
+  google.protobuf.Timestamp since = 2;  // only versions changed after this instant, when set
+}
+
+message FetchBudgetVersionsResponse {
+  BudgetVersion version = 1;
+}
+
+message FetchForecastVersionsRequest {
+  string project_ref = 1;
+  google.protobuf.Timestamp since = 2;
+}
+
+message FetchForecastVersionsResponse {
+  BudgetVersion version = 1;
+}
+
+message FetchEacRequest {
+  string project_ref = 1;
+}
+
+message FetchEacResponse {
+  string project_ref = 1;
+  google.protobuf.Timestamp as_of = 2;
+  string eac_amount = 3;            // decimal string
+  string currency = 4;
+  string method = 5;                // ERP's method name (manual, ratio, regression, ...)
+  repeated BudgetLine lines = 6;
+}
+
+// Actual is one posted cost line (§03 BudgetActual).
+message Actual {
+  string actual_ref = 1;            // ERP id, the upsert key
+  string project_ref = 2;
+  string wbs_path = 3;
+  string account_code = 4;
+  string period = 5;                // fiscal period, YYYY-MM
+  string amount = 6;                // decimal string, signed
+  string currency = 7;
+  string source_doc_ref = 8;        // voucher, invoice, or journal id
+  google.protobuf.Timestamp posted_at = 9;
+}
+
+message FetchActualsRequest {
+  string project_ref = 1;
+  google.protobuf.Timestamp from_ts = 2;  // posted after (backfill start), optional
+  google.protobuf.Timestamp to_ts = 3;    // posted before, optional
+}
+
+message FetchActualsResponse {
+  Actual actual = 1;
+}
+
+// Commitment is one open or closed commitment (§03 BudgetCommitment).
+message Commitment {
+  string commitment_ref = 1;        // ERP id, the upsert key
+  string project_ref = 2;
+  string wbs_path = 3;
+  string account_code = 4;
+  string vendor_ref = 5;
+  string po_ref = 6;
+  string amount = 7;                // committed, decimal string
+  string invoiced_to_date = 8;      // decimal string
+  string currency = 9;
+  string status = 10;               // open | closed
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message FetchCommitmentsRequest {
+  string project_ref = 1;
+  bool include_closed = 2;
+}
+
+message FetchCommitmentsResponse {
+  Commitment commitment = 1;
+}
+
+message ReleaseBudgetRequest {
+  string car_id = 1;                // pm-core's CAR id; the ERP-side idempotency key
+  string project_ref = 2;
+  string amount = 3;                // authorized amount, decimal string
+  string currency = 4;
+  string approval_ref = 5;          // the approval's audit id (what the ERP record points back to)
+  string plan_line_ref = 6;         // capital plan line in the ERP, when the deployment has one
+  string description = 7;           // e.g. "CAR CR-2457 Still House 2 column still"
+  string released_by = 8;           // pro_manage login handle of the final approver
+}
+
+// ReleaseStatus is what the ERP did with the release.
+enum ReleaseStatus {
+  RELEASE_STATUS_UNSPECIFIED = 0;
+  RELEASE_STATUS_RELEASED = 1;          // created or released now
+  RELEASE_STATUS_ALREADY_RELEASED = 2;  // the same car_id was released earlier; budget_ref is the earlier one
+  RELEASE_STATUS_PENDING = 3;           // accepted; the ERP completes it asynchronously (poll FetchBudgetVersions)
+}
+
+message ReleaseBudgetResponse {
+  string budget_ref = 1;            // ERP id of the budget or release record
+  ReleaseStatus status = 2;
+  google.protobuf.Timestamp released_at = 3;
+  string detail = 4;
+}

@@ -78,6 +78,12 @@ type Config struct {
 	CommsiAddr           string // COMMSI_ADDR, the Commsi module's gRPC address (pm-workers)
 	NotifyFallbackDomain string // PM_NOTIFY_FALLBACK_DOMAIN: <handle>@domain for actors without a users row (dev and CI)
 
+	// ERP mirror (FSD §10 ERPi). Empty ERPI_ADDR is the pro_manage-led profile without an ERP: no
+	// mirror, no release; approvals complete as before.
+	ErpiAddr        string        // ERPI_ADDR, the ERPi module's gRPC address
+	ErpiProvider    string        // ERPI_PROVIDER: stub | ifs | ...
+	ErpSyncInterval time.Duration // PM_ERP_SYNC_INTERVAL between mirror pulls per project (pm-workers)
+
 	// Workers
 	WorkerTick        time.Duration
 	OutboxMaxAttempts int           // dead-letter after this many failed deliveries
@@ -116,6 +122,9 @@ func Load(ctx context.Context, service string, sp secrets.Provider) (Config, err
 		S3Region:             envOr("S3_REGION", "us-east-1"),
 		CommsiAddr:           os.Getenv("COMMSI_ADDR"),
 		NotifyFallbackDomain: os.Getenv("PM_NOTIFY_FALLBACK_DOMAIN"),
+		ErpiAddr:             os.Getenv("ERPI_ADDR"),
+		ErpiProvider:         envOr("ERPI_PROVIDER", "stub"),
+		ErpSyncInterval:      durationOr("PM_ERP_SYNC_INTERVAL", 5*time.Minute),
 	}
 
 	switch strings.ToLower(envOr("PM_LOG_LEVEL", "info")) {

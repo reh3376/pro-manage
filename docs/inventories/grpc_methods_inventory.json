@@ -1,6 +1,6 @@
 {
   "surface": "grpc_methods",
-  "description": "Every rpc declared under proto/ must have a UDTS spec and a consumer (FSD \u00a712, \u00a715). Key: 'package.Service/Rpc'.",
+  "description": "Every rpc declared under proto/ must have a UDTS spec and a consumer (FSD §12, §15). Key: 'package.Service/Rpc'.",
   "entries": {
     "pm.connector.v1.CommsiService/OnDeliveryReceipt": {
       "writers": [
@@ -26,7 +26,7 @@
         "services/pm-core/internal/notify/integration_test.go"
       ],
       "disposition": "planned",
-      "notes": "Batched digest; pm-core consumer (the daily inbox digest, \u00a708) is planned."
+      "notes": "Batched digest; pm-core consumer (the daily inbox digest, §08) is planned."
     },
     "pm.connector.v1.CommsiService/SendNotification": {
       "writers": [
@@ -55,7 +55,7 @@
         "docs/tests/udts/specs/sigi_stub_connector_capabilities.udts.json"
       ],
       "disposition": "active",
-      "notes": "Manifest echo (\u00a715): module, type, code, contract, adjudicated capabilities."
+      "notes": "Manifest echo (§15): module, type, code, contract, adjudicated capabilities."
     },
     "pm.connector.v1.ConnectorService/HealthCheck": {
       "writers": [
@@ -71,7 +71,101 @@
         "docs/tests/udts/specs/sigi_stub_connector_healthcheck.udts.json"
       ],
       "disposition": "active",
-      "notes": "Common connector probe (\u00a710): SERVING, DEGRADED (IdP discovery failing), NOT_SERVING; pm-core routes around DEGRADED instances once the registry lands (slice 4b)."
+      "notes": "Common connector probe (§10): SERVING, DEGRADED (IdP discovery failing), NOT_SERVING; pm-core routes around DEGRADED instances once the registry lands (slice 4b)."
+    },
+    "pm.connector.v1.ErpiService/FetchActuals": {
+      "writers": [
+        "connectors/erpi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/erpi_stub_fetch_actuals.udts.json",
+        "connectors/erpi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go",
+        "services/pm-core/internal/budget/integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "financials tier: posted cost lines upserted into budget_actuals on the ERP's actual_ref."
+    },
+    "pm.connector.v1.ErpiService/FetchBudgetVersions": {
+      "writers": [
+        "connectors/erpi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/erpi_stub_fetch_budget_versions.udts.json",
+        "connectors/erpi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go",
+        "services/pm-core/internal/budget/integration_test.go"
+      ],
+      "disposition": "active",
+      "notes": "project_controls tier: baselines mirrored into budget_versions (kind baseline) by budget.SyncProject."
+    },
+    "pm.connector.v1.ErpiService/FetchCommitments": {
+      "writers": [
+        "connectors/erpi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/erpi_stub_fetch_commitments.udts.json",
+        "connectors/erpi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go"
+      ],
+      "disposition": "active",
+      "notes": "financials tier: commitments upserted into budget_commitments on the ERP's commitment_ref."
+    },
+    "pm.connector.v1.ErpiService/FetchEac": {
+      "writers": [
+        "connectors/erpi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/erpi_stub_fetch_eac.udts.json",
+        "connectors/erpi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go"
+      ],
+      "disposition": "active",
+      "notes": "project_controls tier: the current EAC mirrored as budget_versions kind eac, version_ref current."
+    },
+    "pm.connector.v1.ErpiService/FetchForecastVersions": {
+      "writers": [
+        "connectors/erpi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/erpi_stub_fetch_forecast_versions.udts.json",
+        "connectors/erpi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go"
+      ],
+      "disposition": "active",
+      "notes": "project_controls tier: forecasts mirrored into budget_versions (kind forecast)."
+    },
+    "pm.connector.v1.ErpiService/FetchProjectStructure": {
+      "writers": [
+        "connectors/erpi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/erpi_stub_fetch_project_structure.udts.json",
+        "connectors/erpi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/erpi/client.go"
+      ],
+      "disposition": "active",
+      "notes": "project_controls tier: the ERP's project tree; pm-core's client drains it (mirroring the tree onto pro_manage nodes is a layer, §03 ERP-led structure)."
+    },
+    "pm.connector.v1.ErpiService/ReleaseBudget": {
+      "writers": [
+        "connectors/erpi/stub/internal/service/service.go"
+      ],
+      "readers": [
+        "docs/tests/udts/specs/erpi_stub_release_budget.udts.json",
+        "connectors/erpi/stub/tests/udts/contract_test.go",
+        "services/pm-core/internal/connectors/erpi/client.go",
+        "services/pm-core/internal/budget/budget.go",
+        "services/pm-core/internal/budget/integration_test.go",
+        "scripts/car_check.sh"
+      ],
+      "disposition": "active",
+      "notes": "budget_release tier: the one controlled financial write (§10); pm-workers calls it from the outbox (erpi.budget.release) with the CAR id as the idempotency key."
     },
     "pm.connector.v1.IdpiService/AuthenticateInteractive": {
       "writers": [
@@ -131,7 +225,7 @@
         "connectors/idpi/oidc/tests/integration/keycloak_test.go"
       ],
       "disposition": "active",
-      "notes": "Pure claims-to-roles mapping (\u00a704) from connectors/idpi/oidc/mapping.yaml: platform roles, pools, attributes."
+      "notes": "Pure claims-to-roles mapping (§04) from connectors/idpi/oidc/mapping.yaml: platform roles, pools, attributes."
     },
     "pm.connector.v1.IdpiService/ValidateToken": {
       "writers": [
@@ -195,7 +289,7 @@
         "services/pm-core/internal/signing/integration_test.go"
       ],
       "disposition": "active",
-      "notes": "Status and per-signer state; pm-workers reconciles open envelopes with it every tick (\u00a710 lost webhooks)."
+      "notes": "Status and per-signer state; pm-workers reconciles open envelopes with it every tick (§10 lost webhooks)."
     },
     "pm.connector.v1.SigiService/OnWebhook": {
       "writers": [
