@@ -1,0 +1,53 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core signed_artifact_boundary",
+    "description": "The signed CAR artifact is a budget read: no actor 401, non-member 403; the owner gets 404 here because the seeded CAR has no envelope, never someone else's PDF.",
+    "category": "authorization",
+    "severity": "high",
+    "endpoint": "/api/v1/cars/01900000-0000-7000-8000-00000000e001/signed-artifact",
+    "method": "GET"
+  },
+  "requests": [
+    {
+      "name": "no_actor",
+      "expected_status": 401
+    },
+    {
+      "name": "non_member",
+      "headers": {
+        "X-Dev-Actor": "nobody.usts"
+      },
+      "expected_status": 403
+    },
+    {
+      "name": "owner_no_artifact",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "expected_status": 404
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      401,
+      403,
+      404
+    ],
+    "body_not_contains": [
+      "%PDF"
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A01:2021 Broken Access Control"
+    ],
+    "cwe": [
+      "CWE-639"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core team_write_boundary",
+    "description": "Inviting a member is a team write (owner, or an explicit team grant). Viewer, contributor, and non-member are 403 before validation; the owner reaches validation (422 on an empty body).",
+    "category": "authorization",
+    "severity": "high",
+    "endpoint": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/members",
+    "method": "POST"
+  },
+  "requests": [
+    {
+      "name": "viewer",
+      "headers": {
+        "X-Dev-Actor": "fay.ops"
+      },
+      "payload": {},
+      "expected_status": 403
+    },
+    {
+      "name": "contributor",
+      "headers": {
+        "X-Dev-Actor": "hana.epcm"
+      },
+      "payload": {},
+      "expected_status": 403
+    },
+    {
+      "name": "non_member",
+      "headers": {
+        "X-Dev-Actor": "nobody.usts"
+      },
+      "payload": {},
+      "expected_status": 403
+    },
+    {
+      "name": "owner_reaches_validation",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "payload": {},
+      "expected_status": 422
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      403,
+      422
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A01:2021 Broken Access Control"
+    ],
+    "cwe": [
+      "CWE-285"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

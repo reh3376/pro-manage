@@ -45,9 +45,10 @@ func NewChain(key []byte) (*Chain, error) {
 type Event struct {
 	TenantID              string
 	ProjectID             *uuid.UUID
-	ActorUserID           string
-	ActionType            string // e.g. "site.create"
-	SubjectType           string // e.g. "site"
+	ActorUserID           string     // the login handle (display attribution)
+	ActorID               *uuid.UUID // the user's stable id (B-11); nil for system actors and dev-header callers without a users row
+	ActionType            string     // e.g. "site.create"
+	SubjectType           string     // e.g. "site"
 	SubjectID             string
 	Before                any // nil for creates
 	After                 any // nil for deletes
@@ -58,6 +59,11 @@ type Event struct {
 	At                    time.Time // zero means now
 }
 
+// ChainVersion is what new rows sign under. Version 1 signed the handle alone;
+// version 2 (B-11) adds the actor's stable id. Verify reads each row's own
+// version, so a chain may hold both.
+const ChainVersion int16 = 2
+
 // canonical is the exact byte string that is signed. Field order is fixed and
 // JSON is rendered with sorted keys, so the hash is reproducible from the row.
 type canonical struct {
@@ -65,6 +71,7 @@ type canonical struct {
 	TenantID              string          `json:"tenant_id"`
 	ProjectID             string          `json:"project_id"`
 	ActorUserID           string          `json:"actor_user_id"`
+	ActorID               *string         `json:"actor_id,omitempty"` // version 2 only; omitted under version 1 so old rows re-sign byte for byte
 	ActionType            string          `json:"action_type"`
 	SubjectType           string          `json:"subject_type"`
 	SubjectID             string          `json:"subject_id"`
@@ -92,6 +99,10 @@ func canonicalBytes(row db.AuditEvent) ([]byte, error) {
 		Before: normalizeJSON(row.BeforeState), After: normalizeJSON(row.AfterState),
 		At: row.At.UTC().Format(time.RFC3339Nano), SourceIP: strOr(row.SourceIp), RequestID: strOr(row.RequestID),
 		GuidanceID: strOr(row.GuidanceID), ClassificationVerdict: strOr(row.ClassificationVerdict),
+	}
+	if row.ChainVersion >= 2 {
+		id := uuidStr(row.ActorID)
+		c.ActorID = &id
 	}
 	return json.Marshal(c)
 }
@@ -126,12 +137,12 @@ func (c *Chain) Append(ctx context.Context, q *db.Queries, ev Event) (db.AuditEv
 	at = at.UTC().Truncate(time.Microsecond) // Postgres timestamptz precision; the stored and signed values must agree
 
 	row := db.AuditEvent{
-		AuditID: ids.New(), TenantID: ev.TenantID, ProjectID: ev.ProjectID, ActorUserID: ev.ActorUserID,
+		AuditID: ids.New(), TenantID: ev.TenantID, ProjectID: ev.ProjectID, ActorUserID: ev.ActorUserID, ActorID: ev.ActorID,
 		ActionType: ev.ActionType, SubjectType: ev.SubjectType, SubjectID: ev.SubjectID,
 		BeforeState: before, AfterState: after, At: at,
 		SourceIp: nilIfEmpty(ev.SourceIP), RequestID: nilIfEmpty(ev.RequestID),
 		GuidanceID: nilIfEmpty(ev.GuidanceID), ClassificationVerdict: nilIfEmpty(ev.ClassificationVerdict),
-		PrevHash: prev,
+		PrevHash: prev, ChainVersion: ChainVersion,
 	}
 	payload, err := canonicalBytes(row)
 	if err != nil {
@@ -145,6 +156,7 @@ func (c *Chain) Append(ctx context.Context, q *db.Queries, ev Event) (db.AuditEv
 		BeforeState: row.BeforeState, AfterState: row.AfterState, At: row.At,
 		SourceIp: row.SourceIp, RequestID: row.RequestID, GuidanceID: row.GuidanceID,
 		ClassificationVerdict: row.ClassificationVerdict, PrevHash: row.PrevHash, SignedHash: row.SignedHash,
+		ActorID: row.ActorID, ChainVersion: row.ChainVersion,
 	})
 }
 

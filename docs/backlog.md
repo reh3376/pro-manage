@@ -1,6 +1,6 @@
 # Engineering backlog
 
-Status: **Living list** · Last updated: 2026-10-27
+Status: **Living list** · Last updated: 2026-10-30
 
 Work the owner has asked for that is not a spine slice or an FSD open item. Ordered by priority within each group; each item names what "done" looks like. Owner decisions live in [open-items.md](./fsd/open-items.md); the delivery order lives in the [roadmap](./fsd/roadmap.md).
 
@@ -59,10 +59,6 @@ Pools from IdP claims landed in slice 4b (2026-10-23): every login refills the u
 
 The SLA tick (slice 7) escalates a stage once by extending its clock, because there is no delegation chain to widen the assignees with. `§08` wants each eligible user to declare an active delegate with a duration, out-of-office windows that steer routing to available assignees, the owner's per-workflow override, and the escalation to walk that chain. The empty-pool case still fails the submit as a precondition instead of pausing the workflow with an alert to the platform admin. The daily inbox digest (`§08`, `SendDigest` in the Commsi contract) is unscheduled.
 
-### B-14 First USTS specs for the auth boundary
-
-The USTS runner is vendored and its spec directory is empty, while the boundary it exists for is now real: unauthenticated and wrong-role callers on every `/api/v1` route, the section-level ACL (viewer, editor-with-deny, contributor, non-member), the `/auth/*` edge, the platform-admin gates, and the Sigi webhook's signature check. Write the first specs from `access.uats.json`, `auth.uats.json`, and `signing.uats.json`, and make `make test-usts` merge-blocking inside the compose job; contributor contract scoping joins when B-12 lands.
-
 ### B-13 Sigi_DS: the DocuSign backend, cancellation, and the inbound webhook path
 
 Slice 6 runs the whole envelope lifecycle against `Sigi_STUB`. `Sigi_DS` implements the same `pm.connector.v1.SigiService` against DocuSign eSignature REST (JWT grant, envelope from a template or the rendered document, embedded or email signing, Connect webhooks verified with the HMAC key) once the account exists (OI-17 decides which workflow kinds sign). Also open: `CancelEnvelope` when a CAR is cancelled, voiding a pending envelope on a supplemental, and the reverse-proxy path for provider webhooks (OI-13); until then reconciliation on the worker tick is the only path, which the design already treats as authoritative.
@@ -79,13 +75,11 @@ Slice 9 shipped the `ErpiService` contract (spine subset), the mirror, and the r
 
 The screens render server-side and re-render after every action, which is right for the spine but leaves: live refresh of the inbox and the chain over SSE (`§09`), team and grant management on the project page (members and grants are read-only there; the REST routes exist), the inbox naming a CAR by its code rather than its id (the open-stages query carries only the subject id), a content security policy and the hardened `pm-frontend-public` split (`§05`), the signed-PDF link going through the frontend rather than straight to pm-core, and a client-side error boundary that keeps the shell when pm-core is down. Pull each when a pilot persona asks for it.
 
-### B-11 Re-key attribution to user_id
-
-Audit rows (`actor_user_id`), `projects.owner_user_id`, `approver_pools.user_id`, and stage assignees key on the login handle (`preferred_username`). The IdP subject is the stable identity (`users.external_id`, `users.user_id`). Before the pilot: a migration that adds `actor_id uuid` beside the handle, backfills from `users`, and makes the handle a display value, so a renamed account keeps its history.
-
 ## Done
 
 | Id | Item | Closed in |
 |---|---|---|
 | B-10 | pm-core login on IdPi_OIDC (slice 4b): login and callback routes, just-in-time users, Redis sessions, actor from the session, pools from claims | 2026-10-23 |
 | B-08 | SLA tick, nudges, escalation, and expiry through Commsi (slice 7); the empty-pool pause moved to B-15 | 2026-10-26 |
+| B-14 | First USTS specs for the auth boundary (slice 10): 18 pm-core specs, merge-blocking in the compose job; contributor scoping joins with B-12 | 2026-10-30 |
+| B-11 | Attribution re-keyed to users.user_id (slice 10): user_ref on memberships, grants, pools, and ownerships, rename cascade at login, actor_id in audit rows under chain version 2 | 2026-10-30 |
