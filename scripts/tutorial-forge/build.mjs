@@ -101,11 +101,21 @@ export async function build(config, configDir) {
   const expandCount = acronymsOpts.expandCount ?? 2;
   const stripFrontmatter = config.stripFrontmatter !== false;
 
-  // Preflight — fail fast with clear names for every missing input.
+  // Preflight — fail fast with clear names for every missing input. The three
+  // sources that are both bundled and hashed are read once here; the same bytes
+  // are written and hashed below, so the file cannot change between the check
+  // and the use (CodeQL js/file-system-race).
+  const readInput = (label, path) => {
+    try {
+      return readFileSync(path);
+    } catch (err) {
+      return fail(`${label} not found: ${path} (${err.code ?? err.message})`);
+    }
+  };
+  const deckBytes = readInput('deck source', DECK_SRC);
+  const cssBytes = readInput('CSS', CSS_SRC);
+  const viewerBytes = readInput('SVG viewer', SVG_VIEWER_SRC);
   for (const [label, path] of [
-    ['deck source', DECK_SRC],
-    ['CSS', CSS_SRC],
-    ['SVG viewer', SVG_VIEWER_SRC],
     ['highlight.js style', FRAMEWORK_DEFAULTS.highlightStyle],
     ['mermaid runtime (for renderer)', FRAMEWORK_DEFAULTS.mermaid],
   ]) {
@@ -117,7 +127,7 @@ export async function build(config, configDir) {
   mkdirSync(OUTPUT_DIR, { recursive: true });
   logInfo(`writing to ${OUTPUT_DIR}`);
 
-  let md = readFileSync(DECK_SRC, 'utf-8');
+  let md = deckBytes.toString('utf-8');
 
   if (stripFrontmatter) {
     md = md.replace(/^---\n[\s\S]*?\n---\n+/, '');
@@ -530,14 +540,14 @@ ${scrollSyncScript}</body>
   mkdirSync(join(OUTPUT_DIR, 'assets', 'css'), { recursive: true });
   mkdirSync(join(OUTPUT_DIR, 'assets', 'js'), { recursive: true });
 
-  cpSync(CSS_SRC, join(OUTPUT_DIR, 'assets', 'css', 'slides-overrides.css'));
+  writeFileSync(join(OUTPUT_DIR, 'assets', 'css', 'slides-overrides.css'), cssBytes);
   logInfo('bundled assets/css/slides-overrides.css');
 
   cpSync(FRAMEWORK_DEFAULTS.highlightStyle, join(OUTPUT_DIR, 'assets', 'css', 'zenburn.min.css'));
   logInfo('bundled assets/css/zenburn.min.css');
 
-  cpSync(SVG_VIEWER_SRC, join(OUTPUT_DIR, 'assets', 'js', 'svg-viewer.js'));
-  logInfo(`bundled assets/js/svg-viewer.js (${statSync(SVG_VIEWER_SRC).size} bytes)`);
+  writeFileSync(join(OUTPUT_DIR, 'assets', 'js', 'svg-viewer.js'), viewerBytes);
+  logInfo(`bundled assets/js/svg-viewer.js (${viewerBytes.length} bytes)`);
 
   // Hand-authored SVGs land beside the pre-rendered mermaid-*.svg. Merge:
   // cpSync of the user's assets dir onto the already-populated staging dir;
@@ -554,9 +564,9 @@ ${scrollSyncScript}</body>
 
   // Drift breadcrumb — SHA of the deck + each override file. Lets consumers
   // CI-gate "did someone edit the deck without re-syncing the embed?"
-  const deckSha = createHash('sha256').update(readFileSync(DECK_SRC)).digest('hex');
-  const cssSha = createHash('sha256').update(readFileSync(CSS_SRC)).digest('hex');
-  const viewerSha = createHash('sha256').update(readFileSync(SVG_VIEWER_SRC)).digest('hex');
+  const deckSha = createHash('sha256').update(deckBytes).digest('hex');
+  const cssSha = createHash('sha256').update(cssBytes).digest('hex');
+  const viewerSha = createHash('sha256').update(viewerBytes).digest('hex');
   writeFileSync(
     join(OUTPUT_DIR, 'SOURCE_SHA256.txt'),
     [
