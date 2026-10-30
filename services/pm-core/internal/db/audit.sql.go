@@ -17,12 +17,12 @@ const insertAuditEvent = `-- name: InsertAuditEvent :one
 INSERT INTO audit_events (
     audit_id, tenant_id, project_id, actor_user_id, action_type, subject_type, subject_id,
     before_state, after_state, at, source_ip, request_id, guidance_id, classification_verdict,
-    prev_hash, signed_hash
+    prev_hash, signed_hash, actor_id, chain_version
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7,
     $8, $9, $10, $11, $12, $13, $14,
-    $15, $16
-) RETURNING audit_id, seq, tenant_id, project_id, actor_user_id, action_type, subject_type, subject_id, before_state, after_state, at, source_ip, request_id, guidance_id, classification_verdict, prev_hash, signed_hash
+    $15, $16, $17, $18
+) RETURNING audit_id, seq, tenant_id, project_id, actor_user_id, action_type, subject_type, subject_id, before_state, after_state, at, source_ip, request_id, guidance_id, classification_verdict, prev_hash, signed_hash, actor_id, chain_version
 `
 
 type InsertAuditEventParams struct {
@@ -42,6 +42,8 @@ type InsertAuditEventParams struct {
 	ClassificationVerdict *string         `json:"classification_verdict"`
 	PrevHash              string          `json:"prev_hash"`
 	SignedHash            string          `json:"signed_hash"`
+	ActorID               *uuid.UUID      `json:"actor_id"`
+	ChainVersion          int16           `json:"chain_version"`
 }
 
 func (q *Queries) InsertAuditEvent(ctx context.Context, arg InsertAuditEventParams) (AuditEvent, error) {
@@ -62,6 +64,8 @@ func (q *Queries) InsertAuditEvent(ctx context.Context, arg InsertAuditEventPara
 		arg.ClassificationVerdict,
 		arg.PrevHash,
 		arg.SignedHash,
+		arg.ActorID,
+		arg.ChainVersion,
 	)
 	var i AuditEvent
 	err := row.Scan(
@@ -82,6 +86,8 @@ func (q *Queries) InsertAuditEvent(ctx context.Context, arg InsertAuditEventPara
 		&i.ClassificationVerdict,
 		&i.PrevHash,
 		&i.SignedHash,
+		&i.ActorID,
+		&i.ChainVersion,
 	)
 	return i, err
 }
@@ -98,7 +104,7 @@ func (q *Queries) LastAuditHash(ctx context.Context, tenantID string) (string, e
 }
 
 const listAuditEventsForProject = `-- name: ListAuditEventsForProject :many
-SELECT audit_id, seq, tenant_id, project_id, actor_user_id, action_type, subject_type, subject_id, before_state, after_state, at, source_ip, request_id, guidance_id, classification_verdict, prev_hash, signed_hash FROM audit_events WHERE tenant_id = $1 AND project_id = $2 ORDER BY seq DESC LIMIT $3
+SELECT audit_id, seq, tenant_id, project_id, actor_user_id, action_type, subject_type, subject_id, before_state, after_state, at, source_ip, request_id, guidance_id, classification_verdict, prev_hash, signed_hash, actor_id, chain_version FROM audit_events WHERE tenant_id = $1 AND project_id = $2 ORDER BY seq DESC LIMIT $3
 `
 
 type ListAuditEventsForProjectParams struct {
@@ -134,6 +140,8 @@ func (q *Queries) ListAuditEventsForProject(ctx context.Context, arg ListAuditEv
 			&i.ClassificationVerdict,
 			&i.PrevHash,
 			&i.SignedHash,
+			&i.ActorID,
+			&i.ChainVersion,
 		); err != nil {
 			return nil, err
 		}
@@ -146,7 +154,7 @@ func (q *Queries) ListAuditEventsForProject(ctx context.Context, arg ListAuditEv
 }
 
 const listAuditEventsInOrder = `-- name: ListAuditEventsInOrder :many
-SELECT audit_id, seq, tenant_id, project_id, actor_user_id, action_type, subject_type, subject_id, before_state, after_state, at, source_ip, request_id, guidance_id, classification_verdict, prev_hash, signed_hash FROM audit_events WHERE tenant_id = $1 AND seq > $2 ORDER BY seq ASC LIMIT $3
+SELECT audit_id, seq, tenant_id, project_id, actor_user_id, action_type, subject_type, subject_id, before_state, after_state, at, source_ip, request_id, guidance_id, classification_verdict, prev_hash, signed_hash, actor_id, chain_version FROM audit_events WHERE tenant_id = $1 AND seq > $2 ORDER BY seq ASC LIMIT $3
 `
 
 type ListAuditEventsInOrderParams struct {
@@ -183,6 +191,8 @@ func (q *Queries) ListAuditEventsInOrder(ctx context.Context, arg ListAuditEvent
 			&i.ClassificationVerdict,
 			&i.PrevHash,
 			&i.SignedHash,
+			&i.ActorID,
+			&i.ChainVersion,
 		); err != nil {
 			return nil, err
 		}

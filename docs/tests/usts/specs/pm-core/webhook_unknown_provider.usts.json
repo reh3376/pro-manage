@@ -1,0 +1,37 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core webhook_unknown_provider",
+    "description": "A provider that is not configured is rejected before any body parsing.",
+    "category": "authentication",
+    "severity": "high",
+    "endpoint": "/webhooks/sigi/docusign",
+    "method": "POST"
+  },
+  "requests": [
+    {
+      "name": "unknown_provider",
+      "payload": {
+        "anything": true
+      },
+      "expected_status": 401
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      401
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A08:2021 Software and Data Integrity Failures"
+    ],
+    "cwe": [
+      "CWE-345"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

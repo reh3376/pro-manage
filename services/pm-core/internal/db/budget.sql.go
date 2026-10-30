@@ -302,7 +302,7 @@ func (q *Queries) ListPendingBudgetReleases(ctx context.Context, limit int32) ([
 }
 
 const listProjectsForERPSync = `-- name: ListProjectsForERPSync :many
-SELECT project_id, tenant_id, code, name, description, portfolio_id, site_id, currency, owner_user_id, lifecycle_state, fel_stage, project_type, tpm_pillar_tags, hazardous_area_classification, regulatory_stamps, onboarding_level, imported, import_batch_id, start_date, target_end_date, baseline_budget_total, baseline_duration_days, tags, created_at, created_by, updated_at, updated_by, version, erp_project_ref, erp_synced_at, erp_sync_error FROM projects WHERE tenant_id = $1 AND erp_project_ref IS NOT NULL ORDER BY erp_synced_at NULLS FIRST LIMIT $2
+SELECT project_id, tenant_id, code, name, description, portfolio_id, site_id, currency, owner_user_id, lifecycle_state, fel_stage, project_type, tpm_pillar_tags, hazardous_area_classification, regulatory_stamps, onboarding_level, imported, import_batch_id, start_date, target_end_date, baseline_budget_total, baseline_duration_days, tags, created_at, created_by, updated_at, updated_by, version, erp_project_ref, erp_synced_at, erp_sync_error, owner_ref FROM projects WHERE tenant_id = $1 AND erp_project_ref IS NOT NULL ORDER BY erp_synced_at NULLS FIRST LIMIT $2
 `
 
 type ListProjectsForERPSyncParams struct {
@@ -352,6 +352,7 @@ func (q *Queries) ListProjectsForERPSync(ctx context.Context, arg ListProjectsFo
 			&i.ErpProjectRef,
 			&i.ErpSyncedAt,
 			&i.ErpSyncError,
+			&i.OwnerRef,
 		); err != nil {
 			return nil, err
 		}

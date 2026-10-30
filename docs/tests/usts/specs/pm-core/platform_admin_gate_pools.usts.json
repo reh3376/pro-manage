@@ -1,0 +1,63 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core platform_admin_gate_pools",
+    "description": "Adding an approver-pool member changes who can approve money and is gated on platform_admin; without the role it is 403 before validation.",
+    "category": "authorization",
+    "severity": "critical",
+    "endpoint": "/api/v1/approver-pools",
+    "method": "POST"
+  },
+  "requests": [
+    {
+      "name": "owner_without_role",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "payload": {
+        "pool": "cfo",
+        "user_id": "alice.owner"
+      },
+      "expected_status": 403
+    },
+    {
+      "name": "finance_without_role",
+      "headers": {
+        "X-Dev-Actor": "bob.finance"
+      },
+      "payload": {
+        "pool": "cfo",
+        "user_id": "bob.finance"
+      },
+      "expected_status": 403
+    },
+    {
+      "name": "platform_admin_reaches_validation",
+      "headers": {
+        "X-Dev-Actor": "carol.admin",
+        "X-Dev-Roles": "platform_admin"
+      },
+      "payload": {},
+      "expected_status": 422
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      403,
+      422
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A01:2021 Broken Access Control"
+    ],
+    "cwe": [
+      "CWE-285",
+      "CWE-269"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

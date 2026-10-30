@@ -482,6 +482,96 @@
       "history": [],
       "recorded_at": "2026-10-22T13:29:40Z"
     },
+    "docs/tests/usts/specs/pm-core/api_requires_actor.usts.json": {
+      "sha256": "8695504b5ff2d7f1c18b568eb2c4092eccdf6dedb25824c2d13fbcb4a1d8e3d2",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/audit_summary_exposure.usts.json": {
+      "sha256": "cb85ff3448a3a845a0cb19bd72ebd58de8ac3fc0b50ce1aa444a6b5557b19ede",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/auth_me_requires_session.usts.json": {
+      "sha256": "4416b939cb69bcfa8002790ab1941e2bd4490b4a788640922a49e563a50432cd",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/budget_section_deny.usts.json": {
+      "sha256": "5befdd5483c7e81ff43a43ad5b711aa43b91c270eadd08c1d6d10017ede69dec",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/budget_sync_write_boundary.usts.json": {
+      "sha256": "34c134ba03d6ce78927c7d6fe1e22f7f981e43a7989c93e3f171f7407ea443fc",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/car_draft_write_boundary.usts.json": {
+      "sha256": "848e8afb1fc80a9d06c7762b066a9794ad542e36b3639ce7a44d3006ed010a3c",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/error_bodies_no_internals.usts.json": {
+      "sha256": "618a0c8199360231e5b428db77f7d482e823e95049671e378f9379496c67e1e3",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/inbox_requires_actor.usts.json": {
+      "sha256": "59c65176b32f72ee19865a719524afa098caf4f619709f907904772f5a6a4a93",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/platform_admin_gate_pools.usts.json": {
+      "sha256": "ce379f8c5fb214791a103e9e93356139cfb15cffc62224e6e2e78837b98cab3d",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/platform_admin_gate_sites.usts.json": {
+      "sha256": "faed9d5a776dfed57943170a0bf88b4808350740336dc3ee9bc441775ec53cb5",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/project_create_injection.usts.json": {
+      "sha256": "5031bb9b34fc11e2fdf593c8c194ebea98d634e1988a20b1ba3f60ae4a727257",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/project_filter_injection.usts.json": {
+      "sha256": "45a0b0eeff42c00864f2d59c32c46909e15935474c6923d23140f40ff2a3a4eb",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/project_read_boundary.usts.json": {
+      "sha256": "aa57c524c0214466e09799ce738fc0298a148b59f3f12c5f8d212964c3883275",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/response_headers_baseline.usts.json": {
+      "sha256": "7e093287447770d469a970ef46f4e2e32a1436f01ae86d71af98cef7c72da179",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/signed_artifact_boundary.usts.json": {
+      "sha256": "2513b9743272c9f862cbfde5096a1f7443e123a80688806fd01ffb1ceb2d152e",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/team_write_boundary.usts.json": {
+      "sha256": "8edc6ea7d315c1356a57fd169b4d8d609403fdbdc7d1dc29e8f1ad81dee64d5e",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/webhook_sigi_stub_signature.usts.json": {
+      "sha256": "0f0efd2af9a725b8d56e99265489f6c49b6e27d12118bda8ba77b2a4751b91db",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
+    "docs/tests/usts/specs/pm-core/webhook_unknown_provider.usts.json": {
+      "sha256": "daf89745e9a83ac15e0a8db8f874a5053fd8ebab923e075c2e7f2d29dba7c82a",
+      "history": [],
+      "recorded_at": "2026-10-30T16:34:56Z"
+    },
     "docs/tests/uxts_report.py": {
       "sha256": "446931fcfd06a2aefed5aee2ef184d6a8ce4ac2f2b10de39f18ff9af9fc0d332",
       "history": [],
@@ -528,6 +618,6 @@
       "recorded_at": "2026-10-22T13:29:40Z"
     }
   },
-  "updated_at": "2026-10-27T14:19:23Z",
-  "count": 83
+  "updated_at": "2026-10-30T16:34:56Z",
+  "count": 101
 }

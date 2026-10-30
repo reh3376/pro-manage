@@ -35,7 +35,7 @@ export STUB_MDEMG_URL  ?= http://127.0.0.1:9997
         build test lint smoke smoke-stub ci-local hooks \
         go-build go-test go-lint py-sync py-test py-lint fe-install fe-typecheck fe-build \
         proto proto-lint proto-breaking \
-        uxts test-uats test-udts test-idpi-live test-uats-stub test-uats-live test-mdemg-stub test-mdemg-live check-outbox test-outbox-stub check-car test-car-stub check-login check-screens test-uxts-hashes uxts-add-hashes \
+        uxts test-uats test-udts test-idpi-live test-uats-stub test-uats-live test-mdemg-stub test-mdemg-live check-outbox test-outbox-stub check-car test-car-stub check-login check-screens test-usts test-uxts-hashes uxts-add-hashes \
         test-unts unts-update verify-inventories check-matrix
 
 help: ## Show this help
@@ -159,6 +159,9 @@ test-udts: ## UDTS gRPC contract specs against the running dev stack (pm-core, I
 	cd $(SIGI_DIR) && UDTS_SIGI_TARGET=$(UDTS_SIGI_TARGET) go test -count=1 -v ./tests/udts/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+contract_test)"
 	cd $(COMMSI_DIR) && UDTS_COMMSI_TARGET=$(UDTS_COMMSI_TARGET) go test -count=1 -v ./tests/udts/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+contract_test)"
 	cd $(ERPI_DIR) && UDTS_ERPI_TARGET=$(UDTS_ERPI_TARGET) go test -count=1 -v ./tests/udts/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+contract_test)"
+
+test-usts: ## USTS security specs against the running dev stack (needs the seed; USTS_AUTH_ENABLED lets the vendored runner run authentication specs)
+	USTS_AUTH_ENABLED=true $(UXTS_PY) docs/tests/usts/runners/usts_runner.py --spec "docs/tests/usts/specs/pm-core/*.usts.json" --base-url $(PM_CORE_URL)
 
 check-login: ## SSO login end to end through pm-core, IdPi_OIDC, and the dev Keycloak (cookie jar drives the login form)
 	cd $(GO_DIR) && PM_CORE_URL=$(PM_CORE_URL) go test -tags integration -count=1 -v -run SSOLogin ./tests/login/ 2>&1 | grep -E "^(=== RUN|--- |ok|FAIL|\s+login_test)"

@@ -47,9 +47,10 @@ var (
 
 // Actor is who performs a mutation, as resolved by the API layer.
 type Actor struct {
-	UserID        string   // the login handle (preferred_username); what audit rows and pools key on today
-	Subject       string   // the IdP's stable id when the actor came from a session
-	PlatformRoles []string // §04 platform roles from the session; empty for the dev header
+	UserID        string     // the login handle (preferred_username): the display attribution and the key rows still carry
+	ID            *uuid.UUID // users.user_id, the stable identity (B-11); nil for a dev-header caller with no users row
+	Subject       string     // the IdP's stable id when the actor came from a session
+	PlatformRoles []string   // §04 platform roles from the session; empty for the dev header
 	SessionID     string
 	SourceIP      string
 	RequestID     string
@@ -203,7 +204,7 @@ func (s *Service) CreateSite(ctx context.Context, actor Actor, in CreateSiteInpu
 			return fmt.Errorf("create site: %w", err)
 		}
 		_, err = s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ActorUserID: actor.UserID, ActionType: "site.create", SubjectType: "site", SubjectID: site.SiteID.String(),
+			TenantID: s.Tenant, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "site.create", SubjectType: "site", SubjectID: site.SiteID.String(),
 			After: site, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
 		return err
@@ -373,8 +374,15 @@ func (s *Service) CreateProject(ctx context.Context, actor Actor, in CreateProje
 		if _, err := q.UpsertProjectMember(ctx, db.UpsertProjectMemberParams{ProjectID: pid, UserID: project.OwnerUserID, BaseRole: "owner", InvitedBy: actor.UserID}); err != nil {
 			return fmt.Errorf("owner membership: %w", err)
 		}
+		// B-11: attach the stable identity when the owner has signed in before; otherwise the first login attaches it.
+		if err := q.LinkProjectOwnerIdentity(ctx, pid); err != nil {
+			return err
+		}
+		if err := q.LinkMemberIdentity(ctx, db.LinkMemberIdentityParams{ProjectID: pid, UserID: project.OwnerUserID, TenantID: s.Tenant}); err != nil {
+			return err
+		}
 		ev, err := s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ProjectID: &pid, ActorUserID: actor.UserID, ActionType: "project.create", SubjectType: "project",
+			TenantID: s.Tenant, ProjectID: &pid, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "project.create", SubjectType: "project",
 			SubjectID: pid.String(), After: project, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
 		if err != nil {

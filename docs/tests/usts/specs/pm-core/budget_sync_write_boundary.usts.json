@@ -1,0 +1,54 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core budget_sync_write_boundary",
+    "description": "Pulling the ERP mirror on demand is a budget write: viewer (read grant only), contributor, and non-member are 403.",
+    "category": "authorization",
+    "severity": "medium",
+    "endpoint": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/budget/sync",
+    "method": "POST"
+  },
+  "requests": [
+    {
+      "name": "viewer_with_read_grant",
+      "headers": {
+        "X-Dev-Actor": "fay.ops"
+      },
+      "payload": {},
+      "expected_status": 403
+    },
+    {
+      "name": "contributor",
+      "headers": {
+        "X-Dev-Actor": "hana.epcm"
+      },
+      "payload": {},
+      "expected_status": 403
+    },
+    {
+      "name": "non_member",
+      "headers": {
+        "X-Dev-Actor": "nobody.usts"
+      },
+      "payload": {},
+      "expected_status": 403
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      403
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A01:2021 Broken Access Control"
+    ],
+    "cwe": [
+      "CWE-285"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

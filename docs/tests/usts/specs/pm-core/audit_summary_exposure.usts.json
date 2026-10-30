@@ -1,0 +1,59 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core audit_summary_exposure",
+    "description": "The audit section serves before/after payloads only to read_full holders (FSD §04): a viewer gets the summary (200 without state payloads), a contributor and a non-member get 403; no response carries before_state, after_state, or the chain hashes.",
+    "category": "data_exposure",
+    "severity": "high",
+    "endpoint": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/audit",
+    "method": "GET"
+  },
+  "requests": [
+    {
+      "name": "viewer_summary",
+      "headers": {
+        "X-Dev-Actor": "fay.ops"
+      },
+      "expected_status": 200
+    },
+    {
+      "name": "contributor",
+      "headers": {
+        "X-Dev-Actor": "hana.epcm"
+      },
+      "expected_status": 403
+    },
+    {
+      "name": "non_member",
+      "headers": {
+        "X-Dev-Actor": "nobody.usts"
+      },
+      "expected_status": 403
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      200,
+      403
+    ],
+    "body_not_contains": [
+      "before_state",
+      "after_state",
+      "signed_hash",
+      "prev_hash"
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A01:2021 Broken Access Control",
+      "A04:2021 Insecure Design"
+    ],
+    "cwe": [
+      "CWE-200"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

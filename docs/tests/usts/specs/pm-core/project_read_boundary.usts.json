@@ -1,0 +1,77 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core project_read_boundary",
+    "description": "Reading a project needs membership, an open stage, or a platform role that reads across projects (FSD §04). A non-member, a platform admin (no blanket read), an actor with made-up roles, and a viewer of another project are 403; the portfolio executive and the owner are 200. Seeded project P-NF-ON-3.",
+    "category": "authorization",
+    "severity": "critical",
+    "endpoint": "/api/v1/projects/01900000-0000-7000-8000-00000000b004",
+    "method": "GET"
+  },
+  "requests": [
+    {
+      "name": "non_member",
+      "headers": {
+        "X-Dev-Actor": "nobody.usts"
+      },
+      "expected_status": 403
+    },
+    {
+      "name": "platform_admin_has_no_blanket_read",
+      "headers": {
+        "X-Dev-Actor": "carol.admin",
+        "X-Dev-Roles": "platform_admin"
+      },
+      "expected_status": 403
+    },
+    {
+      "name": "made_up_roles",
+      "headers": {
+        "X-Dev-Actor": "nobody.usts",
+        "X-Dev-Roles": "superuser,root,owner"
+      },
+      "expected_status": 403
+    },
+    {
+      "name": "viewer_of_another_project",
+      "headers": {
+        "X-Dev-Actor": "fay.ops"
+      },
+      "expected_status": 403
+    },
+    {
+      "name": "portfolio_executive_reads",
+      "headers": {
+        "X-Dev-Actor": "evan.exec",
+        "X-Dev-Roles": "portfolio_executive"
+      },
+      "expected_status": 200
+    },
+    {
+      "name": "owner_reads",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "expected_status": 200
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      200,
+      403
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A01:2021 Broken Access Control"
+    ],
+    "cwe": [
+      "CWE-284",
+      "CWE-639"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}
