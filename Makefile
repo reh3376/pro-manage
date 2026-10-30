@@ -32,7 +32,7 @@ export PM_FRONTEND_URL ?= http://127.0.0.1:3100
 export STUB_MDEMG_URL  ?= http://127.0.0.1:9997
 
 .PHONY: help env dev dev-stub dev-down dev-logs mdemg-up mdemg-down mdemg-logs db-seed db-psql sqlc go-test-integration \
-        build test lint smoke smoke-stub ci-local hooks \
+        build test lint smoke smoke-stub ci-local hooks tutorial tutorial-serve \
         go-build go-test go-lint py-sync py-test py-lint fe-install fe-typecheck fe-build \
         proto proto-lint proto-breaking \
         uxts test-uats test-udts test-idpi-live test-uats-stub test-uats-live test-mdemg-stub test-mdemg-live check-outbox test-outbox-stub check-car test-car-stub check-login check-screens test-usts test-uxts-hashes uxts-add-hashes \
@@ -132,6 +132,13 @@ fe-typecheck: fe-install ## Frontend type check
 
 fe-build: fe-install ## Frontend production build
 	cd $(FE_DIR) && pnpm build
+
+tutorial: ## Build the onboarding tutorial (docs/tutorial.md) into build/tutorial-static with tutorial-forge (needs `cd scripts/tutorial-forge && npm ci` once)
+	@test -d scripts/tutorial-forge/node_modules || { echo "tutorial-forge deps not installed: cd scripts/tutorial-forge && npm ci"; exit 1; }
+	node scripts/tutorial-forge/cli.mjs build --config tutorial.config.json
+
+tutorial-serve: tutorial ## Build the tutorial and serve it on http://127.0.0.1:8765
+	cd build/tutorial-static && python3 -m http.server 8765 --bind 127.0.0.1
 
 proto: proto-lint ## Generate Go and Python code from proto/
 	cd proto && buf generate

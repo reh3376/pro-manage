@@ -9,7 +9,7 @@
       "TPM": "Total Productive Maintenance",
       "FEL": "Front-End Loading",
       "EEM": "Early Equipment Management",
-      "CAR": "Capital Appropriation Request",
+      "CAR": "Capital Authorization Request",
       "CQV": "Commissioning, Qualification, and Validation",
       "MP": "Maintenance Prevention",
       "OEE": "Overall Equipment Effectiveness",
@@ -76,7 +76,11 @@
       "EVM": "Earned Value Management",
       "RACI": "Responsible, Accountable, Consulted, Informed"
     },
-    "disabled": ["IT", "PM", "PI"],
+    "disabled": [
+      "IT",
+      "PM",
+      "PI"
+    ],
     "glossary": {
       "enabled": true,
       "label": "Glossary"
