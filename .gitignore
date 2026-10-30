@@ -69,3 +69,9 @@ services/pm-core/bin/
 
 # Python
 uv.lock.bak
+
+# tutorial-forge (added 2026-10-30)
+scripts/tutorial-forge/node_modules/
+scripts/tutorial-forge/example/dist/
+build/tutorial-static/
+pro_manage-tutorial.zip
