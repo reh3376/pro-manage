@@ -44,7 +44,7 @@ x-pm-env: &pm-env
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: pm
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -78,7 +78,7 @@ services:
       retries: 12
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     command: ["redis-server", "--save", "", "--appendonly", "no"]
     ports:
       - "127.0.0.1:${PM_REDIS_PORT:-6380}:6379"
@@ -90,7 +90,7 @@ services:
 
   rustfs:
     # S3-compatible object store for dev (FSD §05 "MinIO or equivalent"; MinIO images are no longer published).
-    image: rustfs/rustfs:1.0.3
+    image: rustfs/rustfs:1.0.4
     environment:
       RUSTFS_VOLUMES: /data
       RUSTFS_ADDRESS: 0.0.0.0:9000
