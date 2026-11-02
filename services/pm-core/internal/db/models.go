@@ -22,6 +22,7 @@ type AclGrant struct {
 	GrantedAt   time.Time  `json:"granted_at"`
 	ExpiresAt   *time.Time `json:"expires_at"`
 	Reason      string     `json:"reason"`
+	UserRef     *uuid.UUID `json:"user_ref"`
 }
 
 type ApprovalStage struct {
@@ -68,6 +69,7 @@ type ApproverPool struct {
 	AddedBy string     `json:"added_by"`
 	AddedAt time.Time  `json:"added_at"`
 	Source  string     `json:"source"`
+	UserRef *uuid.UUID `json:"user_ref"`
 }
 
 type AuditEvent struct {
@@ -88,6 +90,8 @@ type AuditEvent struct {
 	ClassificationVerdict *string         `json:"classification_verdict"`
 	PrevHash              string          `json:"prev_hash"`
 	SignedHash            string          `json:"signed_hash"`
+	ActorID               *uuid.UUID      `json:"actor_id"`
+	ChainVersion          int16           `json:"chain_version"`
 }
 
 type BudgetActual struct {
@@ -327,6 +331,7 @@ type Project struct {
 	ErpProjectRef               *string    `json:"erp_project_ref"`
 	ErpSyncedAt                 *time.Time `json:"erp_synced_at"`
 	ErpSyncError                *string    `json:"erp_sync_error"`
+	OwnerRef                    *uuid.UUID `json:"owner_ref"`
 }
 
 type ProjectMember struct {
@@ -337,6 +342,7 @@ type ProjectMember struct {
 	InvitedAt   time.Time  `json:"invited_at"`
 	ActivatedAt *time.Time `json:"activated_at"`
 	ExpiresAt   *time.Time `json:"expires_at"`
+	UserRef     *uuid.UUID `json:"user_ref"`
 }
 
 type SignatureEnvelope struct {

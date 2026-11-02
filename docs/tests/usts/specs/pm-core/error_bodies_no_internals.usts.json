@@ -1,0 +1,48 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core error_bodies_no_internals",
+    "description": "Error responses name a code and a message, never a stack, a SQL state, a file path, or the Go runtime. Driven by a malformed project id.",
+    "category": "injection",
+    "severity": "high",
+    "endpoint": "/api/v1/projects/0190000000-0000-7000-8000-ffffffffffff",
+    "method": "GET"
+  },
+  "requests": [
+    {
+      "name": "malformed_id",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "expected_status_range": [
+        400,
+        422
+      ]
+    }
+  ],
+  "assertions": {
+    "body_not_contains": [
+      "SQLSTATE",
+      "syntax error",
+      "goroutine",
+      "runtime/",
+      "/Users/",
+      "/home/",
+      "pgx",
+      "panic"
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A03:2021 Injection",
+      "A05:2021 Security Misconfiguration"
+    ],
+    "cwe": [
+      "CWE-209"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

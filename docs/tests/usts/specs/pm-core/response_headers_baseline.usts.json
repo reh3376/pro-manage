@@ -1,0 +1,49 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core response_headers_baseline",
+    "description": "Every API response carries the baseline hardening headers (nosniff, no referrer, no-store) and a request id, and never advertises a server or framework.",
+    "category": "headers",
+    "severity": "medium",
+    "endpoint": "/api/v1/projects",
+    "method": "GET"
+  },
+  "requests": [
+    {
+      "name": "authenticated",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "expected_status": 200
+    },
+    {
+      "name": "unauthenticated",
+      "expected_status": 401
+    }
+  ],
+  "assertions": {
+    "headers_present": [
+      "X-Content-Type-Options",
+      "Referrer-Policy",
+      "Cache-Control",
+      "X-Request-ID"
+    ],
+    "headers_not_present": [
+      "Server",
+      "X-Powered-By"
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A05:2021 Security Misconfiguration"
+    ],
+    "cwe": [
+      "CWE-16",
+      "CWE-693"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

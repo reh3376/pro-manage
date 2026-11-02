@@ -58,7 +58,7 @@ func (q *Queries) DeleteProjectMember(ctx context.Context, arg DeleteProjectMemb
 }
 
 const getGrant = `-- name: GetGrant :one
-SELECT grant_id, project_id, user_id, scope_kind, scope_target, permission, granted_by, granted_at, expires_at, reason FROM acl_grants WHERE grant_id = $1
+SELECT grant_id, project_id, user_id, scope_kind, scope_target, permission, granted_by, granted_at, expires_at, reason, user_ref FROM acl_grants WHERE grant_id = $1
 `
 
 func (q *Queries) GetGrant(ctx context.Context, grantID uuid.UUID) (AclGrant, error) {
@@ -75,12 +75,13 @@ func (q *Queries) GetGrant(ctx context.Context, grantID uuid.UUID) (AclGrant, er
 		&i.GrantedAt,
 		&i.ExpiresAt,
 		&i.Reason,
+		&i.UserRef,
 	)
 	return i, err
 }
 
 const getProjectMember = `-- name: GetProjectMember :one
-SELECT project_id, user_id, base_role, invited_by, invited_at, activated_at, expires_at FROM project_members WHERE project_id = $1 AND user_id = $2
+SELECT project_id, user_id, base_role, invited_by, invited_at, activated_at, expires_at, user_ref FROM project_members WHERE project_id = $1 AND user_id = $2
 `
 
 type GetProjectMemberParams struct {
@@ -99,6 +100,7 @@ func (q *Queries) GetProjectMember(ctx context.Context, arg GetProjectMemberPara
 		&i.InvitedAt,
 		&i.ActivatedAt,
 		&i.ExpiresAt,
+		&i.UserRef,
 	)
 	return i, err
 }
@@ -107,7 +109,7 @@ const insertGrant = `-- name: InsertGrant :one
 INSERT INTO acl_grants (grant_id, project_id, user_id, scope_kind, scope_target, permission, granted_by, expires_at, reason)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 ON CONFLICT (project_id, user_id, scope_kind, scope_target, permission) DO UPDATE SET granted_by = EXCLUDED.granted_by, granted_at = now(), expires_at = EXCLUDED.expires_at, reason = EXCLUDED.reason
-RETURNING grant_id, project_id, user_id, scope_kind, scope_target, permission, granted_by, granted_at, expires_at, reason
+RETURNING grant_id, project_id, user_id, scope_kind, scope_target, permission, granted_by, granted_at, expires_at, reason, user_ref
 `
 
 type InsertGrantParams struct {
@@ -146,6 +148,7 @@ func (q *Queries) InsertGrant(ctx context.Context, arg InsertGrantParams) (AclGr
 		&i.GrantedAt,
 		&i.ExpiresAt,
 		&i.Reason,
+		&i.UserRef,
 	)
 	return i, err
 }
@@ -172,7 +175,7 @@ func (q *Queries) IsOpenStageAssignee(ctx context.Context, arg IsOpenStageAssign
 }
 
 const listGrantsForUser = `-- name: ListGrantsForUser :many
-SELECT grant_id, project_id, user_id, scope_kind, scope_target, permission, granted_by, granted_at, expires_at, reason FROM acl_grants WHERE project_id = $1 AND user_id = $2 AND (expires_at IS NULL OR expires_at > now()) ORDER BY scope_kind, scope_target
+SELECT grant_id, project_id, user_id, scope_kind, scope_target, permission, granted_by, granted_at, expires_at, reason, user_ref FROM acl_grants WHERE project_id = $1 AND user_id = $2 AND (expires_at IS NULL OR expires_at > now()) ORDER BY scope_kind, scope_target
 `
 
 type ListGrantsForUserParams struct {
@@ -200,6 +203,7 @@ func (q *Queries) ListGrantsForUser(ctx context.Context, arg ListGrantsForUserPa
 			&i.GrantedAt,
 			&i.ExpiresAt,
 			&i.Reason,
+			&i.UserRef,
 		); err != nil {
 			return nil, err
 		}
@@ -212,7 +216,7 @@ func (q *Queries) ListGrantsForUser(ctx context.Context, arg ListGrantsForUserPa
 }
 
 const listProjectGrants = `-- name: ListProjectGrants :many
-SELECT grant_id, project_id, user_id, scope_kind, scope_target, permission, granted_by, granted_at, expires_at, reason FROM acl_grants WHERE project_id = $1 ORDER BY user_id, scope_kind, scope_target
+SELECT grant_id, project_id, user_id, scope_kind, scope_target, permission, granted_by, granted_at, expires_at, reason, user_ref FROM acl_grants WHERE project_id = $1 ORDER BY user_id, scope_kind, scope_target
 `
 
 func (q *Queries) ListProjectGrants(ctx context.Context, projectID uuid.UUID) ([]AclGrant, error) {
@@ -235,6 +239,7 @@ func (q *Queries) ListProjectGrants(ctx context.Context, projectID uuid.UUID) ([
 			&i.GrantedAt,
 			&i.ExpiresAt,
 			&i.Reason,
+			&i.UserRef,
 		); err != nil {
 			return nil, err
 		}
@@ -247,7 +252,7 @@ func (q *Queries) ListProjectGrants(ctx context.Context, projectID uuid.UUID) ([
 }
 
 const listProjectMembers = `-- name: ListProjectMembers :many
-SELECT project_id, user_id, base_role, invited_by, invited_at, activated_at, expires_at FROM project_members WHERE project_id = $1 ORDER BY base_role, user_id
+SELECT project_id, user_id, base_role, invited_by, invited_at, activated_at, expires_at, user_ref FROM project_members WHERE project_id = $1 ORDER BY base_role, user_id
 `
 
 func (q *Queries) ListProjectMembers(ctx context.Context, projectID uuid.UUID) ([]ProjectMember, error) {
@@ -267,6 +272,7 @@ func (q *Queries) ListProjectMembers(ctx context.Context, projectID uuid.UUID) (
 			&i.InvitedAt,
 			&i.ActivatedAt,
 			&i.ExpiresAt,
+			&i.UserRef,
 		); err != nil {
 			return nil, err
 		}
@@ -279,7 +285,7 @@ func (q *Queries) ListProjectMembers(ctx context.Context, projectID uuid.UUID) (
 }
 
 const listVisibleProjects = `-- name: ListVisibleProjects :many
-SELECT p.project_id, p.tenant_id, p.code, p.name, p.description, p.portfolio_id, p.site_id, p.currency, p.owner_user_id, p.lifecycle_state, p.fel_stage, p.project_type, p.tpm_pillar_tags, p.hazardous_area_classification, p.regulatory_stamps, p.onboarding_level, p.imported, p.import_batch_id, p.start_date, p.target_end_date, p.baseline_budget_total, p.baseline_duration_days, p.tags, p.created_at, p.created_by, p.updated_at, p.updated_by, p.version, p.erp_project_ref, p.erp_synced_at, p.erp_sync_error FROM projects p
+SELECT p.project_id, p.tenant_id, p.code, p.name, p.description, p.portfolio_id, p.site_id, p.currency, p.owner_user_id, p.lifecycle_state, p.fel_stage, p.project_type, p.tpm_pillar_tags, p.hazardous_area_classification, p.regulatory_stamps, p.onboarding_level, p.imported, p.import_batch_id, p.start_date, p.target_end_date, p.baseline_budget_total, p.baseline_duration_days, p.tags, p.created_at, p.created_by, p.updated_at, p.updated_by, p.version, p.erp_project_ref, p.erp_synced_at, p.erp_sync_error, p.owner_ref FROM projects p
 WHERE p.tenant_id = $1
   AND ($2::uuid IS NULL OR p.site_id = $2::uuid)
   AND (
@@ -345,6 +351,7 @@ func (q *Queries) ListVisibleProjects(ctx context.Context, arg ListVisibleProjec
 			&i.ErpProjectRef,
 			&i.ErpSyncedAt,
 			&i.ErpSyncError,
+			&i.OwnerRef,
 		); err != nil {
 			return nil, err
 		}
@@ -360,7 +367,7 @@ const upsertProjectMember = `-- name: UpsertProjectMember :one
 INSERT INTO project_members (project_id, user_id, base_role, invited_by, activated_at, expires_at)
 VALUES ($1, $2, $3, $4, now(), $5)
 ON CONFLICT (project_id, user_id) DO UPDATE SET base_role = EXCLUDED.base_role, expires_at = EXCLUDED.expires_at, invited_by = EXCLUDED.invited_by, invited_at = now()
-RETURNING project_id, user_id, base_role, invited_by, invited_at, activated_at, expires_at
+RETURNING project_id, user_id, base_role, invited_by, invited_at, activated_at, expires_at, user_ref
 `
 
 type UpsertProjectMemberParams struct {
@@ -388,6 +395,7 @@ func (q *Queries) UpsertProjectMember(ctx context.Context, arg UpsertProjectMemb
 		&i.InvitedAt,
 		&i.ActivatedAt,
 		&i.ExpiresAt,
+		&i.UserRef,
 	)
 	return i, err
 }

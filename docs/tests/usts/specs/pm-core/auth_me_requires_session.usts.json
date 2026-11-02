@@ -1,0 +1,54 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core auth_me_requires_session",
+    "description": "/auth/me answers only to a valid pm_session cookie: no cookie, a garbage cookie, and the dev header (which never applies to the auth edge) are all 401 and leak nothing about any user.",
+    "category": "authentication",
+    "severity": "critical",
+    "endpoint": "/auth/me",
+    "method": "GET"
+  },
+  "requests": [
+    {
+      "name": "no_cookie",
+      "expected_status": 401
+    },
+    {
+      "name": "garbage_cookie",
+      "headers": {
+        "Cookie": "pm_session=not-a-session"
+      },
+      "expected_status": 401
+    },
+    {
+      "name": "dev_header_does_not_apply",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "expected_status": 401
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      401
+    ],
+    "body_not_contains": [
+      "username",
+      "platform_roles",
+      "display_name"
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A07:2021 Identification and Authentication Failures"
+    ],
+    "cwe": [
+      "CWE-287",
+      "CWE-306"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

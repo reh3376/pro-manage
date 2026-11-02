@@ -1,0 +1,59 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core api_requires_actor",
+    "description": "Every /api/v1 route needs a session or, in development, the dev header. Missing header, empty header, roles without an actor, and a garbage cookie are 401 and the body carries no project data.",
+    "category": "authentication",
+    "severity": "critical",
+    "endpoint": "/api/v1/projects",
+    "method": "GET"
+  },
+  "requests": [
+    {
+      "name": "no_actor",
+      "expected_status": 401
+    },
+    {
+      "name": "empty_dev_actor",
+      "headers": {
+        "X-Dev-Actor": ""
+      },
+      "expected_status": 401
+    },
+    {
+      "name": "garbage_cookie",
+      "headers": {
+        "Cookie": "pm_session=forged"
+      },
+      "expected_status": 401
+    },
+    {
+      "name": "roles_without_actor",
+      "headers": {
+        "X-Dev-Roles": "platform_admin"
+      },
+      "expected_status": 401
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      401
+    ],
+    "body_not_contains": [
+      "project_id",
+      "\"items\""
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A07:2021 Identification and Authentication Failures"
+    ],
+    "cwe": [
+      "CWE-306"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

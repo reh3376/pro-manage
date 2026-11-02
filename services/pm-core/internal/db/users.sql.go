@@ -12,6 +12,66 @@ import (
 	"github.com/google/uuid"
 )
 
+const attachGrantIdentity = `-- name: AttachGrantIdentity :exec
+UPDATE acl_grants SET user_ref = $1 WHERE user_id = $2 AND user_ref IS NULL
+`
+
+type AttachGrantIdentityParams struct {
+	UserRef *uuid.UUID `json:"user_ref"`
+	UserID  string     `json:"user_id"`
+}
+
+func (q *Queries) AttachGrantIdentity(ctx context.Context, arg AttachGrantIdentityParams) error {
+	_, err := q.db.Exec(ctx, attachGrantIdentity, arg.UserRef, arg.UserID)
+	return err
+}
+
+const attachMemberIdentity = `-- name: AttachMemberIdentity :exec
+
+UPDATE project_members SET user_ref = $1 WHERE user_id = $2 AND user_ref IS NULL
+`
+
+type AttachMemberIdentityParams struct {
+	UserRef *uuid.UUID `json:"user_ref"`
+	UserID  string     `json:"user_id"`
+}
+
+// Identity attach (B-11): rows keyed on a handle before its user signed in get the stable reference
+// on that first login; rows created afterwards get it at insert through the Link* queries.
+func (q *Queries) AttachMemberIdentity(ctx context.Context, arg AttachMemberIdentityParams) error {
+	_, err := q.db.Exec(ctx, attachMemberIdentity, arg.UserRef, arg.UserID)
+	return err
+}
+
+const attachPoolIdentity = `-- name: AttachPoolIdentity :exec
+UPDATE approver_pools SET user_ref = $1 WHERE user_id = $2 AND user_ref IS NULL
+`
+
+type AttachPoolIdentityParams struct {
+	UserRef *uuid.UUID `json:"user_ref"`
+	UserID  string     `json:"user_id"`
+}
+
+func (q *Queries) AttachPoolIdentity(ctx context.Context, arg AttachPoolIdentityParams) error {
+	_, err := q.db.Exec(ctx, attachPoolIdentity, arg.UserRef, arg.UserID)
+	return err
+}
+
+const attachProjectOwnerIdentity = `-- name: AttachProjectOwnerIdentity :exec
+UPDATE projects SET owner_ref = $1 WHERE tenant_id = $2 AND owner_user_id = $3 AND owner_ref IS NULL
+`
+
+type AttachProjectOwnerIdentityParams struct {
+	OwnerRef    *uuid.UUID `json:"owner_ref"`
+	TenantID    string     `json:"tenant_id"`
+	OwnerUserID string     `json:"owner_user_id"`
+}
+
+func (q *Queries) AttachProjectOwnerIdentity(ctx context.Context, arg AttachProjectOwnerIdentityParams) error {
+	_, err := q.db.Exec(ctx, attachProjectOwnerIdentity, arg.OwnerRef, arg.TenantID, arg.OwnerUserID)
+	return err
+}
+
 const deleteIdpPoolRows = `-- name: DeleteIdpPoolRows :exec
 DELETE FROM approver_pools WHERE user_id = $1 AND source = 'idp'
 `
@@ -32,6 +92,36 @@ type GetUserParams struct {
 
 func (q *Queries) GetUser(ctx context.Context, arg GetUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, getUser, arg.TenantID, arg.UserID)
+	var i User
+	err := row.Scan(
+		&i.UserID,
+		&i.TenantID,
+		&i.ExternalID,
+		&i.Username,
+		&i.Email,
+		&i.DisplayName,
+		&i.PlatformRoles,
+		&i.Attributes,
+		&i.IsLocal,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.LastLoginAt,
+		&i.LoginCount,
+	)
+	return i, err
+}
+
+const getUserBySubject = `-- name: GetUserBySubject :one
+SELECT user_id, tenant_id, external_id, username, email, display_name, platform_roles, attributes, is_local, is_active, created_at, last_login_at, login_count FROM users WHERE tenant_id = $1 AND external_id = $2
+`
+
+type GetUserBySubjectParams struct {
+	TenantID   string `json:"tenant_id"`
+	ExternalID string `json:"external_id"`
+}
+
+func (q *Queries) GetUserBySubject(ctx context.Context, arg GetUserBySubjectParams) (User, error) {
+	row := q.db.QueryRow(ctx, getUserBySubject, arg.TenantID, arg.ExternalID)
 	var i User
 	err := row.Scan(
 		&i.UserID,
@@ -106,6 +196,63 @@ func (q *Queries) InsertPoolRow(ctx context.Context, arg InsertPoolRowParams) er
 	return err
 }
 
+const linkGrantIdentity = `-- name: LinkGrantIdentity :exec
+UPDATE acl_grants g SET user_ref = u.user_id FROM users u
+WHERE g.grant_id = $1 AND u.tenant_id = $2 AND u.username = g.user_id
+`
+
+type LinkGrantIdentityParams struct {
+	GrantID  uuid.UUID `json:"grant_id"`
+	TenantID string    `json:"tenant_id"`
+}
+
+func (q *Queries) LinkGrantIdentity(ctx context.Context, arg LinkGrantIdentityParams) error {
+	_, err := q.db.Exec(ctx, linkGrantIdentity, arg.GrantID, arg.TenantID)
+	return err
+}
+
+const linkMemberIdentity = `-- name: LinkMemberIdentity :exec
+UPDATE project_members m SET user_ref = u.user_id FROM users u
+WHERE m.project_id = $1 AND m.user_id = $2 AND u.tenant_id = $3 AND u.username = m.user_id
+`
+
+type LinkMemberIdentityParams struct {
+	ProjectID uuid.UUID `json:"project_id"`
+	UserID    string    `json:"user_id"`
+	TenantID  string    `json:"tenant_id"`
+}
+
+func (q *Queries) LinkMemberIdentity(ctx context.Context, arg LinkMemberIdentityParams) error {
+	_, err := q.db.Exec(ctx, linkMemberIdentity, arg.ProjectID, arg.UserID, arg.TenantID)
+	return err
+}
+
+const linkPoolIdentity = `-- name: LinkPoolIdentity :exec
+UPDATE approver_pools p SET user_ref = u.user_id FROM users u
+WHERE p.pool = $1 AND p.user_id = $2 AND u.tenant_id = $3 AND u.username = p.user_id
+`
+
+type LinkPoolIdentityParams struct {
+	Pool     string `json:"pool"`
+	UserID   string `json:"user_id"`
+	TenantID string `json:"tenant_id"`
+}
+
+func (q *Queries) LinkPoolIdentity(ctx context.Context, arg LinkPoolIdentityParams) error {
+	_, err := q.db.Exec(ctx, linkPoolIdentity, arg.Pool, arg.UserID, arg.TenantID)
+	return err
+}
+
+const linkProjectOwnerIdentity = `-- name: LinkProjectOwnerIdentity :exec
+UPDATE projects pr SET owner_ref = u.user_id FROM users u
+WHERE pr.project_id = $1 AND u.tenant_id = pr.tenant_id AND u.username = pr.owner_user_id
+`
+
+func (q *Queries) LinkProjectOwnerIdentity(ctx context.Context, projectID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, linkProjectOwnerIdentity, projectID)
+	return err
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT user_id, tenant_id, external_id, username, email, display_name, platform_roles, attributes, is_local, is_active, created_at, last_login_at, login_count FROM users WHERE tenant_id = $1 ORDER BY username
 `
@@ -142,6 +289,97 @@ func (q *Queries) ListUsers(ctx context.Context, tenantID string) ([]User, error
 		return nil, err
 	}
 	return items, nil
+}
+
+const renameGrantHandle = `-- name: RenameGrantHandle :execrows
+UPDATE acl_grants SET user_id = $2 WHERE user_ref = $1
+`
+
+type RenameGrantHandleParams struct {
+	UserRef *uuid.UUID `json:"user_ref"`
+	UserID  string     `json:"user_id"`
+}
+
+func (q *Queries) RenameGrantHandle(ctx context.Context, arg RenameGrantHandleParams) (int64, error) {
+	result, err := q.db.Exec(ctx, renameGrantHandle, arg.UserRef, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const renameMemberHandle = `-- name: RenameMemberHandle :execrows
+
+UPDATE project_members SET user_id = $2 WHERE user_ref = $1
+`
+
+type RenameMemberHandleParams struct {
+	UserRef *uuid.UUID `json:"user_ref"`
+	UserID  string     `json:"user_id"`
+}
+
+// Rename cascade (B-11): when the IdP renames a login handle, every row that shows the handle
+// follows the stable reference; history (completed stages, requested_by, audit) keeps the old
+// handle, which is what it recorded at the time.
+func (q *Queries) RenameMemberHandle(ctx context.Context, arg RenameMemberHandleParams) (int64, error) {
+	result, err := q.db.Exec(ctx, renameMemberHandle, arg.UserRef, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const renameOpenStageAssignee = `-- name: RenameOpenStageAssignee :execrows
+UPDATE approval_stages SET assignees = array_replace(assignees, $1::text, $2::text)
+WHERE completed_at IS NULL AND $1::text = ANY (assignees)
+`
+
+type RenameOpenStageAssigneeParams struct {
+	Column1 string `json:"column_1"`
+	Column2 string `json:"column_2"`
+}
+
+// Open stages route to the new handle; completed ones keep the handle that decided.
+func (q *Queries) RenameOpenStageAssignee(ctx context.Context, arg RenameOpenStageAssigneeParams) (int64, error) {
+	result, err := q.db.Exec(ctx, renameOpenStageAssignee, arg.Column1, arg.Column2)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const renamePoolHandle = `-- name: RenamePoolHandle :execrows
+UPDATE approver_pools SET user_id = $2 WHERE user_ref = $1
+`
+
+type RenamePoolHandleParams struct {
+	UserRef *uuid.UUID `json:"user_ref"`
+	UserID  string     `json:"user_id"`
+}
+
+func (q *Queries) RenamePoolHandle(ctx context.Context, arg RenamePoolHandleParams) (int64, error) {
+	result, err := q.db.Exec(ctx, renamePoolHandle, arg.UserRef, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const renameProjectOwnerHandle = `-- name: RenameProjectOwnerHandle :execrows
+UPDATE projects SET owner_user_id = $2, updated_at = now(), updated_by = $2, version = version + 1 WHERE owner_ref = $1
+`
+
+type RenameProjectOwnerHandleParams struct {
+	OwnerRef    *uuid.UUID `json:"owner_ref"`
+	OwnerUserID string     `json:"owner_user_id"`
+}
+
+func (q *Queries) RenameProjectOwnerHandle(ctx context.Context, arg RenameProjectOwnerHandleParams) (int64, error) {
+	result, err := q.db.Exec(ctx, renameProjectOwnerHandle, arg.OwnerRef, arg.OwnerUserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const upsertUserOnLogin = `-- name: UpsertUserOnLogin :one

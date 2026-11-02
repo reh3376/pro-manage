@@ -1,0 +1,75 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core car_draft_write_boundary",
+    "description": "Drafting a CAR is a budget write. A viewer with a budget read grant, an external contributor, a non-member, and a platform admin without membership are 403 before any validation runs; the owner reaches validation (422 on an empty body). Seeded project P-NF-KY-7.",
+    "category": "authorization",
+    "severity": "critical",
+    "endpoint": "/api/v1/projects/01900000-0000-7000-8000-00000000b001/cars",
+    "method": "POST"
+  },
+  "requests": [
+    {
+      "name": "viewer_with_read_grant",
+      "headers": {
+        "X-Dev-Actor": "fay.ops"
+      },
+      "payload": {},
+      "expected_status": 403
+    },
+    {
+      "name": "contributor",
+      "headers": {
+        "X-Dev-Actor": "hana.epcm"
+      },
+      "payload": {},
+      "expected_status": 403
+    },
+    {
+      "name": "non_member",
+      "headers": {
+        "X-Dev-Actor": "nobody.usts"
+      },
+      "payload": {},
+      "expected_status": 403
+    },
+    {
+      "name": "platform_admin_without_membership",
+      "headers": {
+        "X-Dev-Actor": "carol.admin",
+        "X-Dev-Roles": "platform_admin"
+      },
+      "payload": {},
+      "expected_status": 403
+    },
+    {
+      "name": "owner_reaches_validation",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "payload": {},
+      "expected_status": 422
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      403,
+      422
+    ],
+    "body_not_contains": [
+      "car_id"
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A01:2021 Broken Access Control"
+    ],
+    "cwe": [
+      "CWE-285"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+name: Deploy Tutorial
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/tutorial.md'
+      - 'scripts/tutorial-forge/**'
+      - 'tutorial.config.json'
+      - '.github/workflows/deploy-tutorial.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-tutorial-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'scripts/tutorial-forge/package-lock.json'
+      - name: Install tutorial-forge deps
+        working-directory: scripts/tutorial-forge
+        run: npm ci
+      - name: Build tutorial
+        run: node scripts/tutorial-forge/cli.mjs build --config tutorial.config.json
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/tutorial-static
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

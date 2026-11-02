@@ -116,7 +116,7 @@ func (s *Service) CreateEstimate(ctx context.Context, actor Actor, projectID uui
 			return fmt.Errorf("create estimate: %w", err)
 		}
 		_, err = s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ProjectID: &project.ProjectID, ActorUserID: actor.UserID, ActionType: "estimate.create", SubjectType: "estimate_artifact",
+			TenantID: s.Tenant, ProjectID: &project.ProjectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "estimate.create", SubjectType: "estimate_artifact",
 			SubjectID: est.EstimateID.String(), After: est, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
 		return err
@@ -200,7 +200,7 @@ func (s *Service) CreatePromise(ctx context.Context, actor Actor, projectID uuid
 			return fmt.Errorf("create promise: %w", err)
 		}
 		_, err = s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ProjectID: &project.ProjectID, ActorUserID: actor.UserID, ActionType: "promise.create", SubjectType: "business_case_promise",
+			TenantID: s.Tenant, ProjectID: &project.ProjectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "promise.create", SubjectType: "business_case_promise",
 			SubjectID: pr.PromiseID.String(), After: pr, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
 		return err
@@ -319,7 +319,7 @@ func (s *Service) CreateCAR(ctx context.Context, actor Actor, projectID uuid.UUI
 			return fmt.Errorf("create car: %w", err)
 		}
 		_, err = s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ProjectID: &project.ProjectID, ActorUserID: actor.UserID, ActionType: "car.create", SubjectType: "capital_authorization",
+			TenantID: s.Tenant, ProjectID: &project.ProjectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "car.create", SubjectType: "capital_authorization",
 			SubjectID: car.CarID.String(), After: car, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
 		return err
@@ -731,7 +731,7 @@ func (s *Service) SubmitCAR(ctx context.Context, actor Actor, carID uuid.UUID, i
 		}
 		err := s.Store.Tx(ctx, func(q *db.Queries) error {
 			ev, err := s.Chain.Append(ctx, q, audit.Event{
-				TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActionType: action, SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
+				TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: action, SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
 				Before: car, After: map[string]any{"governance": rec, "policy_snapshot": sub.policy}, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 				GuidanceID: guidanceID, ClassificationVerdict: res.Verdict,
 			})
@@ -786,7 +786,7 @@ func (s *Service) SubmitCAR(ctx context.Context, actor Actor, carID uuid.UUID, i
 			return err
 		}
 		ev, err := s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActionType: "car.submit", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
+			TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "car.submit", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
 			Before: car, After: map[string]any{"car": after, "governance": rec, "chain": sub.chain, "policy_snapshot": sub.policy}, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 			GuidanceID: guidanceID, ClassificationVerdict: res.Verdict,
 		})
@@ -984,7 +984,7 @@ func (s *Service) DecideCAR(ctx context.Context, actor Actor, carID uuid.UUID, i
 			gid = *in.GuidanceID
 		}
 		ev, err := s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActionType: action, SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
+			TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: action, SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
 			Before: car, After: map[string]any{"car": after, "stage": stage}, SourceIP: actor.SourceIP, RequestID: actor.RequestID, GuidanceID: gid,
 		})
 		if err != nil {
@@ -1082,8 +1082,11 @@ func (s *Service) AddPoolMember(ctx context.Context, actor Actor, pool, userID s
 		if err := q.UpsertPoolMember(ctx, db.UpsertPoolMemberParams{Pool: pool, UserID: userID, SiteID: siteID, AddedBy: actor.UserID}); err != nil {
 			return err
 		}
+		if err := q.LinkPoolIdentity(ctx, db.LinkPoolIdentityParams{Pool: pool, UserID: userID, TenantID: s.Tenant}); err != nil {
+			return err
+		}
 		_, err := s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ActorUserID: actor.UserID, ActionType: "pool.add_member", SubjectType: "approver_pool", SubjectID: pool,
+			TenantID: s.Tenant, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "pool.add_member", SubjectType: "approver_pool", SubjectID: pool,
 			After: map[string]any{"pool": pool, "user_id": userID, "site_id": siteID}, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
 		return err
@@ -1102,7 +1105,7 @@ func (s *Service) signOrAttest(ctx context.Context, q *db.Queries, actor Actor, 
 		}
 		car.SignedArtifactRef = &ref
 		_, err := s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActionType: "car.attested", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
+			TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "car.attested", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
 			After: map[string]any{"attestation": ref, "amount": car.AmountRequested, "threshold_esign": money(threshold)}, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
 		return err
@@ -1154,7 +1157,7 @@ func (s *Service) signOrAttest(ctx context.Context, q *db.Queries, actor Actor, 
 	}
 	car.SignedArtifactRef = &ref
 	_, err = s.Chain.Append(ctx, q, audit.Event{
-		TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActionType: "car.signature_requested", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
+		TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "car.signature_requested", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
 		After: map[string]any{"envelope_id": envID, "signers": signers, "amount": car.AmountRequested, "threshold_esign": money(threshold)}, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 	})
 	return err
@@ -1190,7 +1193,7 @@ func (s *Service) requestBudgetRelease(ctx context.Context, q *db.Queries, actor
 		return err
 	}
 	_, err = s.Chain.Append(ctx, q, audit.Event{
-		TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActionType: "car.budget_release_requested", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
+		TenantID: s.Tenant, ProjectID: &car.ProjectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "car.budget_release_requested", SubjectType: "capital_authorization", SubjectID: car.CarID.String(),
 		After: map[string]any{"release_id": releaseID, "project_ref": *project.ErpProjectRef, "amount": amount, "currency": car.Currency}, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 	})
 	return err

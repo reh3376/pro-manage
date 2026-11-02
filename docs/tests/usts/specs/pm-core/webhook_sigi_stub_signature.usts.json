@@ -1,0 +1,65 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core webhook_sigi_stub_signature",
+    "description": "The Sigi webhook accepts only payloads the module verifies: a missing signature, a wrong signature, and the dev header in place of a signature are 401; nothing about envelopes leaks.",
+    "category": "authentication",
+    "severity": "critical",
+    "endpoint": "/webhooks/sigi/stub",
+    "method": "POST"
+  },
+  "requests": [
+    {
+      "name": "no_signature",
+      "payload": {
+        "envelope_id": "x",
+        "status": "completed"
+      },
+      "expected_status": 401
+    },
+    {
+      "name": "bad_signature",
+      "headers": {
+        "X-Stub-Signature": "deadbeef"
+      },
+      "payload": {
+        "envelope_id": "x",
+        "status": "completed"
+      },
+      "expected_status": 401
+    },
+    {
+      "name": "dev_header_is_not_a_signature",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "payload": {
+        "envelope_id": "x",
+        "status": "completed"
+      },
+      "expected_status": 401
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      401
+    ],
+    "body_not_contains": [
+      "provider_ref",
+      "signers"
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A08:2021 Software and Data Integrity Failures"
+    ],
+    "cwe": [
+      "CWE-345",
+      "CWE-347"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

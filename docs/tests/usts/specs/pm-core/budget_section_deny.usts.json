@@ -1,0 +1,52 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core budget_section_deny",
+    "description": "An editor's base role does not reach the budget section (FSD §04 section table), so the CAR list of Boiler 2 is 403 for gus.maint, 403 for a non-member, and 200 for the owner.",
+    "category": "authorization",
+    "severity": "high",
+    "endpoint": "/api/v1/projects/01900000-0000-7000-8000-00000000b003/cars",
+    "method": "GET"
+  },
+  "requests": [
+    {
+      "name": "editor_no_budget",
+      "headers": {
+        "X-Dev-Actor": "gus.maint"
+      },
+      "expected_status": 403
+    },
+    {
+      "name": "non_member",
+      "headers": {
+        "X-Dev-Actor": "nobody.usts"
+      },
+      "expected_status": 403
+    },
+    {
+      "name": "owner",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "expected_status": 200
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      200,
+      403
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A01:2021 Broken Access Control"
+    ],
+    "cwe": [
+      "CWE-285"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

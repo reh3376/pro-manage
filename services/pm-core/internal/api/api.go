@@ -80,6 +80,11 @@ func (a *API) requestID(next http.Handler) http.Handler {
 			id = ids.New().String()
 		}
 		w.Header().Set("X-Request-ID", id)
+		// Baseline response hardening on every API and auth route (USTS headers spec): no MIME
+		// sniffing, no referrer leakage, and nothing cached by intermediaries.
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		w.Header().Set("Cache-Control", "no-store")
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey(2), id)))
 	})
 }
@@ -107,6 +112,11 @@ func (a *API) requireActor(next http.Handler) http.Handler {
 		}
 		host, _, _ := net.SplitHostPort(r.RemoteAddr)
 		actor := domain.Actor{UserID: user, SourceIP: host, RequestID: requestIDFrom(r.Context())}
+		// A dev-header caller who has signed in before carries the stable id too (B-11); otherwise the handle alone.
+		if u, err := a.Domain.GetUserByUsername(r.Context(), user); err == nil {
+			id := u.UserID
+			actor.ID = &id
+		}
 		// X-Dev-Roles (comma-separated platform roles) stands in for the claims mapping in development and CI.
 		for _, role := range strings.Split(r.Header.Get("X-Dev-Roles"), ",") {
 			if role = strings.TrimSpace(role); role != "" {

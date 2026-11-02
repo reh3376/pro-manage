@@ -1,0 +1,73 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core project_filter_injection",
+    "description": "The project list's site filter is a typed uuid, so SQL- and path-shaped values are rejected as validation or ignored, never executed; the body never carries a database error.",
+    "category": "injection",
+    "severity": "high",
+    "endpoint": "/api/v1/projects",
+    "method": "GET"
+  },
+  "requests": [
+    {
+      "name": "sql_in_site_filter",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "payload": {
+        "site_id": "' OR 1=1 --"
+      },
+      "expected_status_range": [
+        200,
+        422
+      ]
+    },
+    {
+      "name": "union_in_site_filter",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "payload": {
+        "site_id": "00000000-0000-0000-0000-000000000000' UNION SELECT 1--"
+      },
+      "expected_status_range": [
+        200,
+        422
+      ]
+    },
+    {
+      "name": "path_shaped_filter",
+      "headers": {
+        "X-Dev-Actor": "alice.owner"
+      },
+      "payload": {
+        "site_id": "../../etc/passwd"
+      },
+      "expected_status_range": [
+        200,
+        422
+      ]
+    }
+  ],
+  "assertions": {
+    "body_not_contains": [
+      "SQLSTATE",
+      "syntax error",
+      "pgx",
+      "root:"
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A03:2021 Injection"
+    ],
+    "cwe": [
+      "CWE-89",
+      "CWE-20"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}

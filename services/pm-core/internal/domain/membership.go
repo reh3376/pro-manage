@@ -109,8 +109,11 @@ func (s *Service) AddMember(ctx context.Context, actor Actor, projectID uuid.UUI
 		if err != nil {
 			return fmt.Errorf("upsert member: %w", err)
 		}
+		if err := q.LinkMemberIdentity(ctx, db.LinkMemberIdentityParams{ProjectID: projectID, UserID: in.UserID, TenantID: s.Tenant}); err != nil {
+			return err
+		}
 		_, err = s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ProjectID: &projectID, ActorUserID: actor.UserID, ActionType: "member.upsert", SubjectType: "project_member",
+			TenantID: s.Tenant, ProjectID: &projectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "member.upsert", SubjectType: "project_member",
 			SubjectID: projectID.String() + ":" + in.UserID, Before: prev, After: m, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
 		return err
@@ -141,7 +144,7 @@ func (s *Service) RemoveMember(ctx context.Context, actor Actor, projectID uuid.
 			return err
 		}
 		_, err = s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ProjectID: &projectID, ActorUserID: actor.UserID, ActionType: "member.remove", SubjectType: "project_member",
+			TenantID: s.Tenant, ProjectID: &projectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "member.remove", SubjectType: "project_member",
 			SubjectID: projectID.String() + ":" + userID, Before: before, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
 		return err
@@ -210,8 +213,11 @@ func (s *Service) AddGrant(ctx context.Context, actor Actor, projectID uuid.UUID
 		if err != nil {
 			return fmt.Errorf("insert grant: %w", err)
 		}
+		if err := q.LinkGrantIdentity(ctx, db.LinkGrantIdentityParams{GrantID: g.GrantID, TenantID: s.Tenant}); err != nil {
+			return err
+		}
 		_, err = s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ProjectID: &projectID, ActorUserID: actor.UserID, ActionType: "grant.add", SubjectType: "acl_grant",
+			TenantID: s.Tenant, ProjectID: &projectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "grant.add", SubjectType: "acl_grant",
 			SubjectID: g.GrantID.String(), After: g, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
 		return err
@@ -233,7 +239,7 @@ func (s *Service) RemoveGrant(ctx context.Context, actor Actor, projectID, grant
 			return err
 		}
 		_, err = s.Chain.Append(ctx, q, audit.Event{
-			TenantID: s.Tenant, ProjectID: &projectID, ActorUserID: actor.UserID, ActionType: "grant.remove", SubjectType: "acl_grant",
+			TenantID: s.Tenant, ProjectID: &projectID, ActorUserID: actor.UserID, ActorID: actor.ID, ActionType: "grant.remove", SubjectType: "acl_grant",
 			SubjectID: grantID.String(), Before: before, SourceIP: actor.SourceIP, RequestID: actor.RequestID,
 		})
 		return err

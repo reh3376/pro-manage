@@ -1,6 +1,6 @@
 # pro_manage: Functional Specification Document (FSD)
 
-**Status:** Ratified and under construction: the spine is being built against this FSD one slice per PR, with each section's **Decisions on record** block carrying the implementation notes (see the root README's Status and the roadmap) · **Last updated:** 2026-10-27 · **Owner:** Roger Henley
+**Status:** Ratified and under construction: the spine is being built against this FSD one slice per PR, with each section's **Decisions on record** block carrying the implementation notes (see the root README's Status and the roadmap) · **Last updated:** 2026-10-30 · **Owner:** Roger Henley
 
 ---
 

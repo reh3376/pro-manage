@@ -209,6 +209,7 @@ type auditSummary struct {
 	AuditID     uuid.UUID `json:"audit_id"`
 	Seq         int64     `json:"seq"`
 	ActorUserID string    `json:"actor_user_id"`
+	ActorID     *string   `json:"actor_id"`
 	ActionType  string    `json:"action_type"`
 	SubjectType string    `json:"subject_type"`
 	SubjectID   string    `json:"subject_id"`
@@ -221,7 +222,7 @@ type auditSummary struct {
 func summarize(rows []db.AuditEvent) []auditSummary {
 	out := make([]auditSummary, 0, len(rows))
 	for _, e := range rows {
-		out = append(out, auditSummary{AuditID: e.AuditID, Seq: e.Seq, ActorUserID: e.ActorUserID, ActionType: e.ActionType, SubjectType: e.SubjectType, SubjectID: e.SubjectID, At: e.At.UTC().Format("2006-01-02T15:04:05.000000Z"), GuidanceID: e.GuidanceID, Verdict: e.ClassificationVerdict, Summary: true})
+		out = append(out, auditSummary{AuditID: e.AuditID, Seq: e.Seq, ActorUserID: e.ActorUserID, ActorID: uuidPtrStr(e.ActorID), ActionType: e.ActionType, SubjectType: e.SubjectType, SubjectID: e.SubjectID, At: e.At.UTC().Format("2006-01-02T15:04:05.000000Z"), GuidanceID: e.GuidanceID, Verdict: e.ClassificationVerdict, Summary: true})
 	}
 	return out
 }
@@ -234,3 +235,11 @@ func orEmpty(s []string) []string {
 }
 
 var _ = json.Marshal
+
+func uuidPtrStr(id *uuid.UUID) *string {
+	if id == nil {
+		return nil
+	}
+	s := id.String()
+	return &s
+}

@@ -9,6 +9,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"github.com/google/uuid"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -196,7 +197,11 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = h.Sessions.Delete(r.Context(), sess.ID)
 	host, _, _ := strings.Cut(r.RemoteAddr, ":")
-	if err := h.Users.RecordLogout(r.Context(), domain.Actor{UserID: sess.Username, Subject: sess.Subject, SourceIP: host, RequestID: h.rid(r.Context())}, sess.ID); err != nil {
+	logoutActor := domain.Actor{UserID: sess.Username, Subject: sess.Subject, SourceIP: host, RequestID: h.rid(r.Context())}
+	if id, err := uuid.Parse(sess.UserID); err == nil {
+		logoutActor.ID = &id
+	}
+	if err := h.Users.RecordLogout(r.Context(), logoutActor, sess.ID); err != nil {
 		h.Log.Error("record logout", "err", err)
 	}
 	http.SetCookie(w, h.cookie("", -1))
@@ -223,7 +228,11 @@ func (h *Handler) Actor(r *http.Request) (domain.Actor, bool) {
 		return domain.Actor{}, false
 	}
 	host, _, _ := strings.Cut(r.RemoteAddr, ":")
-	return domain.Actor{UserID: sess.Username, Subject: sess.Subject, PlatformRoles: sess.PlatformRoles, SessionID: sess.ID, SourceIP: host}, true
+	actor := domain.Actor{UserID: sess.Username, Subject: sess.Subject, PlatformRoles: sess.PlatformRoles, SessionID: sess.ID, SourceIP: host}
+	if id, err := uuid.Parse(sess.UserID); err == nil {
+		actor.ID = &id
+	}
+	return actor, true
 }
 
 func (h *Handler) cookie(value string, maxAge int) *http.Cookie {

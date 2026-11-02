@@ -23,7 +23,7 @@ INSERT INTO projects (
     $10, $11, $12, $13, $14,
     $15, $16, $17, $18, $19,
     $20, $21, $22, $22
-) RETURNING project_id, tenant_id, code, name, description, portfolio_id, site_id, currency, owner_user_id, lifecycle_state, fel_stage, project_type, tpm_pillar_tags, hazardous_area_classification, regulatory_stamps, onboarding_level, imported, import_batch_id, start_date, target_end_date, baseline_budget_total, baseline_duration_days, tags, created_at, created_by, updated_at, updated_by, version, erp_project_ref, erp_synced_at, erp_sync_error
+) RETURNING project_id, tenant_id, code, name, description, portfolio_id, site_id, currency, owner_user_id, lifecycle_state, fel_stage, project_type, tpm_pillar_tags, hazardous_area_classification, regulatory_stamps, onboarding_level, imported, import_batch_id, start_date, target_end_date, baseline_budget_total, baseline_duration_days, tags, created_at, created_by, updated_at, updated_by, version, erp_project_ref, erp_synced_at, erp_sync_error, owner_ref
 `
 
 type CreateProjectParams struct {
@@ -109,12 +109,13 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.ErpProjectRef,
 		&i.ErpSyncedAt,
 		&i.ErpSyncError,
+		&i.OwnerRef,
 	)
 	return i, err
 }
 
 const getProject = `-- name: GetProject :one
-SELECT project_id, tenant_id, code, name, description, portfolio_id, site_id, currency, owner_user_id, lifecycle_state, fel_stage, project_type, tpm_pillar_tags, hazardous_area_classification, regulatory_stamps, onboarding_level, imported, import_batch_id, start_date, target_end_date, baseline_budget_total, baseline_duration_days, tags, created_at, created_by, updated_at, updated_by, version, erp_project_ref, erp_synced_at, erp_sync_error FROM projects WHERE tenant_id = $1 AND project_id = $2
+SELECT project_id, tenant_id, code, name, description, portfolio_id, site_id, currency, owner_user_id, lifecycle_state, fel_stage, project_type, tpm_pillar_tags, hazardous_area_classification, regulatory_stamps, onboarding_level, imported, import_batch_id, start_date, target_end_date, baseline_budget_total, baseline_duration_days, tags, created_at, created_by, updated_at, updated_by, version, erp_project_ref, erp_synced_at, erp_sync_error, owner_ref FROM projects WHERE tenant_id = $1 AND project_id = $2
 `
 
 type GetProjectParams struct {
@@ -157,12 +158,13 @@ func (q *Queries) GetProject(ctx context.Context, arg GetProjectParams) (Project
 		&i.ErpProjectRef,
 		&i.ErpSyncedAt,
 		&i.ErpSyncError,
+		&i.OwnerRef,
 	)
 	return i, err
 }
 
 const getProjectByCode = `-- name: GetProjectByCode :one
-SELECT project_id, tenant_id, code, name, description, portfolio_id, site_id, currency, owner_user_id, lifecycle_state, fel_stage, project_type, tpm_pillar_tags, hazardous_area_classification, regulatory_stamps, onboarding_level, imported, import_batch_id, start_date, target_end_date, baseline_budget_total, baseline_duration_days, tags, created_at, created_by, updated_at, updated_by, version, erp_project_ref, erp_synced_at, erp_sync_error FROM projects WHERE tenant_id = $1 AND code = $2
+SELECT project_id, tenant_id, code, name, description, portfolio_id, site_id, currency, owner_user_id, lifecycle_state, fel_stage, project_type, tpm_pillar_tags, hazardous_area_classification, regulatory_stamps, onboarding_level, imported, import_batch_id, start_date, target_end_date, baseline_budget_total, baseline_duration_days, tags, created_at, created_by, updated_at, updated_by, version, erp_project_ref, erp_synced_at, erp_sync_error, owner_ref FROM projects WHERE tenant_id = $1 AND code = $2
 `
 
 type GetProjectByCodeParams struct {
@@ -205,12 +207,13 @@ func (q *Queries) GetProjectByCode(ctx context.Context, arg GetProjectByCodePara
 		&i.ErpProjectRef,
 		&i.ErpSyncedAt,
 		&i.ErpSyncError,
+		&i.OwnerRef,
 	)
 	return i, err
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT project_id, tenant_id, code, name, description, portfolio_id, site_id, currency, owner_user_id, lifecycle_state, fel_stage, project_type, tpm_pillar_tags, hazardous_area_classification, regulatory_stamps, onboarding_level, imported, import_batch_id, start_date, target_end_date, baseline_budget_total, baseline_duration_days, tags, created_at, created_by, updated_at, updated_by, version, erp_project_ref, erp_synced_at, erp_sync_error FROM projects
+SELECT project_id, tenant_id, code, name, description, portfolio_id, site_id, currency, owner_user_id, lifecycle_state, fel_stage, project_type, tpm_pillar_tags, hazardous_area_classification, regulatory_stamps, onboarding_level, imported, import_batch_id, start_date, target_end_date, baseline_budget_total, baseline_duration_days, tags, created_at, created_by, updated_at, updated_by, version, erp_project_ref, erp_synced_at, erp_sync_error, owner_ref FROM projects
 WHERE tenant_id = $1
   AND ($2::uuid IS NULL OR site_id = $2::uuid)
 ORDER BY code
@@ -262,6 +265,7 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]P
 			&i.ErpProjectRef,
 			&i.ErpSyncedAt,
 			&i.ErpSyncError,
+			&i.OwnerRef,
 		); err != nil {
 			return nil, err
 		}

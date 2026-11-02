@@ -1,0 +1,45 @@
+{
+  "usts_version": "1.0.0",
+  "test": {
+    "name": "pm-core inbox_requires_actor",
+    "description": "The inbox is per user; without an actor it is 401 and no stage is listed.",
+    "category": "authentication",
+    "severity": "high",
+    "endpoint": "/api/v1/inbox",
+    "method": "GET"
+  },
+  "requests": [
+    {
+      "name": "no_actor",
+      "expected_status": 401
+    },
+    {
+      "name": "garbage_cookie",
+      "headers": {
+        "Cookie": "pm_session=forged"
+      },
+      "expected_status": 401
+    }
+  ],
+  "assertions": {
+    "status_in": [
+      401
+    ],
+    "body_not_contains": [
+      "stage_id",
+      "assignees"
+    ]
+  },
+  "metadata": {
+    "owasp": [
+      "A07:2021 Identification and Authentication Failures"
+    ],
+    "cwe": [
+      "CWE-306"
+    ],
+    "references": [
+      "docs/fsd/04-access-control-and-identity.md",
+      "docs/fsd/12-test-governance-uxts.md"
+    ]
+  }
+}
