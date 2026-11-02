@@ -227,7 +227,7 @@ flowchart TD
   S --> F["Frontend renders every page as that user"]
 ```
 
-Access is decided per **section** of a project: overview, team, budget, schedule, scope, risk, issues, change requests, documents, metrics, approvals, audit, governance, settings. The decision order is fixed: the owner is allowed everything; explicit grants apply most specific first, with deny winning; then the base role's defaults; then platform roles; then the current-stage-assignee reads. Every project route names its section and the permission it needs, so a viewer with a budget read grant can see the CARs of one project and nothing else.
+Access is decided per **section** of a project by the section ACL: overview, team, budget, schedule, scope, risk, issues, change requests, documents, metrics, approvals, audit, governance, settings. The decision order is fixed: the owner is allowed everything; explicit grants apply most specific first, with deny winning; then the base role's defaults; then platform roles; then the current-stage-assignee reads. Every project route names its section and the permission it needs, so a viewer with a budget read grant can see the CARs of one project and nothing else.
 
 The identity, not the login handle, is the stable key. If the identity provider renames someone's handle, the next login moves their memberships, grants, pool rows, ownerships, and open stage assignments to the new name and records the rename; history keeps the handle it recorded at the time. In development and CI a header names the acting user directly so tests can play any persona without a browser.
 
@@ -300,7 +300,7 @@ flowchart TD
   SC["pm-sidecar (Python): rendering, spreadsheets, derived metrics"] --> CORE
 ```
 
-- **pm-core** is the transactional heart: every mutation writes its `AuditEvent` in the same transaction, the workflow engine resolves policy per project, and anything that must reach another system is written to an **outbox** first.
+- **pm-core** is the transactional heart: it serves REST to the frontend and gRPC to the modules, every mutation writes its `AuditEvent` in the same transaction, the workflow engine resolves policy per project, and anything that must reach another system is written to an **outbox** first.
 - **pm-workers** drains the outbox (guidance feedback and observations, envelope creation, notifications, the budget release), reconciles open envelopes, pulls the ERP mirror on an interval, and runs the service-level tick.
 - **The audit chain** is append-only and hash-chained per tenant; the database refuses updates and deletes, a verification walk recomputes every row, and the actor's stable identity is signed into each row.
 - **The frontend** holds no token and no business logic; it forwards the session cookie and renders what the API returns.
