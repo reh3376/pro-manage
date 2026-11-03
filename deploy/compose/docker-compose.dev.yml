@@ -139,7 +139,7 @@ services:
       start_period: 40s
 
   mailpit:
-    image: axllent/mailpit:v1.32
+    image: axllent/mailpit:v1.33
     ports:
       - "127.0.0.1:${PM_MAILPIT_UI_PORT:-8026}:8025"
       - "127.0.0.1:${PM_SMTP_PORT:-1026}:1025"
