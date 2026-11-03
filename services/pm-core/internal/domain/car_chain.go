@@ -35,8 +35,13 @@ const (
 	keyClassifyTOms  = "mdemg.classify.timeout_ms"
 	keyESignAbove    = "car.esign.required_above"
 	keySLAGrace      = "sla.car.overdue_grace"
-	carPolicyVersion = 3
+	carPolicyVersion = 4 // 4: fx conversion of the routing amount and the site business calendar (slice 12, B-07)
 )
+
+// keyFXRate is `fx.rate.<from>.<to>` (§08 "requests convert at fx.rate.* on submission").
+func keyFXRate(from, to string) string {
+	return "fx.rate." + strings.ToUpper(from) + "." + strings.ToUpper(to)
+}
 
 // carPolicyKeys is everything a CAR workflow snapshots at submission (§08 "Snapshot at start").
 var carPolicyKeys = []string{
@@ -65,6 +70,12 @@ type CARPolicy struct {
 	TierMinor       governance.Tier            `json:"tier_minor"`
 	ClassifyTimeout time.Duration              `json:"-"`
 	Resolved        map[string]policy.Resolved `json:"resolved"` // key -> effective value and provenance
+	// Conversion of the request into the threshold currency (B-07). Empty FXPair means none was needed.
+	AmountCurrency string   `json:"amount_currency"` // the CAR's currency
+	FXPair         string   `json:"fx_pair,omitempty"`
+	FXRate         *big.Rat `json:"-"`
+	// The site business calendar the stage clocks run on; empty means the wall clock.
+	Calendar string `json:"business_calendar"`
 }
 
 // MarshalJSON renders the snapshot with the money values as decimal strings.
@@ -79,7 +90,50 @@ func (p CARPolicy) MarshalJSON() ([]byte, error) {
 		FELCapPct         string `json:"fel_funding_cap_pct"`
 		ESignAbove        string `json:"threshold_esign"`
 		ClassifyTimeoutMs int64  `json:"classify_timeout_ms"`
-	}{alias(p), money(p.ThrFinance), money(p.ThrVPFinance), money(p.ThrCFO), money(p.ThrCEO), p.FELCapPct.FloatString(2), money(p.ESignAbove), p.ClassifyTimeout.Milliseconds()})
+		FXRate            string `json:"fx_rate,omitempty"`
+	}{alias(p), money(p.ThrFinance), money(p.ThrVPFinance), money(p.ThrCFO), money(p.ThrCEO), p.FELCapPct.FloatString(2), money(p.ESignAbove), p.ClassifyTimeout.Milliseconds(), rate(p.FXRate)})
+}
+
+func rate(r *big.Rat) string {
+	if r == nil {
+		return ""
+	}
+	return r.FloatString(6)
+}
+
+// convertToThresholdCurrency returns the amount in the policy's threshold
+// currency. Same currency: the amount itself. Otherwise the rate at
+// fx.rate.<from>.<to> resolved for the project at now, recorded on the policy
+// so the snapshot shows the rate the chain was built with (§08); a missing
+// rate is a precondition failure, never a silent 1:1.
+func convertToThresholdCurrency(ctx context.Context, q *db.Queries, project db.Project, now time.Time, amount *big.Rat, from string, p *CARPolicy) (*big.Rat, error) {
+	from, to := strings.ToUpper(strings.TrimSpace(from)), strings.ToUpper(strings.TrimSpace(p.Currency))
+	p.AmountCurrency = from
+	if from == "" || from == to {
+		return amount, nil
+	}
+	scope := policy.Scope{ProjectID: project.ProjectID.String(), SiteID: project.SiteID.String(), ProjectType: project.ProjectType}
+	if project.PortfolioID != nil {
+		scope.PortfolioID = project.PortfolioID.String()
+	}
+	key := keyFXRate(from, to)
+	r, err := policy.Resolve(ctx, q, key, scope, now)
+	if errors.Is(err, policy.ErrUnknownVariable) {
+		return nil, fmt.Errorf("%w: the request is in %s and the thresholds in %s, and %s is not defined (Finance sets the rate as a policy variable)", ErrPrecondition, from, to, key)
+	}
+	if err != nil {
+		return nil, err
+	}
+	fx, err := ratOf(r)
+	if err != nil {
+		return nil, err
+	}
+	if fx.Sign() <= 0 {
+		return nil, fmt.Errorf("%w: %s must be a positive rate", ErrPrecondition, key)
+	}
+	p.Resolved[key] = r
+	p.FXPair, p.FXRate = from+"."+to, fx
+	return new(big.Rat).Mul(amount, fx), nil
 }
 
 // resolveCARPolicy resolves every key for the project at now. A key that is not

@@ -290,7 +290,7 @@ The Connector SDK is extracted from the first two production modules rather than
 flowchart TD
   FE["pm-frontend (Next.js, server-rendered)"] --> CORE["pm-core (Go): REST to the frontend, gRPC to modules"]
   CORE --> PG["Postgres: entities, policy, audit chain, outbox, ERP mirror"]
-  CORE --> R["Redis: sessions"]
+  CORE --> R["Redis: sessions, pre-classification cache"]
   CORE --> S3["Object store: signed artifacts"]
   CORE --> MD["MDEMG: guidance, classify, feedback"]
   W["pm-workers (Go)"] --> PG
@@ -363,7 +363,7 @@ flowchart TD
   S9 --> N["Next: ERPi_IFS and Sigi_DS once the IFS answers and the DocuSign account arrive"]
 ```
 
-Every spine element runs today against a development backend. The two production modules still to build wait on inputs only the owner can supply: the IFS Cloud answers (licensed modules, the service account, the projection names, the inbound path) and the DocuSign account. The engineering backlog records what each slice deliberately left for a layer, from Redis-backed pre-classification for multiple replicas to delegation chains, document- and field-level grants, live refresh of the inbox, and the dashboards of FSD §09.
+Every spine element runs today against a development backend. The two production modules still to build wait on inputs only the owner can supply: the IFS Cloud answers (licensed modules, the service account, the projection names, the inbound path) and the DocuSign account. The engineering backlog records what each slice deliberately left for a layer, from delegation chains and the admin override of a Tier A refusal to document- and field-level grants, live rates from the ERP, and the dashboards of FSD §09.
 
 ---
 

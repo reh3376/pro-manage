@@ -43,14 +43,6 @@ Move the `pm-core` client secret out of the realm JSON into an env substitution 
 
 Replace the health-only sidecar with `pm.sidecar.v1.RenderService` stubs once the first export exists; UDTS spec with it.
 
-### B-06 Pre-classification cache to Redis
-
-The spine's `governance.PreclassCache` is in-process (scoped to user and project, 10-minute TTL, keyed by `sha256(action_kind, payload, policy_snapshot)` as `§06` specifies). Move it to the stack's Redis before pm-core runs more than one replica, so a verdict pre-classified on one instance is honoured by the one that takes the submit.
-
-### B-07 CAR chain: FX conversion and business-day SLA clocks
-
-The toy compares the routing amount in the CAR's currency against thresholds resolved for the project (the seed's site override expresses the Ontario threshold in CAD); `§08` wants conversion at `fx.rate.<from>.<to>` on submission with the rate in the snapshot. Stage SLAs run on the wall clock; `§08` wants business days of the site calendar. Both land with `ERPi_IFS` (rates) and the site calendar.
-
 ### B-09 Admin override of a Tier A refusal
 
 Pools from IdP claims landed in slice 4b (2026-10-23): every login refills the user's `source = idp` rows from `ResolveClaimsToRoles`; seed and manual rows stay. Still open: the admin override that `§06` offers after a Tier A refusal (`overridden_by_admin`, `blocked_false_positive` feedback). The actor now carries platform roles from the session, so the override can be gated on `platform_admin` once the ACL layer lands.
@@ -79,4 +71,6 @@ Slice 9 shipped the `ErpiService` contract (spine subset), the mirror, and the r
 | B-08 | SLA tick, nudges, escalation, and expiry through Commsi (slice 7); the empty-pool pause moved to B-15 | 2026-10-26 |
 | B-14 | First USTS specs for the auth boundary (slice 10): 18 pm-core specs, merge-blocking in the compose job; contributor scoping joins with B-12 | 2026-10-30 |
 | B-11 | Attribution re-keyed to users.user_id (slice 10): user_ref on memberships, grants, pools, and ownerships, rename cascade at login, actor_id in audit rows under chain version 2 | 2026-10-30 |
+| B-06 | Pre-classification cache in the stack's Redis (slice 12): `governance.RedisPreclass` behind the `PreclassStore` interface, one key per user, project, and settled form with the TTL as the key's expiry, degrading to a re-classify when Redis is away; the in-process cache stays for a pm-core without `REDIS_URL` | 2026-11-03 |
+| B-07 | FX conversion and business-day SLA clocks (slice 12): a request in another currency converts into `car.threshold.currency` at `fx.rate.<from>.<to>` on submission with the rate in the snapshot (a missing rate is a precondition); `business_calendars` with the site's weekend and holidays run the stage clocks on open, on advance, and on escalation; the threshold currency is overridable at portfolio and site. Live rates from the ERP wait on `ERPi_IFS` (B-17) | 2026-11-03 |
 | B-16 | Frontend layers (slice 11): team and grant management, CAR codes in the inbox, live refresh over SSE through a same-origin proxy, CSP and hardening headers, the signed PDF through the frontend, a route error boundary. A nonce-based CSP and the pm-frontend-public split wait for the public renderer | 2026-11-03 |

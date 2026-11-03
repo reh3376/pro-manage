@@ -20,7 +20,7 @@
   },
   "config": {
     "timeout_ms": 10000,
-    "sha256": "1e1618a607ca4f84da4be89679d3ddf61eab1af6ae005ef6cf479af0552d9242"
+    "sha256": "bcd9ea3fc33d177b8c4035e2d7eac32651053ba2be80fff3269a1882e4deb734"
   },
   "request": {
     "method": "GET",
@@ -92,6 +92,35 @@
             "path": "$.value",
             "op": "equals",
             "expected": 6750000
+          },
+          {
+            "name": "set_by",
+            "path": "$.set_by",
+            "op": "equals",
+            "expected": "dana.policy"
+          }
+        ]
+      }
+    },
+    {
+      "name": "resolve_currency_site_override_on",
+      "request": {
+        "path": "/api/v1/projects/01900000-0000-7000-8000-00000000b004/policy/car.threshold.currency"
+      },
+      "expected": {
+        "status": 200,
+        "body_assertions": [
+          {
+            "name": "site scope wins",
+            "path": "$.scope_kind",
+            "op": "equals",
+            "expected": "site"
+          },
+          {
+            "name": "Ontario thresholds are in CAD (slice 12)",
+            "path": "$.value",
+            "op": "equals",
+            "expected": "CAD"
           },
           {
             "name": "set_by",

@@ -44,8 +44,15 @@ INSERT INTO policy_variables (key, type, unit, description, global_default, allo
   ('sla.car.ceo', 'duration', 'hours', 'CAR stage 5 (CEO) SLA', '168', '{"min":1,"max":720}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
   ('sla.car.overdue_grace', 'duration', 'hours', 'Grace after a CAR stage SLA passes before it is escalated, and again before it expires (§08 SLA tick)', '24', '{"min":1,"max":720}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
   ('mdemg.tier.approval.car', 'enum', NULL, 'Fail-closed tier for approval.car when the routing amount reaches car.threshold.vp_finance (full and supplemental)', '"A"', '{"values":["A","B","C"]}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
-  ('mdemg.tier.approval.car.minor', 'enum', NULL, 'Fail-closed tier for approval.car below the VP Finance threshold and for every FEL-funding CAR', '"B"', '{"values":["A","B","C"]}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed')
+  ('mdemg.tier.approval.car.minor', 'enum', NULL, 'Fail-closed tier for approval.car below the VP Finance threshold and for every FEL-funding CAR', '"B"', '{"values":["A","B","C"]}', '{project_type,portfolio,site,project}', 'policy_owner', 'seed', 'seed'),
+  ('fx.rate.CAD.USD', 'decimal', 'USD per CAD', 'Conversion of a CAD request into USD thresholds at submission (§08; Finance maintains, dev placeholder)', '0.74', '{"min":0}', '{}', 'policy_owner', 'seed', 'seed'),
+  ('fx.rate.USD.CAD', 'decimal', 'CAD per USD', 'Conversion of a USD request into CAD thresholds at submission (§08; Finance maintains, dev placeholder)', '1.35', '{"min":0}', '{}', 'policy_owner', 'seed', 'seed')
 ON CONFLICT (key) DO NOTHING;
+
+-- Slice 12 (B-07): the threshold currency became overridable at the site so the Ontario site can
+-- express its thresholds in CAD. An UPDATE because the INSERT above does nothing on a seeded database.
+UPDATE policy_variables SET overridable_at = '{portfolio,site}', updated_by = 'seed', updated_at = now()
+WHERE key = 'car.threshold.currency' AND overridable_at = '{}';
 
 -- Approver pools (FSD §04 workflow roles) for the Keycloak dev users until IdPi claims mapping fills them.
 INSERT INTO approver_pools (pool, user_id, site_id, added_by) VALUES
@@ -67,11 +74,26 @@ INSERT INTO capital_authorizations (car_id, project_id, code, kind, amount_reque
   ('01900000-0000-7000-8000-00000000e002', '01900000-0000-7000-8000-00000000b003', 'CR-2455', 'fel_funding', 30000.00, 'USD', 'tic', NULL, NULL, 'FEL2 study for the Boiler 2 burner replacement.', 'draft', NULL, NULL, 'seed', 'seed')
 ON CONFLICT (tenant_id, code) DO NOTHING;
 
--- A site-scoped override so the resolver has something to resolve in dev:
--- the Ontario site expresses its VP Finance threshold in CAD.
+-- Site-scoped overrides so the resolver has something to resolve in dev: the Ontario site expresses
+-- its thresholds in CAD, with the VP Finance threshold restated at the seed rate. A CAD request on an
+-- Ontario project therefore compares without conversion; a USD request there converts at fx.rate.USD.CAD.
 INSERT INTO policy_values (value_id, variable_key, scope_kind, scope_id, value, set_by, reason) VALUES
-  ('01900000-0000-7000-8000-00000000c001', 'car.threshold.vp_finance', 'site', '01900000-0000-7000-8000-00000000a002', '6750000', 'dana.policy', 'CAD equivalent of the global USD threshold at the seed rate (dev only)')
+  ('01900000-0000-7000-8000-00000000c001', 'car.threshold.vp_finance', 'site', '01900000-0000-7000-8000-00000000a002', '6750000', 'dana.policy', 'CAD equivalent of the global USD threshold at the seed rate (dev only)'),
+  ('01900000-0000-7000-8000-00000000c002', 'car.threshold.currency', 'site', '01900000-0000-7000-8000-00000000a002', '"CAD"', 'dana.policy', 'Ontario thresholds are expressed in CAD (dev only)')
 ON CONFLICT (value_id) DO NOTHING;
+
+-- Business calendars (FSD §03, §08; slice 12, B-07): weekends and the statutory holidays of each site
+-- through 2027, so stage SLA clocks run in business time of the project's site. Dev placeholders:
+-- the company calendar replaces them when the pilot's HR calendar is loaded.
+INSERT INTO business_calendars (calendar_id, tenant_id, name, time_zone, weekend_days, holidays) VALUES
+  ('us-ky', 'default', 'Kentucky plant calendar', 'America/New_York', '{6,7}',
+   '{2026-01-01,2026-05-25,2026-07-03,2026-09-07,2026-11-26,2026-11-27,2026-12-25,2027-01-01,2027-05-31,2027-07-05,2027-09-06,2027-11-25,2027-11-26,2027-12-24}'),
+  ('ca-on', 'default', 'Ontario plant calendar', 'America/Toronto', '{6,7}',
+   '{2026-01-01,2026-02-16,2026-04-03,2026-05-18,2026-07-01,2026-08-03,2026-09-07,2026-10-12,2026-12-25,2026-12-28,2027-01-01,2027-02-15,2027-03-26,2027-05-24,2027-07-01,2027-08-02,2027-09-06,2027-10-11,2027-12-27,2027-12-28}')
+ON CONFLICT (calendar_id) DO NOTHING;
+
+UPDATE sites SET business_calendar_id = 'us-ky', updated_at = now() WHERE code = 'NF-KY' AND business_calendar_id IS NULL;
+UPDATE sites SET business_calendar_id = 'ca-on', updated_at = now() WHERE code = 'NF-ON' AND business_calendar_id IS NULL;
 
 -- Memberships (FSD §04 base roles). Owners first: on a fresh database the projects above arrive after
 -- migration 00005 ran its backfill, so the seed states them too. Then fay.ops views Still House 2,
