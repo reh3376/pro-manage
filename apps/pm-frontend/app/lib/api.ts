@@ -36,7 +36,18 @@ async function sessionHeader(): Promise<Record<string, string>> {
 export async function api<T>(path: string, init: RequestInit & { returnTo?: string } = {}): Promise<T> {
   const headers: Record<string, string> = { accept: "application/json", ...(await sessionHeader()), ...(init.headers as Record<string, string> | undefined) };
   if (init.body && !("content-type" in headers)) headers["content-type"] = "application/json";
-  const res = await fetch(`${coreURL}${path}`, { ...init, headers, cache: "no-store", signal: init.signal ?? AbortSignal.timeout(15000) });
+  let res: Response;
+  try {
+    res = await fetch(`${coreURL}${path}`, { ...init, headers, cache: "no-store", signal: init.signal ?? AbortSignal.timeout(15000) });
+  } catch (e) {
+    // Production builds redact server-side error messages before they reach the client
+    // boundary, but they keep a digest; name the cause through it so app/error.tsx can
+    // tell "pm-core did not answer" from a page bug.
+    throw Object.assign(new Error(`pm-core unreachable: ${e instanceof Error ? e.message : String(e)}`), { digest: "PM_CORE_UNREACHABLE" });
+  }
+  if (res.status >= 500) {
+    throw Object.assign(new Error(`pm-core answered ${res.status} for ${path}`), { digest: `PM_CORE_${res.status}` });
+  }
   if (res.status === 401) {
     redirect(loginURL(init.returnTo ?? "/"));
   }
@@ -113,6 +124,8 @@ export type Access = {
   sections: Record<string, string>;
 };
 
+export type Grant = { grant_id: string; project_id: string; user_id: string; scope_kind: string; scope_target: string; permission: string; granted_by: string; granted_at: string; expires_at: string | null; reason: string };
+
 export type Member = { project_id: string; user_id: string; base_role: string; invited_by: string; invited_at: string; expires_at: string | null };
 
 export type CAR = {
@@ -170,7 +183,7 @@ export type GuidanceView = {
   session_id: string;
 };
 
-export type InboxItem = Stage & { workflow_kind: string; subject_type: string; subject_id: string; project_id: string | null; overdue: boolean; sla_state: string };
+export type InboxItem = Stage & { workflow_kind: string; subject_type: string; subject_id: string; subject_code: string | null; project_id: string | null; overdue: boolean; sla_state: string };
 
 export type AuditRow = {
   audit_id: string;

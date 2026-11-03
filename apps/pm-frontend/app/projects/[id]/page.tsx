@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { api, tryApi, money, when, type Access, type AuditRow, type BudgetSummary, type CAR, type Member, type Project, type Promise_ } from "../../lib/api";
+import { api, tryApi, money, when, type Access, type AuditRow, type BudgetSummary, type CAR, type Grant, type Member, type Project, type Promise_ } from "../../lib/api";
+import { LiveRefresh } from "../../lib/live";
 import { PromiseForm } from "./promise-form";
+import { TeamPanel } from "./team-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -13,14 +15,16 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   const returnTo = `/projects/${id}`;
   const project = await tryApi<Project>(`/api/v1/projects/${id}`, { returnTo });
   if (!project) notFound();
-  const [access, cars, members, audit, promises, budget] = await Promise.all([
+  const [access, cars, members, audit, promises, budget, grants] = await Promise.all([
     api<Access>(`/api/v1/projects/${id}/access`, { returnTo }),
     tryApi<{ items: CAR[] }>(`/api/v1/projects/${id}/cars`, { returnTo }),
     tryApi<{ items: Member[] }>(`/api/v1/projects/${id}/members`, { returnTo }),
     tryApi<{ items: AuditRow[]; full: boolean }>(`/api/v1/projects/${id}/audit?limit=15`, { returnTo }),
     tryApi<{ items: Promise_[] }>(`/api/v1/projects/${id}/promises`, { returnTo }),
     tryApi<{ summary: BudgetSummary; erp_configured: boolean }>(`/api/v1/projects/${id}/budget`, { returnTo }),
+    tryApi<{ items: Grant[] }>(`/api/v1/projects/${id}/grants`, { returnTo }),
   ]);
+  const canWriteTeam = access.sections.team === "write";
   const canWriteBudget = access.sections.budget === "write";
 
   return (
@@ -29,7 +33,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         <Link href="/projects">Projects</Link> / {project.code}
       </p>
       <h1>
-        {project.code} <span className="muted">{project.name}</span>
+        {project.code} <span className="muted">{project.name}</span> <LiveRefresh projectId={id} />
       </h1>
       <p className="muted">{project.description}</p>
       <section className="grid">
@@ -196,26 +200,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       {members && (
         <section className="card">
           <h2>Team</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Base role</th>
-                <th>Since</th>
-                <th>Expires</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.items.map((m) => (
-                <tr key={m.user_id}>
-                  <td>{m.user_id}</td>
-                  <td>{m.base_role}</td>
-                  <td className="muted">{when(m.invited_at)}</td>
-                  <td className="muted">{m.expires_at ? when(m.expires_at) : ""}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <TeamPanel projectID={id} members={members.items} grants={grants?.items ?? []} canWrite={canWriteTeam} />
         </section>
       )}
 

@@ -99,8 +99,9 @@ ON CONFLICT (pool, user_id) DO NOTHING;
 
 -- name: OpenStagesForUser :many
 -- The inbox: stages awaiting this user's decision on in-flight workflows.
-SELECT s.*, w.kind AS workflow_kind, w.subject_type, w.subject_id, w.project_id
+SELECT s.*, w.kind AS workflow_kind, w.subject_type, w.subject_id, w.project_id, c.code AS subject_code
 FROM approval_stages s JOIN approval_workflows w ON w.workflow_id = s.workflow_id
+LEFT JOIN capital_authorizations c ON w.subject_type = 'capital_authorization' AND c.car_id::text = w.subject_id
 WHERE w.tenant_id = $1 AND w.status = 'in_flight' AND w.current_stage = s.stage_order
   AND s.completed_at IS NULL AND sqlc.arg(user_id)::text = ANY (s.assignees)
 ORDER BY s.stage_due_at;

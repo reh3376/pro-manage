@@ -69,6 +69,7 @@ func (a *API) Mount(mux *http.ServeMux) {
 	a.mountAccess(mux, wrap)
 	a.mountSigning(mux, wrap, a.requestID)
 	a.mountBudget(mux, wrap)
+	a.mountStreams(mux, wrap)
 }
 
 // ---------------------------------------------------------------- middleware

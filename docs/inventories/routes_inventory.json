@@ -95,6 +95,17 @@
       "disposition": "active",
       "notes": "Open stages assigned to the actor, soonest due first, with overdue flag."
     },
+    "pm-core GET /api/v1/inbox/stream": {
+      "writers": [
+        "services/pm-core/internal/api/stream.go"
+      ],
+      "readers": [
+        "apps/pm-frontend/app/api/events/route.ts",
+        "services/pm-core/tests/login/screens_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Live-refresh hints for the caller's inbox over SSE: workflow and CAR events across the projects the caller can see."
+    },
     "pm-core GET /api/v1/mdemg/status": {
       "writers": [
         "services/pm-core/internal/api/mdemg.go"
@@ -248,6 +259,17 @@
       ],
       "disposition": "active",
       "notes": "BusinessCasePromises of a project."
+    },
+    "pm-core GET /api/v1/projects/{project_id}/stream": {
+      "writers": [
+        "services/pm-core/internal/api/stream.go"
+      ],
+      "readers": [
+        "apps/pm-frontend/app/api/events/route.ts",
+        "services/pm-core/tests/login/screens_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Live-refresh hints for one project over SSE (FSD §05): change events read from the audit log, gated on the overview read; no payloads, the subscriber re-fetches."
     },
     "pm-core GET /api/v1/sites": {
       "writers": [
@@ -527,6 +549,29 @@
       ],
       "disposition": "active",
       "notes": "Home: service status and the signed-in user's starting points; sign-in link to pm-core /auth/login."
+    },
+    "pm-frontend GET /api/cars/[id]/artifact": {
+      "writers": [
+        "apps/pm-frontend/app/api/cars/[id]/artifact/route.ts"
+      ],
+      "readers": [
+        "apps/pm-frontend/app/cars/[id]/page.tsx",
+        "docs/tests/uats/specs/pm-frontend/headers.uats.json"
+      ],
+      "disposition": "active",
+      "notes": "The signed CAR PDF through the frontend with the session cookie forwarded; pm-core's budget read decides (B-16)."
+    },
+    "pm-frontend GET /api/events": {
+      "writers": [
+        "apps/pm-frontend/app/api/events/route.ts"
+      ],
+      "readers": [
+        "apps/pm-frontend/app/lib/live.tsx",
+        "docs/tests/uats/specs/pm-frontend/headers.uats.json",
+        "services/pm-core/tests/login/screens_test.go"
+      ],
+      "disposition": "active",
+      "notes": "Same-origin proxy for pm-core's streams (?scope=inbox or ?project=<id>) so EventSource stays inside connect-src 'self'; forwards the session cookie."
     },
     "pm-frontend GET /api/healthz": {
       "writers": [

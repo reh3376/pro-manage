@@ -820,8 +820,9 @@ func (q *Queries) OpenStage(ctx context.Context, arg OpenStageParams) error {
 }
 
 const openStagesForUser = `-- name: OpenStagesForUser :many
-SELECT s.stage_id, s.workflow_id, s.stage_order, s.role_required, s.assignees, s.sla_minutes, s.entered_at, s.stage_due_at, s.completed_at, s.completed_by, s.decision, s.comment, s.guidance_id, s.classification_verdict, s.fail_tier, s.nudged_at, s.overdue_at, s.escalated_at, w.kind AS workflow_kind, w.subject_type, w.subject_id, w.project_id
+SELECT s.stage_id, s.workflow_id, s.stage_order, s.role_required, s.assignees, s.sla_minutes, s.entered_at, s.stage_due_at, s.completed_at, s.completed_by, s.decision, s.comment, s.guidance_id, s.classification_verdict, s.fail_tier, s.nudged_at, s.overdue_at, s.escalated_at, w.kind AS workflow_kind, w.subject_type, w.subject_id, w.project_id, c.code AS subject_code
 FROM approval_stages s JOIN approval_workflows w ON w.workflow_id = s.workflow_id
+LEFT JOIN capital_authorizations c ON w.subject_type = 'capital_authorization' AND c.car_id::text = w.subject_id
 WHERE w.tenant_id = $1 AND w.status = 'in_flight' AND w.current_stage = s.stage_order
   AND s.completed_at IS NULL AND $2::text = ANY (s.assignees)
 ORDER BY s.stage_due_at
@@ -855,6 +856,7 @@ type OpenStagesForUserRow struct {
 	SubjectType           string     `json:"subject_type"`
 	SubjectID             string     `json:"subject_id"`
 	ProjectID             *uuid.UUID `json:"project_id"`
+	SubjectCode           *string    `json:"subject_code"`
 }
 
 // The inbox: stages awaiting this user's decision on in-flight workflows.
@@ -890,6 +892,7 @@ func (q *Queries) OpenStagesForUser(ctx context.Context, arg OpenStagesForUserPa
 			&i.SubjectType,
 			&i.SubjectID,
 			&i.ProjectID,
+			&i.SubjectCode,
 		); err != nil {
 			return nil, err
 		}

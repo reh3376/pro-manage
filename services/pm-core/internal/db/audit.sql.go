@@ -213,3 +213,15 @@ func (q *Queries) LockAuditChain(ctx context.Context, dollar_1 string) error {
 	_, err := q.db.Exec(ctx, lockAuditChain, dollar_1)
 	return err
 }
+
+const maxAuditSeq = `-- name: MaxAuditSeq :one
+SELECT COALESCE(MAX(seq), 0)::bigint FROM audit_events WHERE tenant_id = $1
+`
+
+// Where a live stream starts: everything after this seq is "new" for the subscriber.
+func (q *Queries) MaxAuditSeq(ctx context.Context, tenantID string) (int64, error) {
+	row := q.db.QueryRow(ctx, maxAuditSeq, tenantID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}

@@ -131,6 +131,70 @@ export async function decideCAR(_prev: ActionState, form: FormData): Promise<Act
   }
 }
 
+function dateOrNull(v: FormDataEntryValue | null): string | null {
+  const s = String(v ?? "").trim();
+  return s ? new Date(s + "T23:59:59Z").toISOString() : null;
+}
+
+export async function addMember(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const projectID = String(form.get("project_id") ?? "");
+  try {
+    await api(`/api/v1/projects/${projectID}/members`, {
+      method: "POST",
+      returnTo: `/projects/${projectID}`,
+      body: JSON.stringify({ user_id: String(form.get("user_id") ?? "").trim(), base_role: String(form.get("base_role") ?? "viewer"), expires_at: dateOrNull(form.get("expires_at")) }),
+    });
+    revalidatePath(`/projects/${projectID}`);
+    return { ok: "Member saved." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function removeMember(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const projectID = String(form.get("project_id") ?? "");
+  try {
+    await api(`/api/v1/projects/${projectID}/members/${encodeURIComponent(String(form.get("user_id") ?? ""))}`, { method: "DELETE", returnTo: `/projects/${projectID}` });
+    revalidatePath(`/projects/${projectID}`);
+    return { ok: "Member removed." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function addGrant(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const projectID = String(form.get("project_id") ?? "");
+  try {
+    await api(`/api/v1/projects/${projectID}/grants`, {
+      method: "POST",
+      returnTo: `/projects/${projectID}`,
+      body: JSON.stringify({
+        user_id: String(form.get("user_id") ?? "").trim(),
+        scope_kind: "section",
+        scope_target: `section:${String(form.get("section") ?? "")}`,
+        permission: String(form.get("permission") ?? "read"),
+        reason: String(form.get("reason") ?? ""),
+        expires_at: dateOrNull(form.get("expires_at")),
+      }),
+    });
+    revalidatePath(`/projects/${projectID}`);
+    return { ok: "Grant saved." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function removeGrant(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const projectID = String(form.get("project_id") ?? "");
+  try {
+    await api(`/api/v1/projects/${projectID}/grants/${encodeURIComponent(String(form.get("grant_id") ?? ""))}`, { method: "DELETE", returnTo: `/projects/${projectID}` });
+    revalidatePath(`/projects/${projectID}`);
+    return { ok: "Grant removed." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 // signOut ends the pm-core session (which cascades to the IdP), drops the cookie
 // from the browser, and lands on the IdP's end-session page when there is one.
 export async function signOut(): Promise<void> {

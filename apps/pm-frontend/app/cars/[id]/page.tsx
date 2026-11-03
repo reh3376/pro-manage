@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { api, tryApi, money, when, corePublicURL, whoAmI, type AuditRow, type CARView, type GuidanceView, type Project, type Signature } from "../../lib/api";
+import { api, tryApi, money, when, whoAmI, type AuditRow, type CARView, type GuidanceView, type Project, type Signature } from "../../lib/api";
+import { LiveRefresh } from "../../lib/live";
 import { DecidePanel, SubmitPanel } from "./panels";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ export default async function CARPage({ params }: { params: Promise<{ id: string
         <Link href="/projects">Projects</Link> / {project ? <Link href={`/projects/${car.project_id}`}>{project.code}</Link> : car.project_id.slice(0, 8)} / {car.code}
       </p>
       <h1>
-        CAR {car.code} <span className={`badge ${car.status}`}>{car.status}</span>
+        CAR {car.code} <span className={`badge ${car.status}`}>{car.status}</span> <LiveRefresh projectId={car.project_id} />
       </h1>
       <p className="muted">
         {car.kind} for {money(car.amount_requested, car.currency)} on basis {car.basis}
@@ -199,7 +200,7 @@ export default async function CARPage({ params }: { params: Promise<{ id: string
               ) : null}
               {signature.artifact_available && (
                 <p>
-                  <a className="button" href={`${corePublicURL}/api/v1/cars/${car.car_id}/signed-artifact`}>
+                  <a className="button" href={`/api/cars/${car.car_id}/artifact`}>
                     Download signed PDF
                   </a>{" "}
                   <span className="muted small">SHA-256 {signature.envelope?.artifact_sha256}</span>
