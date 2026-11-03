@@ -44,8 +44,9 @@ const FRAMEWORK_DEFAULTS = {
   svgViewer: join(PKG_DIR, 'templates', 'svg-viewer.js'),
   highlightStyle: join(PKG_DIR, 'node_modules', 'highlight.js', 'styles', 'base16', 'zenburn.min.css'),
   mermaid: join(PKG_DIR, 'node_modules', 'mermaid', 'dist', 'mermaid.min.js'),
-  // reveal-md ships a tiny favicon we can reuse as the framework default.
-  favicon: join(PKG_DIR, 'node_modules', 'reveal-md', 'lib', 'favicon.ico'),
+  // The framework's own default favicon (the generic icon reveal-md ships, MIT, vendored so
+  // reveal-md and its express server are not a dependency of a static build).
+  favicon: join(PKG_DIR, 'templates', 'favicon.ico'),
 };
 
 export function logInfo(msg) {

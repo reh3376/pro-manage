@@ -9,9 +9,11 @@
   },
   "dependencies": {
     "marked": "13.0.3",
-    "mermaid": "11.16.1",
-    "puppeteer": "23.9.0",
-    "highlight.js": "11.11.1",
-    "reveal-md": "6.1.4"
+    "mermaid": "12.3.0",
+    "puppeteer": "25.16.0",
+    "highlight.js": "11.11.1"
+  },
+  "overrides": {
+    "basic-ftp": "^6.2.1"
   }
 }
