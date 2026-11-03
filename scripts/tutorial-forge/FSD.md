@@ -112,15 +112,18 @@ highlighting for fenced code, standard markdown tables/lists/blockquotes.
 ### 3.2 Dependency graph (framework → npm)
 
 - `marked@13.0.3` — markdown → HTML.
-- `mermaid@11.16.1` — diagram runtime, read at build time by Puppeteer.
-- `puppeteer@23.9.0` — headless Chromium for Mermaid render. Downloads
-  bundled Chromium (~150 MB) on first `npm install`.
+- `mermaid@12.3.0` — diagram runtime, read at build time by Puppeteer.
+- `puppeteer@25.16.0` — headless Chromium for Mermaid render. Downloads
+  bundled Chromium (~150 MB) on first `npm install`. `package.json` overrides
+  `basic-ftp` to its patched line because puppeteer's proxy chain still pins
+  a vulnerable one.
 - `highlight.js@11.11.1` — ships `zenburn.min.css` only (code renders at
   serve time via plain `<pre><code class="language-…">` which browsers
   highlight if a code engine is loaded; the framework's bundle does not
   include highlight.js runtime — the ULTRA-light choice).
-- `reveal-md@6.1.4` — kept for its bundled `favicon.ico` only. Zero runtime
-  use. Can be removed if a framework consumer provides its own icon.
+- No reveal-md: its only use was the bundled `favicon.ico`, which is vendored
+  at `templates/favicon.ico` so the express server it drags in is not a
+  dependency of a static build.
 
 ## 4. File reference
 
@@ -281,7 +284,7 @@ interface TutorialConfig {
 
   // Shell / branding
   title?: string;               // default: 'Tutorial' — <title> element text
-  iconPath?: string;            // default: framework favicon from reveal-md
+  iconPath?: string;            // default: templates/favicon.ico
 
   // Overrides (fall back to framework defaults when absent)
   cssPath?: string;             // default: templates/default.css

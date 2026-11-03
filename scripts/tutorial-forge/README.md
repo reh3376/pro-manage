@@ -47,9 +47,9 @@ cd scripts/tutorial-forge
 npm install
 ```
 
-The dependencies (marked, mermaid, puppeteer, highlight.js, reveal-md for the
-default favicon) install into `scripts/tutorial-forge/node_modules/`. Puppeteer
-downloads a bundled Chromium on first install (one-time, ~150 MB).
+The dependencies (marked, mermaid, puppeteer, highlight.js) install into
+`scripts/tutorial-forge/node_modules/`. Puppeteer downloads a bundled Chromium
+on first install (one-time, ~150 MB).
 
 ## Minimal usage
 
@@ -311,7 +311,8 @@ If you don't provide an override, the framework uses:
 - **SVG viewer**: `scripts/tutorial-forge/templates/svg-viewer.js` (vanilla
   JS, zero deps, toolbar `[+][−][⟳][⤢]`, wheel-zoom at cursor, drag-pan,
   touch pinch, double-click reset, idempotent + MutationObserver-safe)
-- **Favicon**: tiny generic from reveal-md's bundle
+- **Favicon**: `scripts/tutorial-forge/templates/favicon.ico` (the tiny generic
+  icon reveal-md ships, vendored so reveal-md is not a dependency)
 - **Acronym dictionary**: `scripts/tutorial-forge/defaults/acronyms.json`
   (~55 industry-standard terms)
 
