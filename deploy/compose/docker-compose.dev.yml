@@ -90,7 +90,7 @@ services:
 
   rustfs:
     # S3-compatible object store for dev (FSD §05 "MinIO or equivalent"; MinIO images are no longer published).
-    image: rustfs/rustfs:1.0.3
+    image: rustfs/rustfs:1.0.4
     environment:
       RUSTFS_VOLUMES: /data
       RUSTFS_ADDRESS: 0.0.0.0:9000
