@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { api, type InboxItem, when } from "../lib/api";
+import { LiveRefresh } from "../lib/live";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,9 @@ export default async function InboxPage() {
   const { items } = await api<{ items: InboxItem[] }>("/api/v1/inbox", { returnTo: "/inbox" });
   return (
     <main>
-      <h1>Inbox</h1>
+      <h1>
+        Inbox <LiveRefresh scope="inbox" />
+      </h1>
       <p className="muted">Stages waiting on your decision. Rows clear when you decide, never by dismissal.</p>
       {items.length === 0 ? (
         <section className="card">
@@ -31,7 +34,7 @@ export default async function InboxPage() {
               {items.map((it) => (
                 <tr key={it.stage_id}>
                   <td>
-                    {it.subject_type === "capital_authorization" ? <Link href={`/cars/${it.subject_id}`}>CAR {it.subject_id.slice(0, 8)}</Link> : `${it.subject_type} ${it.subject_id}`}
+                    {it.subject_type === "capital_authorization" ? <Link href={`/cars/${it.subject_id}`}>CAR {it.subject_code ?? it.subject_id.slice(0, 8)}</Link> : `${it.subject_type} ${it.subject_id}`}
                   </td>
                   <td>
                     {it.stage_order} <span className="muted">({it.role_required})</span>

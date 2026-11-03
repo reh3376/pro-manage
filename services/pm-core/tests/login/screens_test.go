@@ -3,6 +3,7 @@
 package login
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -15,8 +16,9 @@ import (
 )
 
 var (
-	projectLink = regexp.MustCompile(`href="/projects/([0-9a-f-]{36})"`)
-	carLink     = regexp.MustCompile(`href="/cars/([0-9a-f-]{36})"`)
+	projectLink  = regexp.MustCompile(`href="/projects/([0-9a-f-]{36})"`)
+	carLink      = regexp.MustCompile(`href="/cars/([0-9a-f-]{36})"`)
+	carCodeInRow = regexp.MustCompile(`CAR\s*(<!--\s*-->)?\s*CR-`)
 )
 
 // TestPersonaScreens signs in through the real SSO flow and walks the persona
@@ -82,7 +84,7 @@ func TestPersonaScreens(t *testing.T) {
 	// reverse) the callback lands on the frontend's home page instead. Either way it must be the
 	// signed-in frontend, and the walk continues on the host the cookie was issued for.
 	landed := string(body)
-	if resp.StatusCode != 200 || !(strings.Contains(landed, "<h1>Inbox</h1>") || strings.Contains(landed, "Signed in as")) {
+	if resp.StatusCode != 200 || !(strings.Contains(landed, "Inbox <span") || strings.Contains(landed, "Signed in as")) {
 		t.Fatalf("after login: %d at %s: %.300s", resp.StatusCode, resp.Request.URL, body)
 	}
 	fe = resp.Request.URL.Scheme + "://" + resp.Request.URL.Host
@@ -120,7 +122,28 @@ func TestPersonaScreens(t *testing.T) {
 	}
 
 	get("/", "Signed in as", user)
-	get("/inbox", "<h1>Inbox</h1>")
+	inbox := get("/inbox", "Inbox")
+	// React's server output puts a comment node between "CAR " and the interpolated code.
+	if strings.Contains(inbox, `href="/cars/`) && !carCodeInRow.MatchString(inbox) {
+		t.Fatalf("inbox rows should name the CAR by its code (B-16)")
+	}
+	// The live-refresh proxy streams pm-core's inbox events for the session (B-16, FSD §05 SSE).
+	streamCtx, cancelStream := context.WithTimeout(context.Background(), 4*time.Second)
+	defer cancelStream()
+	sreq, _ := http.NewRequestWithContext(streamCtx, http.MethodGet, fe+"/api/events?scope=inbox", nil)
+	sresp, err := c.Do(sreq)
+	if err != nil {
+		t.Fatalf("events proxy: %v", err)
+	}
+	if sresp.StatusCode != 200 || !strings.HasPrefix(sresp.Header.Get("Content-Type"), "text/event-stream") {
+		t.Fatalf("events proxy: %d %s", sresp.StatusCode, sresp.Header.Get("Content-Type"))
+	}
+	first := make([]byte, 64)
+	n, _ := io.ReadAtLeast(sresp.Body, first, 10)
+	sresp.Body.Close()
+	if !strings.Contains(string(first[:n]), ": connected") {
+		t.Fatalf("events proxy did not open a stream: %q", first[:n])
+	}
 	projects := ids(projectLink, get("/projects", "<h1>Projects</h1>"), 5)
 	if len(projects) == 0 {
 		t.Logf("%s sees no projects; the project and CAR screens are not walked", user)
@@ -129,6 +152,9 @@ func TestPersonaScreens(t *testing.T) {
 	cars, chains, audits := 0, 0, 0
 	for _, pid := range projects {
 		project := get("/projects/"+pid, "Your access", "Overview")
+		if strings.Contains(project, "Base role: owner") && !strings.Contains(project, `name="base_role"`) {
+			t.Fatalf("the owner should see the team management forms on %s (B-16)", pid)
+		}
 		if strings.Contains(project, `href="/projects/`+pid+`/cars/new"`) {
 			get("/projects/"+pid+"/cars/new", "New capital authorization request", `name="amount_requested"`)
 		}

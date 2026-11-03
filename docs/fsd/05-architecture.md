@@ -115,7 +115,7 @@ Every gRPC contract has a UDTS spec in `docs/api-spec/udts/` and the generated c
 
 - Namespace: `/api/v1/*`. OIDC bearer tokens required.
 - Resource-oriented: `/api/v1/projects/{id}/budget`, `/api/v1/projects/{id}/approvals`, etc.
-- Live updates via SSE at `/api/v1/projects/{id}/stream` (per-section channels gated by ACL).
+- Live updates via SSE at `/api/v1/projects/{id}/stream` (per-section channels gated by ACL). **Status 2026-11-03:** the project stream and an inbox stream exist (slice 11) as change hints from the audit log, gated on the overview read and project visibility; per-section channels and tile updates arrive with the dashboards.
 - Covered by **UATS** contract tests from day one.
 
 ## Modular connector framework

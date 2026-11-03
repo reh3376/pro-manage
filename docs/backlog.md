@@ -1,6 +1,6 @@
 # Engineering backlog
 
-Status: **Living list** · Last updated: 2026-10-30
+Status: **Living list** · Last updated: 2026-11-03
 
 Work the owner has asked for that is not a spine slice or an FSD open item. Ordered by priority within each group; each item names what "done" looks like. Owner decisions live in [open-items.md](./fsd/open-items.md); the delivery order lives in the [roadmap](./fsd/roadmap.md).
 
@@ -71,10 +71,6 @@ Slice 5 enforces section-level grants. Still to come as the layers that need the
 
 Slice 9 shipped the `ErpiService` contract (spine subset), the mirror, and the release against `ERPi_STUB`. `ERPi_IFS` builds against the same contract and UDTS specs once OI-10 to OI-13 are answered: OAuth client credentials through IFS IAM, OData projections named from the API Explorer, ETags on `ReleaseBudget`, polling with the push switch when IT approves an inbound path. Also open on the pm-core side: persisting the tree from `FetchProjectStructure` (drained today, not stored), the remaining §10 RPCs (invoices, purchase orders and receipts for `ProcurementItem`, earned value, subcontracts, change orders, payment applications, capitalization status for closeout), an operational alert when a release fails (the audit row and the CAR page flag exist; nobody is notified), per-site instance routing from the registry, and the pro_manage-led budget entry (manual baselines, the baseline-change chain) for projects not in the ERP.
 
-### B-16 Persona screens: what slice 8 left for the layers
-
-The screens render server-side and re-render after every action, which is right for the spine but leaves: live refresh of the inbox and the chain over SSE (`§09`), team and grant management on the project page (members and grants are read-only there; the REST routes exist), the inbox naming a CAR by its code rather than its id (the open-stages query carries only the subject id), a content security policy and the hardened `pm-frontend-public` split (`§05`), the signed-PDF link going through the frontend rather than straight to pm-core, and a client-side error boundary that keeps the shell when pm-core is down. Pull each when a pilot persona asks for it.
-
 ## Done
 
 | Id | Item | Closed in |
@@ -83,3 +79,4 @@ The screens render server-side and re-render after every action, which is right 
 | B-08 | SLA tick, nudges, escalation, and expiry through Commsi (slice 7); the empty-pool pause moved to B-15 | 2026-10-26 |
 | B-14 | First USTS specs for the auth boundary (slice 10): 18 pm-core specs, merge-blocking in the compose job; contributor scoping joins with B-12 | 2026-10-30 |
 | B-11 | Attribution re-keyed to users.user_id (slice 10): user_ref on memberships, grants, pools, and ownerships, rename cascade at login, actor_id in audit rows under chain version 2 | 2026-10-30 |
+| B-16 | Frontend layers (slice 11): team and grant management, CAR codes in the inbox, live refresh over SSE through a same-origin proxy, CSP and hardening headers, the signed PDF through the frontend, a route error boundary. A nonce-based CSP and the pm-frontend-public split wait for the public renderer | 2026-11-03 |

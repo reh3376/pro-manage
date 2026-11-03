@@ -1,0 +1,87 @@
+{
+  "uats_version": "1.0.0",
+  "api": {
+    "name": "pm-frontend response hardening headers",
+    "base_url": "${PM_FRONTEND_URL:-http://127.0.0.1:3100}",
+    "service": "pm-frontend",
+    "tags": [
+      "pm-frontend",
+      "headers",
+      "security"
+    ]
+  },
+  "metadata": {
+    "author": "reh3376",
+    "created": "2026-11-03",
+    "description": "Every frontend response carries the baseline hardening headers (backlog B-16, FSD \u00a705): a content security policy that keeps scripts, connections, and form targets same-origin and forbids framing, plus nosniff, deny-framing, and no-referrer. The live streams and the signed PDF are proxied through the app's own route handlers so connect-src 'self' holds.",
+    "status": "active",
+    "test_type": "contract",
+    "priority": "high"
+  },
+  "config": {
+    "timeout_ms": 10000,
+    "sha256": "9f8794ac31d2d2cc1414a0db8fd1a5e9c608ae57ed8b22df45aa50b23759f284"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/"
+  },
+  "expected": {
+    "status": 200,
+    "headers": {
+      "Content-Security-Policy": {
+        "op": "contains",
+        "expected": "frame-ancestors 'none'"
+      },
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "no-referrer"
+    },
+    "body_assertions": []
+  },
+  "variants": [
+    {
+      "name": "csp_connect_src_self",
+      "expected": {
+        "status": 200,
+        "headers": {
+          "Content-Security-Policy": {
+            "op": "contains",
+            "expected": "connect-src 'self'"
+          }
+        },
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "events_proxy_requires_session",
+      "request": {
+        "path": "/api/events?scope=inbox"
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "events_proxy_needs_scope",
+      "request": {
+        "path": "/api/events"
+      },
+      "expected": {
+        "status": 400,
+        "body_assertions": []
+      }
+    },
+    {
+      "name": "artifact_proxy_requires_session",
+      "request": {
+        "path": "/api/cars/01900000-0000-7000-8000-00000000e001/artifact"
+      },
+      "expected": {
+        "status": 401,
+        "body_assertions": []
+      }
+    }
+  ]
+}

@@ -136,3 +136,12 @@ dl.kpis { grid-template-columns: repeat(4, max-content 1fr); gap: 0.35rem 1rem; 
 @media (max-width: 56rem) { dl.kpis { grid-template-columns: max-content 1fr; } }
 .badge.released, .badge.open { border-color: var(--ok); color: var(--ok); }
 .badge.pending { border-color: var(--accent); color: var(--accent); }
+.live { font-size: 0.75rem; font-weight: 400; color: var(--muted); vertical-align: middle; margin-left: 0.5rem; }
+.live .dot { display: inline-block; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--muted); margin-right: 0.2rem; }
+.live-live .dot { background: var(--ok); }
+.live-offline .dot { background: var(--fail); }
+.danger-text { color: var(--fail); }
+.inline.sub { margin-top: 0.75rem; align-items: flex-end; }
+.inline label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--muted); }
+.badge.read, .badge.read_full, .badge.write { border-color: var(--accent); color: var(--accent); }
+.badge.deny { border-color: var(--fail); color: var(--fail); }

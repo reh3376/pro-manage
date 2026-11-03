@@ -2,6 +2,10 @@
 -- Serializes appends per tenant so seq order and the hash chain agree (transaction-scoped advisory lock).
 SELECT pg_advisory_xact_lock(hashtext('audit_chain:' || $1::text));
 
+-- name: MaxAuditSeq :one
+-- Where a live stream starts: everything after this seq is "new" for the subscriber.
+SELECT COALESCE(MAX(seq), 0)::bigint FROM audit_events WHERE tenant_id = $1;
+
 -- name: LastAuditHash :one
 SELECT signed_hash FROM audit_events WHERE tenant_id = $1 ORDER BY seq DESC LIMIT 1;
 
