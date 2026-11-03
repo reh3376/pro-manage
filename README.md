@@ -48,7 +48,7 @@ It is for a single company, hosted on the company's intranet in containers, tune
 | Phased roadmap (thin spine, delivery scenarios, layer catalogue), milestones, risk register | [`docs/fsd/roadmap.md`](./docs/fsd/roadmap.md) |
 | Owner decision checklist (every open item, grouped by what it unblocks) | [`docs/fsd/open-items.md`](./docs/fsd/open-items.md) |
 | Engineering backlog (repo hardening, tooling, hygiene items) | [`docs/backlog.md`](./docs/backlog.md) |
-| **Onboarding tutorial** (one scrollable page with a sidebar and diagrams; `make tutorial` renders it from `docs/tutorial.md`) | [`docs/tutorial.md`](./docs/tutorial.md), built to `build/tutorial-static/` by [`scripts/tutorial-forge`](./scripts/tutorial-forge/README.md) |
+| **Onboarding tutorial** (one scrollable page with a sidebar and diagrams; published to GitHub Pages on every push to `main` that touches it; `make tutorial` renders it locally from `docs/tutorial.md`) | [reh3376.github.io/pro-manage](https://reh3376.github.io/pro-manage/), source [`docs/tutorial.md`](./docs/tutorial.md), built by [`scripts/tutorial-forge`](./scripts/tutorial-forge/README.md) |
 
 ---
 
