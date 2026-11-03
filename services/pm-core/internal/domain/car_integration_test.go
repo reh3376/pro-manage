@@ -399,3 +399,86 @@ func TestCARPreconditions(t *testing.T) {
 		t.Fatalf("supplemental: %v", err)
 	}
 }
+
+// Slice 12 (B-07): a request in another currency converts into the threshold currency at
+// fx.rate.<from>.<to> on submission, the rate goes into the snapshot, a missing rate is a
+// precondition, and stage clocks run in business time of the site calendar.
+func TestCARCurrencyConversionAndBusinessCalendar(t *testing.T) {
+	f := setup(t, stubClient(t))
+	ctx := context.Background()
+	q := f.svc.Store.Queries()
+	if _, err := q.UpsertPolicyVariable(ctx, db.UpsertPolicyVariableParams{Key: "fx.rate.CAD.USD", Type: "decimal", Description: "integration seed", GlobalDefault: json.RawMessage(`0.74`), AllowedRange: json.RawMessage(`{}`), OverridableAt: []string{}, OwnerRole: "policy_owner", CreatedBy: "it-car"}); err != nil {
+		t.Fatal(err)
+	}
+
+	// A CAD site on a calendar whose next two days are holidays, so 24 business hours span 72 wall hours.
+	loc, _ := time.LoadLocation("America/Toronto")
+	today := time.Now().In(loc)
+	day := func(n int) time.Time {
+		return time.Date(today.Year(), today.Month(), today.Day()+n, 0, 0, 0, 0, time.UTC)
+	}
+	sfx := strings.ToUpper(ids.New().String()[24:])
+	calID := "it-cal-" + strings.ToLower(sfx)
+	if _, err := q.UpsertBusinessCalendar(ctx, db.UpsertBusinessCalendarParams{CalendarID: calID, TenantID: tenant, Name: "integration calendar", TimeZone: "America/Toronto", WeekendDays: []int16{}, Holidays: []time.Time{day(1), day(2)}}); err != nil {
+		t.Fatal(err)
+	}
+	site, err := f.svc.CreateSite(ctx, f.owner, domain.CreateSiteInput{Code: "CAD-" + sfx, Name: "CAD site", Country: "CA", TimeZone: "America/Toronto", Currency: "CAD"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := q.SetSiteCalendar(ctx, db.SetSiteCalendarParams{TenantID: tenant, SiteID: site.SiteID, BusinessCalendarID: &calID, UpdatedBy: "it-car"}); err != nil {
+		t.Fatal(err)
+	}
+	project, err := f.svc.CreateProject(ctx, f.owner, domain.CreateProjectInput{Code: "P-CAD-" + sfx, Name: "CAD project", SiteID: site.SiteID.String(), ProjectType: "greenfield", FelStage: "fel3"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if project.Currency != "CAD" {
+		t.Fatalf("project currency should follow the site: %s", project.Currency)
+	}
+	g := fixture{svc: f.svc, project: project, owner: f.owner}
+	g.commitPromise(t)
+
+	// 6,000,000 CAD is 4,440,000 USD at the seed rate: below the VP Finance threshold, so two
+	// stages and the minor tier. Compared unconverted it would be three stages and Tier A.
+	car := g.fullCAR(t, "6000000.00", "Converted at submission.")
+	gv, err := f.svc.CARGuidance(ctx, f.owner, car.CAR.CarID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gv.Preview.RoutingAmount != "4440000.00" || len(gv.Preview.Chain) != 2 || gv.Preview.Tier != governance.TierB {
+		t.Fatalf("preview should route on the converted amount: %+v", gv.Preview)
+	}
+	if p := gv.Preview.Policy; p.FXPair != "CAD.USD" || p.AmountCurrency != "CAD" || p.Currency != "USD" || p.Calendar != calID {
+		t.Fatalf("policy provenance: pair=%s amount=%s thresholds=%s calendar=%s", p.FXPair, p.AmountCurrency, p.Currency, p.Calendar)
+	}
+	res, err := f.svc.SubmitCAR(ctx, f.owner, car.CAR.CarID, domain.SubmitCARInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var snap map[string]any
+	if err := json.Unmarshal(res.View.Workflow.PolicySnapshot, &snap); err != nil {
+		t.Fatal(err)
+	}
+	if snap["fx_rate"] != "0.740000" || snap["fx_pair"] != "CAD.USD" || snap["business_calendar"] != calID || snap["version"] != float64(4) {
+		t.Fatalf("snapshot should carry the rate and the calendar: %v", snap)
+	}
+	// Stage 1 has a 24 h SLA; with two holidays in the way the clock runs 72 wall hours.
+	st := res.View.Stages[0]
+	if st.EnteredAt == nil || st.StageDueAt == nil {
+		t.Fatalf("stage clock not started: %+v", st)
+	}
+	if got := st.StageDueAt.Sub(*st.EnteredAt); got < 71*time.Hour || got > 73*time.Hour {
+		t.Fatalf("stage 1 due %s after entry; want about 72h (24 business hours over two holidays)", got)
+	}
+
+	// No rate defined for the pair: a precondition, never a silent 1:1 comparison.
+	eur := "EUR"
+	odd, err := f.svc.CreateCAR(ctx, f.owner, project.ProjectID, domain.CreateCARInput{Kind: "fel_funding", AmountRequested: "10000.00", Currency: &eur, BusinessCase: "Study in euros."})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CARGuidance(ctx, f.owner, odd.CAR.CarID); !errors.Is(err, domain.ErrPrecondition) || !strings.Contains(err.Error(), "fx.rate.EUR.USD") {
+		t.Fatalf("expected the missing-rate precondition, got %v", err)
+	}
+}

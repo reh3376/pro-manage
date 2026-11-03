@@ -21,7 +21,7 @@
   },
   "config": {
     "timeout_ms": 15000,
-    "sha256": "d58305952fe02247919d9bacaabdff6c5ec7420c2ba5e5e050e5579bb738812b"
+    "sha256": "da32f0ba7cda231f7a0d32ff326011c4c4ae1f20a3c0752d1704592975af219e"
   },
   "request": {
     "method": "GET",
@@ -167,6 +167,18 @@
             "path": "$.preview.policy.threshold_vp_finance",
             "op": "equals",
             "expected": "5000000.00"
+          },
+          {
+            "name": "snapshot names the site business calendar (slice 12)",
+            "path": "$.preview.policy.business_calendar",
+            "op": "equals",
+            "expected": "us-ky"
+          },
+          {
+            "name": "snapshot records the request currency (slice 12)",
+            "path": "$.preview.policy.amount_currency",
+            "op": "equals",
+            "expected": "USD"
           },
           {
             "name": "session id is user:project",

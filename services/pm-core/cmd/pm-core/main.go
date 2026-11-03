@@ -16,6 +16,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/redis/go-redis/v9"
+
 	"github.com/reh3376/pro-manage/services/pm-core/internal/api"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/auth"
@@ -83,7 +85,25 @@ func run() error {
 		checks["postgres"] = st.Pool.Ping
 		log.Info("postgres configured", "auto_migrate", cfg.DBAutoMigrate, "dev_actor_header", cfg.DevActorHeader)
 
+		// Pre-classification cache (§06): in the stack's Redis when one is configured, so a verdict
+		// pre-classified on one replica is honoured by the one that takes the submit (B-06);
+		// in-process otherwise.
 		gate := &governance.Gate{OrgID: cfg.GovernanceOrgID, Log: log, Cache: governance.NewPreclassCache(cfg.PreclassifyTTL)}
+		var rdb *redis.Client
+		if cfg.RedisURL != "" {
+			opts, err := redis.ParseURL(cfg.RedisURL)
+			if err != nil {
+				return fmt.Errorf("REDIS_URL: %w", err)
+			}
+			rdb = redis.NewClient(opts)
+			if err := rdb.Ping(ctx).Err(); err != nil {
+				return fmt.Errorf("redis ping: %w", err)
+			}
+			defer rdb.Close()
+			gate.Cache = governance.NewRedisPreclass(rdb, cfg.PreclassifyTTL, log)
+			checks["redis"] = func(ctx context.Context) error { return rdb.Ping(ctx).Err() }
+			log.Info("preclassification cache in redis", "ttl", cfg.PreclassifyTTL.String())
+		}
 		sign := &signing.Service{Store: st, Chain: chain, Tenant: cfg.TenantID, Log: log}
 		if cfg.SigiAddr != "" {
 			sc, err := sigi.Dial(cfg.SigiAddr, cfg.SigiProvider)
@@ -128,19 +148,15 @@ func run() error {
 			h := mc.Health(ctx)
 			log.Info("mdemg configured", "base_url", cfg.MDEMGBaseURL, "governance_space", mdemgadapter.GovernanceSpace(cfg.GovernanceOrgID), "reachable", h.Reachable, "jiminy_enabled", h.JiminyEnabled, "latency_ms", h.LatencyMs)
 		}
-		if cfg.IdPiAddr != "" && cfg.RedisURL != "" {
-			store, err := sessions.Open(ctx, cfg.RedisURL)
-			if err != nil {
-				return err
-			}
-			defer store.Close()
+		if cfg.IdPiAddr != "" && rdb != nil {
+			store := sessions.New(rdb) // the same Redis client as the pre-classification cache
 			store.TTL, store.MaxAge = cfg.SessionTTL, cfg.SessionMaxAge
 			ic, err := idpi.Dial(cfg.IdPiAddr)
 			if err != nil {
 				return err
 			}
 			defer ic.Close()
-			checks["redis"] = store.Ping // the IdP's own health shows at /auth/login (503) and the module's /readyz, not here: pm-core serves without it
+			// redis is already in checks (shared client); the IdP's own health shows at /auth/login (503) and the module's /readyz, not here: pm-core serves without it
 			a.Auth = &auth.Handler{Log: log, Sessions: store, IdPi: ic, Users: svc, PublicURL: cfg.PublicURL, FrontendURL: cfg.FrontendURL, CookieSecure: cfg.CookieSecure, RequestID: api.RequestIDFrom}
 			a.Auth.Mount(mux, a.RequestIDMiddleware)
 			log.Info("login configured", "idpi", cfg.IdPiAddr, "callback", cfg.PublicURL+"/auth/callback", "session_ttl", cfg.SessionTTL.String(), "session_max_age", cfg.SessionMaxAge.String())

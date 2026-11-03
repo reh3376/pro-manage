@@ -9,11 +9,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/calendar"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/db"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/notify"
@@ -152,7 +154,7 @@ func (t *Ticker) apply(ctx context.Context, row db.ListOpenStagesForTickRow, act
 			base.Subject = fmt.Sprintf("Overdue: %s (stage %d, %s)", subject, row.StageOrder, row.RoleRequired)
 			base.Body = fmt.Sprintf("Stage %d (%s) of %s passed its SLA at %s. It escalates after a grace of %s if still undecided.", row.StageOrder, row.RoleRequired, subject, row.StageDueAt.UTC().Format(time.RFC1123), grace)
 		case Escalate:
-			due := now.Add(grace)
+			due := t.calendarFor(ctx, q, row.ProjectID).Add(now, grace) // business time of the site (§08, B-07)
 			n, err := q.MarkStageEscalated(ctx, db.MarkStageEscalatedParams{StageID: row.StageID, EscalatedAt: &now, StageDueAt: &due})
 			if err != nil || n == 0 {
 				return err
@@ -223,4 +225,25 @@ func graceFrom(snapshot []byte) time.Duration {
 		return DefaultGrace
 	}
 	return time.Duration(m.Hours * float64(time.Hour))
+}
+
+// calendarFor is the project's site business calendar, or the wall clock when the project
+// has no site calendar (or no project: portfolio-level workflows).
+func (t *Ticker) calendarFor(ctx context.Context, q *db.Queries, projectID *uuid.UUID) calendar.Calendar {
+	if projectID == nil {
+		return calendar.WallClock
+	}
+	row, err := q.GetCalendarForProject(ctx, db.GetCalendarForProjectParams{TenantID: t.Tenant, ProjectID: *projectID})
+	if err != nil {
+		return calendar.WallClock
+	}
+	weekend := make([]int, 0, len(row.WeekendDays))
+	for _, d := range row.WeekendDays {
+		weekend = append(weekend, int(d))
+	}
+	holidays := make([]string, 0, len(row.Holidays))
+	for _, h := range row.Holidays {
+		holidays = append(holidays, h.Format("2006-01-02"))
+	}
+	return calendar.New(row.CalendarID, row.Name, row.TimeZone, weekend, holidays)
 }

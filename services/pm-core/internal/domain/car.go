@@ -22,6 +22,7 @@ import (
 
 	"github.com/reh3376/pro-manage/services/pm-core/internal/audit"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/budget"
+	"github.com/reh3376/pro-manage/services/pm-core/internal/calendar"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/db"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/governance"
 	"github.com/reh3376/pro-manage/services/pm-core/internal/ids"
@@ -403,10 +404,11 @@ type submission struct {
 	site    db.Site
 	est     *db.EstimateArtifact
 	policy  CARPolicy
-	routing *big.Rat
-	amount  *big.Rat
+	routing *big.Rat // in the threshold currency
+	amount  *big.Rat // in the CAR's currency
 	chain   []StageDef
 	tier    governance.Tier
+	cal     calendar.Calendar // the site's business calendar for the stage clocks
 }
 
 // prepare loads everything a submit or preview needs and resolves the policy.
@@ -429,8 +431,10 @@ func (s *Service) prepare(ctx context.Context, car db.CapitalAuthorization, now 
 		}
 		sub.est = &est
 	}
+	sub.cal = s.calendarForSite(ctx, sub.site.SiteID)
+	sub.policy.Calendar = sub.cal.ID
 	sub.amount, _ = new(big.Rat).SetString(car.AmountRequested)
-	sub.routing = sub.amount
+	routing := sub.amount
 	if car.Kind == "supplemental" {
 		// Supplementals route on the cumulative authorized amount so thresholds cannot be crept past in steps (§08).
 		sum, err := s.Store.Queries().SumApprovedCARs(ctx, db.SumApprovedCARsParams{TenantID: s.Tenant, ProjectID: car.ProjectID})
@@ -438,7 +442,12 @@ func (s *Service) prepare(ctx context.Context, car db.CapitalAuthorization, now 
 			return sub, err
 		}
 		approved, _ := new(big.Rat).SetString(sum)
-		sub.routing = new(big.Rat).Add(approved, sub.amount)
+		routing = new(big.Rat).Add(approved, sub.amount)
+	}
+	// Thresholds are compared in the policy's currency; a request in another currency converts at
+	// the fx.rate.* in force on submission, and the rate goes into the snapshot (§08, B-07).
+	if sub.routing, err = convertToThresholdCurrency(ctx, s.Store.Queries(), sub.project, now, routing, car.Currency, &sub.policy); err != nil {
+		return sub, err
 	}
 	sub.chain = BuildCARChain(sub.routing, sub.policy)
 	sub.tier = CARTier(car.Kind, sub.routing, sub.policy)
@@ -770,7 +779,7 @@ func (s *Service) SubmitCAR(ctx context.Context, actor Actor, carID uuid.UUID, i
 		for i, st := range sub.chain {
 			p := db.CreateStageParams{StageID: ids.New(), WorkflowID: wf.WorkflowID, StageOrder: st.Order, RoleRequired: st.Role, Assignees: assignees[i], SlaMinutes: int32(st.SLAHours * 60)}
 			if i == 0 {
-				due := now.Add(time.Duration(st.SLAHours) * time.Hour)
+				due := sub.cal.Add(now, time.Duration(st.SLAHours)*time.Hour) // business time of the site (§08, B-07)
 				p.EnteredAt, p.StageDueAt = &now, &due
 			}
 			if _, err := q.CreateStage(ctx, p); err != nil {
@@ -962,7 +971,7 @@ func (s *Service) DecideCAR(ctx context.Context, actor Actor, carID uuid.UUID, i
 					sla = st.SlaMinutes
 				}
 			}
-			due := now.Add(time.Duration(sla) * time.Minute)
+			due := s.calendarForProject(ctx, car.ProjectID).Add(now, time.Duration(sla)*time.Minute) // business time of the site (§08, B-07)
 			if err := q.OpenStage(ctx, db.OpenStageParams{WorkflowID: wf.WorkflowID, StageOrder: next, EnteredAt: &now, StageDueAt: &due}); err != nil {
 				return err
 			}
@@ -1213,4 +1222,40 @@ func esignThreshold(snapshot []byte) *big.Rat {
 		return nil
 	}
 	return x
+}
+
+// calendarForSite is the site's business calendar, or the wall clock when the site has none.
+func (s *Service) calendarForSite(ctx context.Context, siteID uuid.UUID) calendar.Calendar {
+	row, err := s.Store.Queries().GetCalendarForSite(ctx, db.GetCalendarForSiteParams{TenantID: s.Tenant, SiteID: siteID})
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			s.logger().Warn("site calendar lookup failed; using the wall clock", "site", siteID, "err", err)
+		}
+		return calendar.WallClock
+	}
+	return calendarFromRow(row)
+}
+
+// calendarForProject is the project's site calendar, or the wall clock.
+func (s *Service) calendarForProject(ctx context.Context, projectID uuid.UUID) calendar.Calendar {
+	row, err := s.Store.Queries().GetCalendarForProject(ctx, db.GetCalendarForProjectParams{TenantID: s.Tenant, ProjectID: projectID})
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			s.logger().Warn("project calendar lookup failed; using the wall clock", "project", projectID, "err", err)
+		}
+		return calendar.WallClock
+	}
+	return calendarFromRow(row)
+}
+
+func calendarFromRow(row db.BusinessCalendar) calendar.Calendar {
+	weekend := make([]int, 0, len(row.WeekendDays))
+	for _, d := range row.WeekendDays {
+		weekend = append(weekend, int(d))
+	}
+	holidays := make([]string, 0, len(row.Holidays))
+	for _, h := range row.Holidays {
+		holidays = append(holidays, h.Format("2006-01-02"))
+	}
+	return calendar.New(row.CalendarID, row.Name, row.TimeZone, weekend, holidays)
 }

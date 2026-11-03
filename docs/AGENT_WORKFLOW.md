@@ -92,7 +92,7 @@ Done table), `docs/tests/UXTS_FRAMEWORK_MATRIX.md` counts, `connectors/README.md
 `proto/README.md`, `deploy/compose/README.md`, `SECURITY.md`. Check for em-dashes:
 
 ```bash
-git ls-files '*.md' | grep -v '^docs/personal' | xargs grep -n -- '—'
+git ls-files '*.md' | grep -v '^docs/personal' | xargs grep -n -- $'\xe2\x80\x94'
 ```
 
 ### 5. Commit and push

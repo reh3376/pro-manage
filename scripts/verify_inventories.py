@@ -75,7 +75,7 @@ def scan_policy_variables() -> dict[str, str]:
     # Seed SQL: every tuple of an INSERT INTO policy_variables statement (multi-row inserts included).
     # Statement runs to ON CONFLICT or the next INSERT (descriptions may contain semicolons).
     stmt_pat = re.compile(r"INSERT INTO policy_variables\b.*?(?=ON CONFLICT|INSERT INTO|\Z)", re.I | re.S)
-    tuple_pat = re.compile(r"\(\s*'([a-z0-9_.<>]+)'\s*,")
+    tuple_pat = re.compile(r"\(\s*'([A-Za-z0-9_.<>]+)'\s*,")  # fx.rate.<FROM>.<TO> carries ISO 4217 codes in upper case
     for p in (ROOT / "services" / "pm-core").rglob("*.sql"):
         for stmt in stmt_pat.finditer(_read(p)):
             for m in tuple_pat.finditer(stmt.group(0)):

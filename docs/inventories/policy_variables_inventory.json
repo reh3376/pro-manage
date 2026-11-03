@@ -140,10 +140,10 @@
       ],
       "readers": [
         "policy.Resolve",
-        "services/pm-core/internal/domain/car_chain.go (BuildCARChain / CARTier, slice 3)"
+        "services/pm-core/internal/domain/car_chain.go (BuildCARChain / CARTier, slice 3; convertToThresholdCurrency, slice 12)"
       ],
       "disposition": "active",
-      "notes": "Currency of the thresholds"
+      "notes": "Currency of the thresholds; overridable at portfolio and site since slice 12 (the seed's Ontario site says CAD). A request in another currency converts at fx.rate.<from>.<to> on submission."
     },
     "car.threshold.finance_approver": {
       "writers": [
@@ -189,6 +189,28 @@
       ],
       "disposition": "active",
       "notes": "Early Management exit criterion"
+    },
+    "fx.rate.CAD.USD": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "policy.Resolve",
+        "services/pm-core/internal/domain/car_chain.go (convertToThresholdCurrency, slice 12)"
+      ],
+      "disposition": "active",
+      "notes": "USD per CAD at submission (slice 12, B-07); Finance maintains, seed value is a dev placeholder"
+    },
+    "fx.rate.USD.CAD": {
+      "writers": [
+        "services/pm-core/db/seeds/northfield.sql"
+      ],
+      "readers": [
+        "policy.Resolve",
+        "services/pm-core/internal/domain/car_chain.go (convertToThresholdCurrency, slice 12)"
+      ],
+      "disposition": "active",
+      "notes": "CAD per USD at submission (slice 12, B-07); Finance maintains, seed value is a dev placeholder"
     },
     "health_review.cadence": {
       "writers": [

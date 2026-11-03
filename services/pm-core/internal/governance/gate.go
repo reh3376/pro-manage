@@ -56,7 +56,7 @@ type Gate struct {
 	Client *mdemgadapter.Client
 	OrgID  string // governance space is org.<OrgID>.governance
 	Log    *slog.Logger
-	Cache  *PreclassCache
+	Cache  PreclassStore
 }
 
 // Spaces for a project.

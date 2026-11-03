@@ -167,6 +167,17 @@ type BudgetVersion struct {
 	PulledAt    time.Time       `json:"pulled_at"`
 }
 
+type BusinessCalendar struct {
+	CalendarID  string      `json:"calendar_id"`
+	TenantID    string      `json:"tenant_id"`
+	Name        string      `json:"name"`
+	TimeZone    string      `json:"time_zone"`
+	WeekendDays []int16     `json:"weekend_days"`
+	Holidays    []time.Time `json:"holidays"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+}
+
 type BusinessCasePromise struct {
 	PromiseID          uuid.UUID  `json:"promise_id"`
 	TenantID           string     `json:"tenant_id"`
