@@ -67,6 +67,11 @@ updates:
     schedule: { interval: weekly, day: monday }
     ignore:
       # Pinned deliberately: the MDEMG images follow the version pin in FSD §06, not Dependabot.
+      # Dependabot names a ghcr.io image without the registry host ("reh3376/mdemg"), and with
+      # the host it would not match, so the private images were still looked up and the compose
+      # update job failed on them; both spellings are listed.
+      - dependency-name: "reh3376/mdemg"
+      - dependency-name: "reh3376/mdemg-neural-sidecar"
       - dependency-name: "ghcr.io/reh3376/mdemg"
       - dependency-name: "ghcr.io/reh3376/mdemg-neural-sidecar"
       # Neo4j stays on the line MDEMG is built and tested against (neo4j:5), not Neo4j's calendar releases.
