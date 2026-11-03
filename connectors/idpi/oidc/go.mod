@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/reh3376/pro-manage/services/pm-core v0.0.0
-	go.yaml.in/yaml/v3 v3.0.5
+	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/oauth2 v0.37.0
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
