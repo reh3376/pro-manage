@@ -10,7 +10,16 @@ updates:
     commit-message: { prefix: "ci" }
 
   - package-ecosystem: gomod
-    directory: /services/pm-core
+    # One PR for every Go module: the connector modules take the generated contract from pm-core
+    # through a `replace`, so a dependency bumped in pm-core alone leaves their go.mod files stale
+    # ("updates to go.mod needed") and the Go job fails. Grouping across the directories keeps
+    # the five modules on the same versions in one change.
+    directories:
+      - /services/pm-core
+      - /connectors/idpi/oidc
+      - /connectors/sigi/stub
+      - /connectors/commsi/smtp
+      - /connectors/erpi/stub
     schedule: { interval: weekly, day: monday }
     groups:
       go: { patterns: ["*"] }
@@ -62,6 +71,15 @@ updates:
       - dependency-name: "ghcr.io/reh3376/mdemg-neural-sidecar"
       # Neo4j stays on the line MDEMG is built and tested against (neo4j:5), not Neo4j's calendar releases.
       - dependency-name: "neo4j"
+      # The data stores follow the majors decided in FSD §05 (Postgres 16, Redis 7, TimescaleDB on pg16).
+      # A major bump is a migration (Postgres 18 moved its data directory and rejects the 16 volume
+      # layout), decided and rehearsed by the owner, never a Dependabot PR.
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "redis"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "timescale/timescaledb"
+        update-types: ["version-update:semver-major"]
     groups:
       compose: { patterns: ["*"] }
     commit-message: { prefix: "deps(compose)" }
